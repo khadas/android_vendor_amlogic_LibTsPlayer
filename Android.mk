@@ -1,24 +1,25 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
-LOCAL_MODULE_TAGS := optional
-LOCAL_SRC_FILES := TsPlayer.cpp
-
-
-LOCAL_C_INCLUDES := $(LOCAL_PATH)  \
-                     $(LOCAL_PATH)/../amcodec/codec  \
-		     $(LOCAL_PATH)/../amcodec/audio_ctl \
-		     $(LOCAL_PATH)/../amadec/include \
-		     $(LOCAL_PATH)/../amcodec/include \
-
-										
 LOCAL_ARM_MODE := arm
-LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libmedia  libdl
-LOCAL_SHARED_LIBRARIES += libbinder
-
-LOCAL_LDLIBS    := -lc -landroid_runtime
-LOCAL_STATIC_LIBRARIES :=  libamcodec libamadec
 LOCAL_MODULE    := libTsPlayer
-#LOCAL_CFLAGS=-ldl
 LOCAL_PRELINK_MODULE := false
+LOCAL_MODULE_TAGS := optional
+LOCAL_SRC_FILES := CTsPlayer.cpp CTC_MediaControl.cpp
+
+LIBPLAYER_PATH := $(TOP)/packages/amlogic/LibPlayer
+LOCAL_C_INCLUDES := \
+	$(LIBPLAYER_PATH)/amplayer/player/include \
+	$(LIBPLAYER_PATH)/amplayer/control/include \
+	$(LIBPLAYER_PATH)/amffmpeg \
+	$(LIBPLAYER_PATH)/amcodec/include \
+	$(LIBPLAYER_PATH)/amadec/include \
+	$(JNI_H_INCLUDE)/ \
+	$(LOCAL_PATH)/../include
+#LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 
+LOCAL_STATIC_LIBRARIES := libamcodec libamadec 
+
+LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder
+LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
+
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

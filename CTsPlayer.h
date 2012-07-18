@@ -17,6 +17,7 @@ extern "C" {
 #include <amports/aformat.h>
 #include <codec.h>
 }
+
 #include <string.h>
 #include <utils/Timers.h>
 
@@ -25,7 +26,6 @@ extern "C" {
 #define TRICKMODE_NONE       0x00
 #define TRICKMODE_I          0x01
 #define TRICKMODE_FFFB       0x02
-
 typedef struct{
 	unsigned short	pid;//pid
 	int				nVideoWidth;//视频宽度
@@ -43,21 +43,16 @@ typedef struct{
 	unsigned char*	pExtraData;	
 }AUDIO_PARA_T, *PAUDIO_PARA_T;
 
-
-///////////////////////
 int enable_gl_2xscale(const char *);
 
 int Active_osd_viewport(int , int );
 
-
 class CTsPlayer;
-
 class ITsPlayer{
 public:
 	ITsPlayer(){}
 	virtual ~ITsPlayer(){}
 public:
-	//取得播放模式
 	virtual int  GetPlayMode()=0;
 	//显示窗口
 	virtual int  SetVideoWindow(int x,int y,int width,int height)=0;
@@ -104,9 +99,8 @@ public:
 	virtual void SetEPGSize(int w, int h)=0;
 };
 
-
-
-class CTsPlayer : public ITsPlayer{
+class CTsPlayer : public ITsPlayer
+{
 public:
 	CTsPlayer();
 	virtual ~CTsPlayer();
@@ -139,9 +133,9 @@ public:
 	virtual bool StopFast();
 	//停止
 	virtual bool Stop();
-    //定位
+	//定位
     	virtual bool Seek();
-    //设定音量
+        //设定音量
 	//设定音量
 	virtual bool SetVolume(int volume);
 	//获取音量

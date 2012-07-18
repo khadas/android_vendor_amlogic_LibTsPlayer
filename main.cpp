@@ -63,7 +63,7 @@ int main(int argc,char **argv)
 	}
 	player->SetVideoWindow(0,0,-1,-1);//
 	player->SetColorKey(1,0);
-	player->VideoShow();
+	//player->VideoShow();
 	osd_blank("/sys/class/graphics/fb0/blank",1);//clear all osd0 ,don't need it on APK
     osd_blank("/sys/class/graphics/fb1/blank",1);//clear all osd1 ,don't need it on APK
 	while(!feof(file)){
@@ -87,7 +87,7 @@ int main(int argc,char **argv)
 		if(writelen>0)
 			bufdatalen-=writelen;
 	}
-	player->VideoHide();
+	//player->VideoHide();
 	printf("playfile %s end\n",filename);
 }
 

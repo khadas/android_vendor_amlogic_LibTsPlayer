@@ -5,7 +5,6 @@ LOCAL_MODULE    := libTsPlayer
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := \
-#	main.cpp \
 	CTsPlayer.cpp \
 	CTC_MediaControl.cpp \
 	CTC_MediaProcessor.cpp

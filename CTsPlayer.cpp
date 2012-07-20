@@ -840,6 +840,8 @@ void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
 void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
 {
 
+	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "InitAudio");
+
 
 	aPara=*pAudioPara;
 	return ;
@@ -1055,6 +1057,8 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 void CTsPlayer::GetVideoPixels(int& width, int& height)
 {
 
+	
+	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GetVideoPixels");
 
 
 	int fd = open("/sys/class/display/mode", O_RDONLY); 

@@ -4,7 +4,11 @@ LOCAL_ARM_MODE := arm
 LOCAL_MODULE    := libTsPlayer
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional
-LOCAL_SRC_FILES := CTsPlayer.cpp CTC_MediaControl.cpp
+LOCAL_SRC_FILES := \
+#	main.cpp \
+	CTsPlayer.cpp \
+	CTC_MediaControl.cpp \
+	CTC_MediaProcessor.cpp
 
 LIBPLAYER_PATH := $(TOP)/packages/amlogic/LibPlayer
 LOCAL_C_INCLUDES := \

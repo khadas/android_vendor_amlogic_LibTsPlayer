@@ -1,8 +1,11 @@
-#include "TsPlayer.h"
+#include "CTsPlayer.h"
+#include "CTC_MediaControl.h"
+#include "CTC_MediaProcessor.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <android/log.h>  
 	  
 
 /*
@@ -30,7 +33,7 @@ int osd_blank(char *path,int cmd)
 unsigned char buffer[1024*64];
 int main(int argc,char **argv)
 {
-	CTsPlayer *player=new CTsPlayer();
+	CTC_MediaProcessor *player=new CTC_MediaProcessor();
 	VIDEO_PARA_T VideoPara;
 	AUDIO_PARA_T AudioPara;
 	FILE *file;
@@ -39,9 +42,10 @@ int main(int argc,char **argv)
 	int ret;
 	int bufdatalen=0;
 	int writelen;
+	int w_test=0,h_test=0;
 	if(argc<2){
 		printf("usage %s filenme\n",argv[0]);
-		return 0;
+	//	return 0;
 	}
 	memset(&VideoPara,0,sizeof(VideoPara));
 	memset(&AudioPara,0,sizeof(AudioPara));
@@ -50,6 +54,8 @@ int main(int argc,char **argv)
 	VideoPara.pid=2064;
 	AudioPara.aFmt=AFORMAT_MPEG;
 	AudioPara.pid=2068;
+	player->GetVideoPixels(w_test,h_test);
+	__android_log_print(ANDROID_LOG_INFO, "TsPlayer_test", "GetVideoPixels----width:%d,height:%d",w_test,h_test);
 	player->InitVideo(&VideoPara);
 	player->InitAudio(&AudioPara);
 	if(!player->StartPlay()){

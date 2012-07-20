@@ -818,13 +818,13 @@ int CTsPlayer::SetColorKey(int enable,int key565)
 
 int CTsPlayer::VideoShow(void)
 {
-	//return 0;
-	return set_sys_int("/sys/class/video/disable_video",0);
+	return 0;
+	//return set_sys_int("/sys/class/video/disable_video",0);
 }
 int CTsPlayer::VideoHide(void)
 {
-	//return 0;
-	return set_sys_int("/sys/class/video/disable_video",1);
+	return 0;
+	//return set_sys_int("/sys/class/video/disable_video",1);
 }
 
 

@@ -56,8 +56,6 @@ public:
 	virtual int  GetPlayMode()=0;
 	//显示窗口
 	virtual int  SetVideoWindow(int x,int y,int width,int height)=0;
-	//16位色深需要设置colorkey来透出视频；
-	virtual int  SetColorKey(int enable,int key565)=0;
 	//x显示视频
 	virtual int  VideoShow(void)=0;
 	//隐藏视频
@@ -97,6 +95,8 @@ public:
 	virtual void GetVideoPixels(int& width, int& height)=0;
 	virtual bool IsSoftFit()=0;
 	virtual void SetEPGSize(int w, int h)=0;
+	//16位色深需要设置colorkey来透出视频；
+	virtual int  SetColorKey(int enable,int key565)=0;
 };
 
 class CTsPlayer : public ITsPlayer
@@ -109,8 +109,6 @@ public:
 	virtual int  GetPlayMode();
 	//显示窗口
 	virtual int  SetVideoWindow(int x,int y,int width,int height);
-	//16位色深需要设置colorkey来透出视频；
-	virtual int  SetColorKey(int enable,int key565);
 	//x显示视频
 	virtual int  VideoShow(void);
 	//隐藏视频
@@ -150,6 +148,8 @@ public:
 	virtual void GetVideoPixels(int& width, int& height);
 	virtual bool IsSoftFit();
 	virtual void SetEPGSize(int w, int h);
+	//16位色深需要设置colorkey来透出视频；
+	virtual int  SetColorKey(int enable,int key565);
 private:
 	AUDIO_PARA_T aPara;
 	VIDEO_PARA_T vPara;	
@@ -170,5 +170,4 @@ private:
 #endif
 
 };
-ITsPlayer* GetTsPlayer();
 #endif

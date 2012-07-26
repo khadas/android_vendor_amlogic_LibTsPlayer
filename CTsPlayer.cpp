@@ -1095,12 +1095,12 @@ bool CTsPlayer::SetRatio(int nRatio)
 {
 	return false;
 }
-
+/*
 ITsPlayer* GetTsPlayer()
 {
 	return new CTsPlayer();
 }
-
+*/
 bool CTsPlayer::IsSoftFit()
 {
 	return false;

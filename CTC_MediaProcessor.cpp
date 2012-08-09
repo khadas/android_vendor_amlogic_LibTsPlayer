@@ -5,11 +5,21 @@
  */
 
 #include "CTC_MediaProcessor.h"
+#include <android/log.h>    
 
 // need single instance?
+
+CTC_MediaProcessor* const mediaProcessor = new CTC_MediaProcessor();
+
 CTC_MediaProcessor* GetMediaProcessor()
 {
-	return new CTC_MediaProcessor();
+	return mediaProcessor;
+}
+
+void DeleteMediaProcessor()
+{
+	__android_log_print(ANDROID_LOG_INFO, "CTC_MediaProcessor", "DeleteMediaProcessor\n");
+	delete mediaProcessor;
 }
 
 int GetMediaProcessorVersion()

@@ -266,7 +266,8 @@ int GL_2X_iptv_scale720(int mSwitch)
 	}
 	else if(mSwitch == 1)
 	{
-		write(Fb0Blank, "1", strlen("1"));
+		
+		//write(Fb0Blank, "1", strlen("1"));
 		//write(Fb1Blank, "1", strlen("1"));
 		if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
 		{
@@ -339,8 +340,9 @@ int GL_2X_iptv_scale530(int mSwitch)
 	}
 	else if(mSwitch == 1)
 	{
-	   //640, 530
-		write(Fb0Blank, "1", strlen("1"));
+	   //640, 530   
+   
+		//write(Fb0Blank, "1", strlen("1"));
 		//write(Fb1Blank, "1", strlen("1"));
 		if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
 		{
@@ -527,6 +529,8 @@ void LunchIptv()
 {
 	
 		int ret;
+		
+		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "LunchIptv\n");
 
    ret = disable_freescale_MBX();
 		  LOGI("disable freeacale:%d\n", ret);
@@ -618,6 +622,8 @@ void QuitIptv()
 	
 	/*enable freescale for ui and disable opengl scale*/
 
+	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "QuitIptv\n");
+	   
 
 		               
    

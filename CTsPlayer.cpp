@@ -547,7 +547,7 @@ void LunchIptv()
     set_sys_int("/sys/module/di/parameters/buf_mgr_mode",0);
     set_sys_str("/sys/class/display/rd_reg","m 0x1a2b");
     set_sys_str("/sys/class/display/wr_reg","m 0x1a2b 0x1dc20c81");
-    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1920 1080 0 8");	
+//    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1920 1080 0 8");	
     //Active_video_viewport(0,0,1280,720);
     set_sys_int("/sys/class/video/blackout_policy",0);
     //Active_osd_viewport(1280, 720);
@@ -887,6 +887,7 @@ bool CTsPlayer::StartPlay()
 		//m_fp = fopen("/data/Live.ts", "wb+");	
 #endif
 	}
+	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1920 1080 0 8");
 	return !ret;
 }
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
@@ -975,6 +976,7 @@ bool CTsPlayer::Stop()
 
 	//if (m_nMode == M_LIVE)
 		//set_sys_int("/sys/class/video/blackout_policy",1);
+    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
 	if (m_bIsPlay){
 #ifdef WF
 		if (m_fp != NULL){

@@ -535,8 +535,8 @@ void LunchIptv()
    ret = disable_freescale_MBX();
 		  LOGI("disable freeacale:%d\n", ret);
 	  
-    ret = GL_2X_iptv_scale720(1);
-   LOGI("GL2XScale:%d\n", ret);
+//    ret = GL_2X_iptv_scale720(1);
+//   LOGI("GL2XScale:%d\n", ret);
     
     
     set_sys_int("/sys/class/graphics/fb0/free_scale",0);
@@ -562,8 +562,7 @@ void LunchIptv()
 
 void SwitchResolution(int mode , int status) 
 {
-
-
+	LOGE("SwitchResolution:  mode=%d, status=%d.\n", mode, status);
 
 	
 	if(mode == 1){
@@ -734,38 +733,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 	char buffer[15];
 	int mode_w = 0,mode_h = 0;
 
-   fd_mode= open(path_mode, O_RDONLY);
-   if(fd_mode >= 0){ 
-    memset(buffer, 0 ,sizeof(buffer));       
-	read(fd_mode,buffer,sizeof(buffer));
-	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", " mode_buffer = %s \n",buffer);
-    
-
-	if(!strncmp(buffer,"1080i50hz",9) || !strncmp(buffer,"1080p50hz",9))
-	{
-		mode_w=1920;
-		mode_h= 1080;
-	}
-	else if(!strncmp(buffer,"720p50hz",8))
-	{
-		mode_w=1280;
-		mode_h=720;
-	}
-	else if(!strncmp(buffer,"567i",4))
-	{
-		mode_w=720;
-		mode_h=567;
-	}
-
-   else if( !strncmp(buffer,"480i",4) )
-	{
-		mode_w=720;
-		mode_h=480;
-	}
-        
-     close(fd_mode);
-       
-	}
+    GetVideoPixels(mode_w, mode_h);
 
 
    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer::mode_w = %d , mode_h = %d , mw = %d, mh = %d \n",mode_w,mode_h,m_nEPGWidth,m_nEPGHeight);
@@ -1052,6 +1020,9 @@ int CTsPlayer::GetAudioBalance()
 //nAudioBlance:,1:×óÉùµÀ£¬2:ÓÒÉùµÀ£¬3:Ë«ÉùµÀ
 bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 {
+	if((nAudioBalance < 1) && (nAudioBalance > 3))
+		return false;
+	m_nAudioBalance = nAudioBalance;
 	if (nAudioBalance == 1){
 		codec_left_mono(pcodec);
 	}else if(nAudioBalance == 2){
@@ -1116,7 +1087,7 @@ bool CTsPlayer::IsSoftFit()
 
 void CTsPlayer::SetEPGSize(int w, int h)
 {
-
+	LOGE("SetEPGSize:  w=%d, h=%d,  m_bIsPlay=%d,  m_bSetEPGSize=%d.\n", w, h, m_bIsPlay, m_bSetEPGSize);
 	//if (IsSoftFit())
 		//return;
 	m_nEPGWidth = w;

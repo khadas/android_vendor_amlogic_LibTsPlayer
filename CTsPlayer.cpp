@@ -311,8 +311,12 @@ int GL_2X_iptv_scale530(int mSwitch)
 {
   char mode[16];
 	char m1080scale[8];
-	int request2XScaleFile = -1, scaleOsd1File = -1, scaleaxisOsd1File = -1, Fb0Blank = -1, Fb1Blank = -1;
+	int request2XScaleFile = -1, scaleOsd1File = -1,scaleOsd0File = -1, scaleaxisOsd1File = -1, Fb0Blank = -1, Fb1Blank = -1;
 	char raxis_str[32],saxis_str[32];
+
+	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GL_2X_iptv_scale530");
+	
+
 	
 	get_display_mode(mode);
   
@@ -321,6 +325,9 @@ int GL_2X_iptv_scale530(int mSwitch)
 	}
 	if((scaleOsd1File = open("/sys/class/graphics/fb1/scale", O_RDWR)) < 0) {
 		//log_print("open /sys/class/graphics/fb1/scale fail.");
+	}
+	if((scaleOsd0File = open("/sys/class/graphics/fb0/scale", O_RDWR)) < 0) {
+		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "open /sys/class/graphics/fb0/scale fail.");
 	}
 	if((scaleaxisOsd1File = open("/sys/class/graphics/fb1/scale_axis", O_RDWR)) < 0) {
 		//log_print("open /sys/class/graphics/fb1/scale_axis fail.");
@@ -336,7 +343,7 @@ int GL_2X_iptv_scale530(int mSwitch)
 	{
 			write(request2XScaleFile, "2", strlen("2"));
 			write(scaleOsd1File, "0", strlen("0"));
-			//write(scaleOsd0File, "0", strlen("0"));
+			write(scaleOsd0File, "0", strlen("0"));
 	}
 	else if(mSwitch == 1)
 	{
@@ -362,14 +369,17 @@ int GL_2X_iptv_scale530(int mSwitch)
 		}
 		else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
 		{
+		    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GL_2X_iptv_scale530 : 1080i");
 			//write(request2XScaleFile, "8", strlen("8"));
-			write(request2XScaleFile, "8 1920 1467", strlen("8 1920 1467"));
+			write(request2XScaleFile, "7 1920 1467", strlen("7 1920 1467"));
+
+			//write(scaleOsd0File, "0x10000", strlen("0x10000"));
 			//write(request2XScaleFile, "16 3840 1467", strlen("16 3840 1467"));
-			write(scaleaxisOsd1File, "1280 720 1920 1080", strlen("1280 720 1920 1080"));
-			write(scaleOsd1File, "0x10001", strlen("0x10001"));
+			//write(scaleaxisOsd1File, "1280 720 1920 1080", strlen("1280 720 1920 1080"));
+			
+			//write(scaleOsd1File, "0x10001", strlen("0x10001"));
 
 			//write(scaleaxisOsd0File, "0 0 959 1079", strlen("0 0 959 1079"));
-			//write(scaleOsd0File, "0x10000", strlen("0x10000"));
 			
 		}
 	}
@@ -380,9 +390,9 @@ int GL_2X_iptv_scale530(int mSwitch)
 		close(scaleOsd1File);
 	if(scaleaxisOsd1File >= 0)
 		close(scaleaxisOsd1File);
-	/*if(scaleOsd0File >= 0)
+	if(scaleOsd0File >= 0)
 		close(scaleOsd0File);
-	if(scaleaxisOsd0File >= 0)
+	/*if(scaleaxisOsd0File >= 0)
 		close(scaleaxisOsd0File);*/
 	if(Fb0Blank >= 0)
 		close(Fb0Blank);
@@ -615,7 +625,7 @@ void QuitIptv()
     RemoveIptvPath();
     RestoreDefPath();
 	enable_gl_2xscale("2 0 0");
-    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0");
+ //   set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0");
 	set_sys_int("/sys/class/video/blackout_policy",1);
     set_sys_int("/sys/class/graphics/fb0/free_scale",1);
 	
@@ -824,8 +834,18 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
 bool CTsPlayer::StartPlay()
 {
 
-
+    int fd_axis;	
+	const char *path_axis = "/sys/class/video/axis" ;
+	char bcmd[50] = {0};
+	char StrAxis[32] = {0};
+	char StrScale[32] = {0};
+	int holex,holey,holew,holeh,holex1,holey1;
+    int request2XScaleFile = -1;
 	int ret;
+	int ScaleX,ScaleY;
+	int request;
+	char mode [15] = {0};
+	get_display_mode(mode);
 	memset(pcodec,0,sizeof(*pcodec));
 	pcodec->stream_type=STREAM_TYPE_TS;
 	pcodec->video_type = vPara.vFmt;
@@ -855,7 +875,55 @@ bool CTsPlayer::StartPlay()
 		//m_fp = fopen("/data/Live.ts", "wb+");	
 #endif
 	}
-	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1920 1080 0 8");
+
+	fd_axis = open(path_axis, O_CREAT | O_RDWR | O_TRUNC, 0644);
+
+    if (fd_axis >= 0) 
+	{
+		
+		read(fd_axis, StrAxis, 32);
+		sscanf(StrAxis, "%i %i %i %i", &holex,&holey,&holex1,&holey1);
+		holew = holex1-holex;
+		holeh = holey1-holey;
+        close(fd_axis);
+    }
+	else
+	{
+        return ret;
+	}
+
+	if (m_nEPGWidth == 1280 && m_nEPGHeight == 720)
+	{			
+        sprintf(bcmd, "%d %d %d %d %d %d",holex,holey,holew,holeh,0,8);
+	}
+	else
+    {
+        if((request2XScaleFile = open("/sys/class/graphics/fb0/request2XScale", O_RDWR))< 0)
+		{
+		    return ret;
+    	}
+		read(request2XScaleFile, StrScale, 32);
+		sscanf(StrScale, "%i %i %i", &request,&ScaleX,&ScaleY);
+		if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
+	    {
+            holex = holex*1280/ScaleX/2;
+			holey = holey*720/ScaleY;
+			holew = holew*1280/ScaleX/2;
+			holeh = holeh*720/ScaleY;
+		}
+		else
+		{
+            holex = holex*1280/ScaleX;
+			holey = holey*720/ScaleY;
+			holew = holew*1280/ScaleX;
+			holeh = holeh*720/ScaleY;
+
+		}
+		sprintf(bcmd, "%d %d %d %d %d %d",holex,holey,holew,holeh,0,8);
+	}
+
+
+	set_sys_str("/sys/class/graphics/fb0/video_hole",bcmd);
 	return !ret;
 }
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
@@ -999,14 +1067,14 @@ int CTsPlayer::GetVolume()
 	int nVolume = volume * 100;
 	if (nVolume <= 0)
 		return m_nVolume;
-
+    
 	return (int)(volume*100);
 }
 bool CTsPlayer::SetVolume(int volume)
 {
 
 
-
+    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "SetVolume");
 	int ret = codec_set_volume(pcodec, (float)volume/100.0);
 	m_nVolume = volume;
 	return true;//!ret;

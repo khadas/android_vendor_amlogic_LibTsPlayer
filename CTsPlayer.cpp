@@ -561,7 +561,7 @@ void LunchIptv()
     //Active_video_viewport(0,0,1280,720);
     set_sys_int("/sys/class/video/blackout_policy",0);
     //Active_osd_viewport(1280, 720);
-	
+	set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",3);
 	
 
 
@@ -627,6 +627,7 @@ void QuitIptv()
 	enable_gl_2xscale("2 0 0");
  //   set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0");
 	set_sys_int("/sys/class/video/blackout_policy",1);
+ 	set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
     set_sys_int("/sys/class/graphics/fb0/free_scale",1);
 	
 	/*enable freescale for ui and disable opengl scale*/

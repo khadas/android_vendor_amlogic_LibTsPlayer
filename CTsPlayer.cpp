@@ -928,21 +928,25 @@ bool CTsPlayer::StartPlay()
 	return !ret;
 }
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
-{
-
-
+{	
+	int ret = -1;
 
 	if (!m_bIsPlay)
 		return -1;
-	if (codec_write(pcodec,pBuffer,nSize) > 0){
+	
+	ret = codec_write(pcodec,pBuffer,nSize);
+	
+	if (ret > 0){
 #ifdef WF
-	if (m_fp != NULL){
-		fwrite(pBuffer, 1, nSize, m_fp);
-	}
+		if (m_fp != NULL){
+			fwrite(pBuffer, 1, nSize, m_fp);
+		}
 #endif
-		
 	}
-	return nSize;
+	else{
+		return -1;
+	}
+	return ret;
 }
 
 bool CTsPlayer::Pause()

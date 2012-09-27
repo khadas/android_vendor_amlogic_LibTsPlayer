@@ -835,18 +835,8 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
 bool CTsPlayer::StartPlay()
 {
 
-    int fd_axis;	
-	const char *path_axis = "/sys/class/video/axis" ;
-	char bcmd[50] = {0};
-	char StrAxis[32] = {0};
-	char StrScale[32] = {0};
-	int holex,holey,holew,holeh,holex1,holey1;
-    int request2XScaleFile = -1;
+
 	int ret;
-	int ScaleX,ScaleY;
-	int request;
-	char mode [15] = {0};
-	get_display_mode(mode);
 	memset(pcodec,0,sizeof(*pcodec));
 	pcodec->stream_type=STREAM_TYPE_TS;
 	pcodec->video_type = vPara.vFmt;
@@ -876,55 +866,7 @@ bool CTsPlayer::StartPlay()
 		//m_fp = fopen("/data/Live.ts", "wb+");	
 #endif
 	}
-
-	fd_axis = open(path_axis, O_CREAT | O_RDWR | O_TRUNC, 0644);
-
-    if (fd_axis >= 0) 
-	{
-		
-		read(fd_axis, StrAxis, 32);
-		sscanf(StrAxis, "%i %i %i %i", &holex,&holey,&holex1,&holey1);
-		holew = holex1-holex;
-		holeh = holey1-holey;
-        close(fd_axis);
-    }
-	else
-	{
-        return ret;
-	}
-
-	if (m_nEPGWidth == 1280 && m_nEPGHeight == 720)
-	{			
-        sprintf(bcmd, "%d %d %d %d %d %d",holex,holey,holew,holeh,0,8);
-	}
-	else
-    {
-        if((request2XScaleFile = open("/sys/class/graphics/fb0/request2XScale", O_RDWR))< 0)
-		{
-		    return ret;
-    	}
-		read(request2XScaleFile, StrScale, 32);
-		sscanf(StrScale, "%i %i %i", &request,&ScaleX,&ScaleY);
-		if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
-	    {
-            holex = holex*1280/ScaleX/2;
-			holey = holey*720/ScaleY;
-			holew = holew*1280/ScaleX/2;
-			holeh = holeh*720/ScaleY;
-		}
-		else
-		{
-            holex = holex*1280/ScaleX;
-			holey = holey*720/ScaleY;
-			holew = holew*1280/ScaleX;
-			holeh = holeh*720/ScaleY;
-
-		}
-		sprintf(bcmd, "%d %d %d %d %d %d",holex,holey,holew,holeh,0,8);
-	}
-
-
-	set_sys_str("/sys/class/graphics/fb0/video_hole",bcmd);
+    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
 	return !ret;
 }
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
@@ -1135,6 +1077,8 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
 		else if(height == 720)
 			width = 1280;
 		else if(height == 480)
+			width = 720;
+		else if(height == 576)
 			width = 720;
 		else{
 			width = 1920;

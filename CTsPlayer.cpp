@@ -853,6 +853,9 @@ bool CTsPlayer::StartPlay()
     }
 	printf("set %d,%d,%d,%d\n",vPara.vFmt,aPara.aFmt,vPara.pid,aPara.pid);
 	pcodec->noblock = 0;
+	
+	ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
+	
 	/*other setting*/
 	ret = codec_init(pcodec);
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "StartPlay codec_init After:%d\n", ret);

@@ -990,6 +990,7 @@ bool CTsPlayer::Stop()
 			SwitchResolution(1, 0);	
 		m_bSetEPGSize = false;
 	}
+	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 8");
 	return true;
 }
 bool CTsPlayer::Seek()

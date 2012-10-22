@@ -1090,7 +1090,7 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
 
 bool CTsPlayer::SetRatio(int nRatio)
 {
-	return false;
+	return true;
 }
 /*
 ITsPlayer* GetTsPlayer()

@@ -26,3 +26,4 @@ LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)
+include $(call all-makefiles-under,$(LOCAL_PATH))

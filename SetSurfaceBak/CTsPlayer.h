@@ -12,14 +12,24 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <surfaceflinger/Surface.h>
+#include <surfaceflinger/ISurface.h>
+#include <gui/ISurfaceTexture.h>
+#include <gui/SurfaceTextureClient.h>
+#include <surfaceflinger/ISurfaceComposer.h>
+using namespace android;
+
+
 extern "C" {
 #include <amports/vformat.h>
 #include <amports/aformat.h>
 #include <codec.h>
 }
-
 #include <string.h>
 #include <utils/Timers.h>
+
+
+
 
 #define WF
 
@@ -27,6 +37,7 @@ extern "C" {
 #define TRICKMODE_I          0x01
 #define TRICKMODE_FFFB       0x02
 #define MAX_AUDIO_PARAM_SIZE 10
+
 typedef struct{
 	unsigned short	pid;//pid
 	int				nVideoWidth;//视频宽度
@@ -108,6 +119,7 @@ public:
 	virtual bool IsSoftFit()=0;
 	virtual void SetEPGSize(int w, int h)=0;
 	
+	virtual void SetSurface(Surface* pSurface);
 	//16位色深需要设置colorkey来透出视频；
      virtual void SwitchAudioTrack(int pid) = 0;
      virtual void SwitchSubtitle(int pid) = 0;
@@ -167,6 +179,7 @@ public:
 	virtual bool IsSoftFit();
 	virtual void SetEPGSize(int w, int h);
 
+	virtual void SetSurface(Surface* pSurface);
 	//16位色深需要设置colorkey来透出视频；
 
     virtual void SwitchAudioTrack(int pid) ;

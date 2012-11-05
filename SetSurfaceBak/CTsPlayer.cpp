@@ -7,6 +7,7 @@
 //#include "../LibPlayer/amplayer/player/include/player.h"
 
 //#include "../IPTVPlayer/PubAndroid.h"	 
+using namespace android;
 #define DPrint(x)
 
 #define M_LIVE	1
@@ -1279,9 +1280,25 @@ void CTsPlayer::leaveChannel()
 {
     Stop();
 }
+
+
+void CTsPlayer::SetSurface(Surface* pSurface)
+{
+	  sp<ISurfaceTexture> surfaceTexture;
+	  sp<ANativeWindow> 	mNativeWindow;
+	  int usage=0;
+	  surfaceTexture=pSurface->getSurfaceTexture();
+    mNativeWindow=new SurfaceTextureClient(surfaceTexture);
+    native_window_set_usage(mNativeWindow.get(),usage | GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP | GRALLOC_USAGE_AML_VIDEO_OVERLAY);
+}
+
+
 void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander)
 {
     pfunc_player_evt = pfunc ;
 
 	player_evt_hander = hander;
 }
+
+
+

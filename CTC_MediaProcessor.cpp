@@ -24,5 +24,5 @@ void DeleteMediaProcessor()
 
 int GetMediaProcessorVersion()
 {
-	return 1;
+	return 2;
 }

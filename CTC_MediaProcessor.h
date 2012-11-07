@@ -17,7 +17,6 @@ class CTC_MediaProcessor:public CTsPlayer
 // CTC_MediaProcessor 派生类的实例，然后返回这个实例的指针
 CTC_MediaProcessor* GetMediaProcessor();  // { return NULL; }
 
-void DeleteMediaProcessor();
 
 // 获取底层模块实现的接口版本号。将来如果有多个底层接口定义，使得上层与底层之间能够匹配。本版本定义
 // 返回为1

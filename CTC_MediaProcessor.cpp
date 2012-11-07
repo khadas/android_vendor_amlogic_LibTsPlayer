@@ -9,18 +9,13 @@
 
 // need single instance?
 
-CTC_MediaProcessor* const mediaProcessor = new CTC_MediaProcessor();
-
 CTC_MediaProcessor* GetMediaProcessor()
 {
-	return mediaProcessor;
+    return new CTC_MediaProcessor();
+
+	
 }
 
-void DeleteMediaProcessor()
-{
-	__android_log_print(ANDROID_LOG_INFO, "CTC_MediaProcessor", "DeleteMediaProcessor\n");
-	delete mediaProcessor;
-}
 
 int GetMediaProcessorVersion()
 {

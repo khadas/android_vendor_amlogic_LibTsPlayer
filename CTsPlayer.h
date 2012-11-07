@@ -21,7 +21,7 @@ extern "C" {
 #include <string.h>
 #include <utils/Timers.h>
 
-#define WF
+//#define WF
 
 #define TRICKMODE_NONE       0x00
 #define TRICKMODE_I          0x01

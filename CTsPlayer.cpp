@@ -1,6 +1,8 @@
 #include "CTsPlayer.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/system_properties.h>
+#include <cutils/properties.h>
 #include <fcntl.h>
 #include "player.h"
 //#include "player_set_sys.c"
@@ -238,11 +240,17 @@ void get_display_mode(char *mode)
 
 int GL_2X_iptv_scale720(int mSwitch)
 {
-  char mode[16];
+    char mode[16];
+	char writedata[40] = {0};
 	char m1080scale[8];
+	char vaxis_newx_str[10] = {0};
+	char vaxis_newy_str[10] = {0};
+	char vaxis_width_str[10] = {0};
+	char vaxis_height_str[10] = {0};
+	
 	int request2XScaleFile = -1, scaleOsd1File = -1, scaleaxisOsd1File = -1, Fb0Blank = -1, Fb1Blank = -1;
 	char raxis_str[32],saxis_str[32];
-	
+	int vaxis_newx= -1,vaxis_newy = -1,vaxis_width= -1,vaxis_height= -1;
   
 	get_display_mode(mode);
 
@@ -263,7 +271,12 @@ int GL_2X_iptv_scale720(int mSwitch)
 		//log_print("open /sys/class/graphics/fb1/blank fail.");
 	}
 	if(mSwitch == 0)
-	{
+	{		if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
+		    {
+			    set_sys_str("/sys/class/graphics/fb0/scale","0");
+                set_sys_str("/sys/class/graphics/fb0/scale_axis","0 0 959 1079");            
+			}
+	        set_sys_str("/sys/class/display/axis","0 0 1280 720 0 0 18 18");
 			write(request2XScaleFile, "2", strlen("2"));
 			write(scaleOsd1File, "0", strlen("0"));
 	}
@@ -274,25 +287,175 @@ int GL_2X_iptv_scale720(int mSwitch)
 		//write(Fb1Blank, "1", strlen("1"));
 		if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
 		{
-			write(request2XScaleFile, "16 720 480", strlen("16 720 480"));
+		    if(!strncmp(mode, "480i", 4))
+		    {
+               	property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
+
+			}
+			else
+		    {            
+               	property_get("ubootenv.var.480poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.480poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.480poutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.480poutputheight",vaxis_height_str,"480");        
+			}
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+			
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+				             vaxis_newx,
+				             vaxis_newy);
+		    set_sys_str("/sys/class/display/axis",writedata);
+
+			memset(writedata,0,strlen(writedata));
+
+			sprintf(writedata,"16 %d %d",
+				           vaxis_width,
+				           vaxis_height);
+			write(request2XScaleFile, writedata, strlen(writedata));
+			
 			write(scaleaxisOsd1File, "1280 720 720 480", strlen("1280 720 720 480"));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 		}
 		else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
 		{
-			write(request2XScaleFile, "16 720 576", strlen("16 720 576"));
+		    if(!strncmp(mode, "576i", 4))
+		    {
+               	property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
+
+			}
+			else
+		    {            
+               	property_get("ubootenv.var.576poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.576poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.576poutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.576poutputheight",vaxis_height_str,"576");        
+			}
+
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+			
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+										 vaxis_newx,
+										 vaxis_newy);
+			set_sys_str("/sys/class/display/axis",writedata);
+						
+			memset(writedata,0,strlen(writedata));
+			sprintf(writedata,"16 %d %d",
+							vaxis_width,
+							vaxis_height);
+			write(request2XScaleFile, writedata, strlen(writedata));
+
 			write(scaleaxisOsd1File, "1280 720 720 576", strlen("1280 720 720 576"));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 		}
 		else if(!strncmp(mode, "720p", 4))
 		{
-			write(request2XScaleFile, "16 1280 720", strlen("16 1280 720"));	//for setting blank to 0
+		    property_get("ubootenv.var.720poutputx",vaxis_newx_str,"0");			  
+			property_get("ubootenv.var.720poutputy",vaxis_newy_str,"0");			  
+			property_get("ubootenv.var.720poutputwidth",vaxis_width_str,"1280"); 		  
+			property_get("ubootenv.var.720poutputheight",vaxis_height_str,"720");
+
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_height_str:%s\n",
+		    						vaxis_height_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newy_str:%s\n",
+									vaxis_newy_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_width_str:%s\n",
+									vaxis_width_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_height_str:%s\n",
+									vaxis_height_str);
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+										 vaxis_newx,
+										 vaxis_newy);
+			set_sys_str("/sys/class/display/axis",writedata);
+
+			memset(writedata,0,strlen(writedata));
+			sprintf(writedata,"16 %d %d",
+							vaxis_width,
+							vaxis_height);
+			write(request2XScaleFile, writedata, strlen(writedata));
+			
 		}
 		else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
 		{
-			write(request2XScaleFile, "8 0 0", strlen("8 0 0"));
+			/*write(request2XScaleFile, "8 0 0", strlen("8 0 0"));
 			write(scaleaxisOsd1File, "1280 720 1920 1080", strlen("1280 720 1920 1080"));
-			write(scaleOsd1File, "0x10001", strlen("0x10001"));
+			write(scaleOsd1File, "0x10001", strlen("0x10001"));*/
+			if(!strncmp(mode, "1080i", 5))
+		    {
+               	property_get("ubootenv.var.1080ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.1080ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.1080ioutputwidth",vaxis_width_str,"1920");			  
+			    property_get("ubootenv.var.1080ioutputheight",vaxis_height_str,"1080");
+
+			}
+			else
+		    {            
+               	property_get("ubootenv.var.1080poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.1080poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.1080poutputwidth",vaxis_width_str,"1920");			  
+			    property_get("ubootenv.var.1080poutputheight",vaxis_height_str,"1080");        
+			}
+
+		    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GL_2X_iptv_scale530 : 1080i");
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+								(int(vaxis_newx/2))*2,
+								(int(vaxis_newy/2))*2);						 										 
+			set_sys_str("/sys/class/display/axis",writedata);
+
+			memset(writedata,0,strlen(writedata));
+
+			sprintf(writedata,"0 0 %d %d",
+								960-int(vaxis_newx/2)-1,
+								1080-int(vaxis_newy/2)-1);
+			
+			set_sys_str("/sys/class/graphics/fb0/scale_axis",writedata);
+
+
+			memset(writedata,0,strlen(writedata));
+
+			sprintf(writedata,"7 %d %d",
+							  int(vaxis_width/2),
+							  vaxis_height);
+			write(request2XScaleFile, writedata, strlen(writedata));
+
 		}
 	}
 
@@ -312,11 +475,17 @@ int GL_2X_iptv_scale720(int mSwitch)
 
 int GL_2X_iptv_scale530(int mSwitch)
 {
-  char mode[16];
+    char mode[16]= {0};
+	char writedata[40] = {0};
 	char m1080scale[8];
+	char vaxis_newx_str[10] = {0};
+	char vaxis_newy_str[10] = {0};
+	char vaxis_width_str[10] = {0};
+	char vaxis_height_str[10] = {0};
+	
 	int request2XScaleFile = -1, scaleOsd1File = -1,scaleOsd0File = -1, scaleaxisOsd1File = -1, Fb0Blank = -1, Fb1Blank = -1;
 	char raxis_str[32],saxis_str[32];
-
+    int vaxis_newx= -1,vaxis_newy = -1,vaxis_width= -1,vaxis_height= -1;
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GL_2X_iptv_scale530");
 	
 
@@ -344,6 +513,12 @@ int GL_2X_iptv_scale530(int mSwitch)
 	}
 	if(mSwitch == 0)
 	{
+			if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
+		    {
+			    set_sys_str("/sys/class/graphics/fb0/scale","0");
+                set_sys_str("/sys/class/graphics/fb0/scale_axis","0 0 959 1079");            
+			}
+	        set_sys_str("/sys/class/display/axis","0 0 1280 720 0 0 18 18");
 			write(request2XScaleFile, "2", strlen("2"));
 			write(scaleOsd1File, "0", strlen("0"));
 			write(scaleOsd0File, "0", strlen("0"));
@@ -351,39 +526,179 @@ int GL_2X_iptv_scale530(int mSwitch)
 	else if(mSwitch == 1)
 	{
 	   //640, 530   
-   
-		//write(Fb0Blank, "1", strlen("1"));
-		//write(Fb1Blank, "1", strlen("1"));
+	 
+
+		
 		if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
 		{
-			write(request2XScaleFile, "16 1440 652", strlen("16 1440 652"));
+		    if(!strncmp(mode, "480i", 4))
+		    {
+               	property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
+
+			}
+			else
+		    {            
+               	property_get("ubootenv.var.480poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.480poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.480poutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.480poutputheight",vaxis_height_str,"480");        
+			}
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+			
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+				             vaxis_newx,
+				             vaxis_newy);
+		    set_sys_str("/sys/class/display/axis",writedata);
+
+			memset(writedata,0,strlen(writedata));
+
+			sprintf(writedata,"16 %d %d",
+				           int(vaxis_width*1280/640),
+				           int(vaxis_height*720/530));
+			write(request2XScaleFile, writedata, strlen(writedata));
+			
 			write(scaleaxisOsd1File, "1280 720 720 480", strlen("1280 720 720 480"));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 		}
 		else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
 		{
-			write(request2XScaleFile, "16 1440 782", strlen("16 1440 782"));
+		    
+		    if(!strncmp(mode, "576i", 4))
+		    {
+               	property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
+
+			}
+			else
+		    {            
+               	property_get("ubootenv.var.576poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.576poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.576poutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.576poutputheight",vaxis_height_str,"576");        
+			}
+
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+			
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+										 vaxis_newx,
+										 vaxis_newy);
+			set_sys_str("/sys/class/display/axis",writedata);
+						
+			memset(writedata,0,strlen(writedata));
+			sprintf(writedata,"16 %d %d",
+							int(vaxis_width*1280/640),
+							int(vaxis_height*720/530));
+			write(request2XScaleFile, writedata, strlen(writedata));
+
 			write(scaleaxisOsd1File, "1280 720 720 576", strlen("1280 720 720 576"));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 		}
 		else if(!strncmp(mode, "720p", 4))
 		{
-			write(request2XScaleFile, "16 2560 978", strlen("16 2560 978"));	//for setting blank to 0
+		    
+			property_get("ubootenv.var.720poutputx",vaxis_newx_str,"0");			  
+			property_get("ubootenv.var.720poutputy",vaxis_newy_str,"0");			  
+			property_get("ubootenv.var.720poutputwidth",vaxis_width_str,"1280"); 		  
+			property_get("ubootenv.var.720poutputheight",vaxis_height_str,"720");
+
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_height_str:%s\n",
+		    						vaxis_height_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newy_str:%s\n",
+									vaxis_newy_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_width_str:%s\n",
+									vaxis_width_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_height_str:%s\n",
+									vaxis_height_str);
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+										 vaxis_newx,
+										 vaxis_newy);
+			set_sys_str("/sys/class/display/axis",writedata);
+
+			memset(writedata,0,strlen(writedata));
+			sprintf(writedata,"16 %d %d",
+							int(vaxis_width*1280/640),
+							int(vaxis_height*720/530));
+			write(request2XScaleFile, writedata, strlen(writedata));
+					    
 		}
 		else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
 		{
+		    
+		    if(!strncmp(mode, "1080i", 5))
+		    {
+               	property_get("ubootenv.var.1080ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.1080ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.1080ioutputwidth",vaxis_width_str,"1920");			  
+			    property_get("ubootenv.var.1080ioutputheight",vaxis_height_str,"1080");
+
+			}
+			else
+		    {            
+               	property_get("ubootenv.var.1080poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.1080poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.1080poutputwidth",vaxis_width_str,"1920");			  
+			    property_get("ubootenv.var.1080poutputheight",vaxis_height_str,"1080");        
+			}
+
 		    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GL_2X_iptv_scale530 : 1080i");
-			//write(request2XScaleFile, "8", strlen("8"));
-			write(request2XScaleFile, "7 1920 1467", strlen("7 1920 1467"));
 
-			//write(scaleOsd0File, "0x10000", strlen("0x10000"));
-			//write(request2XScaleFile, "16 3840 1467", strlen("16 3840 1467"));
-			//write(scaleaxisOsd1File, "1280 720 1920 1080", strlen("1280 720 1920 1080"));
-			
-			//write(scaleOsd1File, "0x10001", strlen("0x10001"));
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
 
-			//write(scaleaxisOsd0File, "0 0 959 1079", strlen("0 0 959 1079"));
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+
+			sprintf(writedata,"%d %d 1280 720 0 0 18 18",
+								(int(vaxis_newx/2))*2,
+								(int(vaxis_newy/2))*2);						 										 
+			set_sys_str("/sys/class/display/axis",writedata);
+
+			memset(writedata,0,strlen(writedata));
+
+			sprintf(writedata,"0 0 %d %d",
+								960-int(vaxis_newx/2)-1,
+								1080-int(vaxis_newy/2)-1);
 			
+			set_sys_str("/sys/class/graphics/fb0/scale_axis",writedata);
+
+
+			memset(writedata,0,strlen(writedata));
+
+			sprintf(writedata,"7 %d %d",
+							  int(vaxis_width),
+							  int(vaxis_height*720/530));
+			write(request2XScaleFile, writedata, strlen(writedata));		
 		}
 	}
 
@@ -778,8 +1093,8 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 
 int CTsPlayer::VideoShow(void)
 {
-	return 0;
-	//return set_sys_int("/sys/class/video/disable_video",0);
+	//return 0;
+	return set_sys_int("/sys/class/video/disable_video",0);
 }
 
 /*int CTsPlayer::SetColorKey(int enable,int key565)
@@ -808,8 +1123,8 @@ int CTsPlayer::VideoShow(void)
 
 int CTsPlayer::VideoHide(void)
 {
-	return 0;
-	//return set_sys_int("/sys/class/video/disable_video",1);
+	//return 0;
+	return set_sys_int("/sys/class/video/disable_video",2);
 }
 
 
@@ -1137,7 +1452,7 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 void CTsPlayer::GetVideoPixels(int& width, int& height)
 {
 
-	/*
+	
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GetVideoPixels");
 
 
@@ -1170,7 +1485,7 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
 			width = 1920;
 			height = 1080;
 		}
-	}*/
+	}
 }
 
 bool CTsPlayer::SetRatio(int nRatio)

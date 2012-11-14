@@ -1094,7 +1094,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 int CTsPlayer::VideoShow(void)
 {
 	//return 0;
-	return set_sys_int("/sys/class/video/disable_video",0);
+	return set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
 }
 
 /*int CTsPlayer::SetColorKey(int enable,int key565)
@@ -1124,7 +1124,7 @@ int CTsPlayer::VideoShow(void)
 int CTsPlayer::VideoHide(void)
 {
 	//return 0;
-	return set_sys_int("/sys/class/video/disable_video",2);
+	return set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
 }
 
 

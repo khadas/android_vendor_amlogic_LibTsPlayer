@@ -17,6 +17,7 @@
 #define RES_VIDEO_SIZE 256
 #define RES_AUDIO_SIZE 64
 #define UNIT_FREQ   96000
+#define MAX_WRITE_COUNT 100
 
 #ifndef FBIOPUT_OSD_SRCCOLORKEY
 #define  FBIOPUT_OSD_SRCCOLORKEY    0x46fb
@@ -879,7 +880,7 @@ void LunchIptv()
     //Active_video_viewport(0,0,1280,720);
     set_sys_int("/sys/class/video/blackout_policy",0);
     //Active_osd_viewport(1280, 720);
-	set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
+	//set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
 	
 
 
@@ -945,7 +946,7 @@ void QuitIptv()
 	enable_gl_2xscale("2 0 0");
  //   set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0");
 	set_sys_int("/sys/class/video/blackout_policy",1);
- 	set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
+ 	//set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
     set_sys_int("/sys/class/graphics/fb0/free_scale",1);
 	
 	/*enable freescale for ui and disable opengl scale*/
@@ -1093,7 +1094,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 
 int CTsPlayer::VideoShow(void)
 {
-	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
+	//set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
 	return 0;
 }
 
@@ -1123,7 +1124,7 @@ int CTsPlayer::VideoShow(void)
 
 int CTsPlayer::VideoHide(void)
 {
-	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
+	//set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
 	return 0;
 }
 
@@ -1156,7 +1157,7 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
 bool CTsPlayer::StartPlay()
 {
 	int ret;
-	
+	set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",3);
 	memset(pcodec,0,sizeof(*pcodec));
 	pcodec->stream_type=STREAM_TYPE_TS;
 	pcodec->video_type = vPara.vFmt;
@@ -1178,8 +1179,8 @@ bool CTsPlayer::StartPlay()
 	{
 		pcodec->has_audio=1;
 	  pcodec->audio_pid=(int)a_aPara[0].pid;
-	  pcodec->audio_samplerate=a_aPara[0].nSampleRate;	
-	  pcodec->audio_channels=a_aPara[0].nChannels;
+	  //pcodec->audio_samplerate=a_aPara[0].nSampleRate;	
+	  //pcodec->audio_channels=a_aPara[0].nChannels;
 	  __android_log_print(ANDROID_LOG_INFO,"TsPlayer","pcodec->audio_samplerate:%d pcodec->audio_channels:%d\n",pcodec->audio_samplerate,pcodec->audio_channels);
   }
   
@@ -1213,6 +1214,7 @@ bool CTsPlayer::StartPlay()
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 {	
 	int ret = -1;
+	static unsigned int writecount = 0;
     buf_status audio_buf;
 	buf_status video_buf;
 
@@ -1234,7 +1236,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                   {
                      pfunc_player_evt(IPTV_PLAYER_EVT_ABEND,player_evt_hander);
 				  }
-                  __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "WriteData video low level\n");
+                  //__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "WriteData video low level\n");
 			   }
 		   }
 		   else
@@ -1246,7 +1248,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                   {
                      pfunc_player_evt(IPTV_PLAYER_EVT_ABEND,player_evt_hander);
 				  }
-                  __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "WriteData video low level\n");
+                  //__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "WriteData video low level\n");
 			   }
 		   }
 	   }
@@ -1259,7 +1261,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                {
                     pfunc_player_evt(IPTV_PLAYER_EVT_ABEND,player_evt_hander);
 			   }
-               __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "WriteData audio low level\n");
+               //__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "WriteData audio low level\n");
 		   }
 	   }
     }
@@ -1274,12 +1276,23 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 			fwrite(pBuffer, 1, nSize, m_fp);
 		}
     #endif
-	  m_bWrFirstPkg = false;	
-	  __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "codec_write return > 0\n");
+	  if(writecount >= MAX_WRITE_COUNT)
+	  {
+	      m_bWrFirstPkg = false;
+          writecount = 0;
+		  set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
+	  }
+
+      if(m_bWrFirstPkg == true)
+      {
+          writecount++;
+	  }
+	  
+	  //__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "codec_write return > 0\n");
 	}
 	else
 	{
-		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "codec_write return < 0\n");
+		//__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "codec_write return < 0\n");
 		return -1;
 	}
 	return ret;
@@ -1506,6 +1519,7 @@ bool CTsPlayer::IsSoftFit()
 void CTsPlayer::SetEPGSize(int w, int h)
 {
 	LOGE("SetEPGSize:  w=%d, h=%d,  m_bIsPlay=%d,  m_bSetEPGSize=%d.\n", w, h, m_bIsPlay, m_bSetEPGSize);
+	set_sys_int("/sys/class/graphics/fb0/blank", 1);
 	//if (IsSoftFit())
 		//return;
 	m_nEPGWidth = w;
@@ -1517,6 +1531,7 @@ void CTsPlayer::SetEPGSize(int w, int h)
 			SwitchResolution(1, 0);	
 	}else
 		m_bSetEPGSize = true;
+	set_sys_int("/sys/class/graphics/fb0/blank", 0);
 }
 
 void CTsPlayer::SwitchAudioTrack(int pid)
@@ -1545,8 +1560,8 @@ void CTsPlayer::SwitchAudioTrack(int pid)
   	 pcodec->has_audio=1;
      pcodec->audio_type= a_aPara[count].aFmt;
 	   pcodec->audio_pid=(int)a_aPara[count].pid;
-	   pcodec->audio_samplerate=a_aPara[count].nSampleRate;	
-	   pcodec->audio_channels=a_aPara[count].nChannels;
+	   //pcodec->audio_samplerate=a_aPara[count].nSampleRate;	
+	   //pcodec->audio_channels=a_aPara[count].nChannels;
 	}
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "SwitchAudioTrack pcodec->audio_samplerate:%d pcodec->audio_channels:%d\n",pcodec->audio_samplerate,pcodec->audio_channels);
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "SwitchAudioTrack pcodec->audio_type:%d pcodec->audio_pid:%d\n",pcodec->audio_type,pcodec->audio_pid);
@@ -1592,6 +1607,7 @@ long CTsPlayer::GetCurrentPlayTime()
 }
 void CTsPlayer::leaveChannel()
 {
+    __android_log_print(ANDROID_LOG_INFO,"TsPlayer","leaveChannel be call\n");
     Stop();
 }
 void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander)

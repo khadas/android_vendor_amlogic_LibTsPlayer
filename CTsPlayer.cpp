@@ -330,8 +330,14 @@ int GL_2X_iptv_scale720(int mSwitch)
 				           vaxis_height);
 			write(request2XScaleFile, writedata, strlen(writedata));
 			
-			write(scaleaxisOsd1File, "1280 720 720 480", strlen("1280 720 720 480"));
+            memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							vaxis_width,
+							vaxis_height);
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
+
 		}
 		else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
 		{
@@ -372,7 +378,12 @@ int GL_2X_iptv_scale720(int mSwitch)
 							vaxis_height);
 			write(request2XScaleFile, writedata, strlen(writedata));
 
-			write(scaleaxisOsd1File, "1280 720 720 576", strlen("1280 720 720 576"));
+            memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							vaxis_width,
+							vaxis_height);
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 		}
 		else if(!strncmp(mode, "720p", 4))
@@ -409,6 +420,14 @@ int GL_2X_iptv_scale720(int mSwitch)
 							vaxis_width,
 							vaxis_height);
 			write(request2XScaleFile, writedata, strlen(writedata));
+
+			memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							vaxis_width,
+							vaxis_height);
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
+			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 			
 		}
 		else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
@@ -462,6 +481,14 @@ int GL_2X_iptv_scale720(int mSwitch)
 							  int(vaxis_width/2),
 							  vaxis_height);
 			write(request2XScaleFile, writedata, strlen(writedata));
+
+			memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							vaxis_width,
+							vaxis_height);
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
+			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 
 		}
 	}
@@ -525,7 +552,7 @@ int GL_2X_iptv_scale530(int mSwitch)
 			    set_sys_str("/sys/class/graphics/fb0/scale","0");
                 set_sys_str("/sys/class/graphics/fb0/scale_axis","0 0 959 1079");            
 			}
-	        set_sys_str("/sys/class/display/axis","0 0 1280 720 0 0 18 18");
+	    set_sys_str("/sys/class/display/axis","0 0 1280 720 0 0 18 18");
 			write(request2XScaleFile, "2", strlen("2"));
 			write(scaleOsd1File, "0", strlen("0"));
 			write(scaleOsd0File, "0", strlen("0"));
@@ -574,8 +601,14 @@ int GL_2X_iptv_scale530(int mSwitch)
 				           int(vaxis_height*720/530));
 			write(request2XScaleFile, writedata, strlen(writedata));
 			
-			write(scaleaxisOsd1File, "1280 720 720 480", strlen("1280 720 720 480"));
+            memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							int(vaxis_width*1280/640),
+							int(vaxis_height*720/530));
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
+
 		}
 		else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
 		{
@@ -617,8 +650,14 @@ int GL_2X_iptv_scale530(int mSwitch)
 							int(vaxis_height*720/530));
 			write(request2XScaleFile, writedata, strlen(writedata));
 
-			write(scaleaxisOsd1File, "1280 720 720 576", strlen("1280 720 720 576"));
+            memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							int(vaxis_width*1280/640),
+							int(vaxis_height*720/530));
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
 			write(scaleOsd1File, "0x10001", strlen("0x10001"));
+
 		}
 		else if(!strncmp(mode, "720p", 4))
 		{
@@ -655,7 +694,13 @@ int GL_2X_iptv_scale530(int mSwitch)
 							int(vaxis_width*1280/640),
 							int(vaxis_height*720/530));
 			write(request2XScaleFile, writedata, strlen(writedata));
-					    
+			memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							int(vaxis_width*1280/640),
+							int(vaxis_height*720/530));
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
+			write(scaleOsd1File, "0x10001", strlen("0x10001"));		    
 		}
 		else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
 		{
@@ -705,7 +750,14 @@ int GL_2X_iptv_scale530(int mSwitch)
 			sprintf(writedata,"7 %d %d",
 							  int(vaxis_width),
 							  int(vaxis_height*720/530));
-			write(request2XScaleFile, writedata, strlen(writedata));		
+			write(request2XScaleFile, writedata, strlen(writedata));
+			memset(writedata,0,strlen(writedata));
+			
+            sprintf(writedata,"1280 720 %d %d",
+							int(vaxis_width*2),
+							int(vaxis_height*720/530));
+			write(scaleaxisOsd1File, writedata, strlen(writedata));
+			write(scaleOsd1File, "0x10001", strlen("0x10001"));
 		}
 	}
 

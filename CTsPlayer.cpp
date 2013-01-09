@@ -1099,51 +1099,216 @@ int  CTsPlayer::GetPlayMode()
 }
 int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 {
-
 // int     m_nEPGWidth;
  // int     m_nEPGHeight;
-
-   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer::SetVideoWindow:  %d, %d ,%d ,%d\n",x ,y ,width,height);
-   
+   int epg_centre_x = 0;
+   int epg_centre_y = 0;
+   int old_videowindow_certre_x = 0;
+   int old_videowindow_certre_y = 0;
+   int new_videowindow_certre_x = 0;
+   int new_videowindow_certre_y = 0;
+   int new_videowindow_width = 0;
+   int new_videowindow_height = 0;
+   char vaxis_newx_str[10] = {0};
+	 char vaxis_newy_str[10] = {0};
+	 char vaxis_width_str[10] = {0};
+	 char vaxis_height_str[10] = {0};
+	 char mode[16]= {0};
+   int vaxis_newx= -1,vaxis_newy = -1,vaxis_width= -1,vaxis_height= -1;
 	int fd_axis,fd_mode;
 	int x2 = 0,y2 = 0,width2 = 0,height2 = 0;
 
-	const char *path_mode = "/sys/class/display/mode" ;
-	const char *path_axis = "/sys/class/video/axis" ;
+	 const char *path_mode = "/sys/class/video/screen_mode" ;
+	 const char *path_axis = "/sys/class/video/axis" ;
 
 	char  bcmd[32];
       
 	char buffer[15];
 	int mode_w = 0,mode_h = 0;
 
-    GetVideoPixels(mode_w, mode_h);
+   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer::SetVideoWindow:  %d, %d ,%d ,%d\n",x ,y ,width,height);
+  
+   /*adjust axis as rate recurrence*/
+   get_display_mode(mode);
+   GetVideoPixels(mode_w, mode_h);
+   
+   x2=x*mode_w/m_nEPGWidth;
+	 width2=width*mode_w/m_nEPGWidth;
+	 y2=y*mode_h/m_nEPGHeight;
+   height2=height*mode_h/m_nEPGHeight;
+   
+   old_videowindow_certre_x = x2+int(width2/2);
+   old_videowindow_certre_y = y2+int(height2/2);
+   
+   if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
+	 {
+		  if(!strncmp(mode, "480i", 4))
+		  {
+          property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
+
+			}
+			else
+		  {            
+          property_get("ubootenv.var.480poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.480poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.480poutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.480poutputheight",vaxis_height_str,"480");        
+			}
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+			epg_centre_x = vaxis_newx+int(vaxis_width/2);
+			epg_centre_y = vaxis_newy+int(vaxis_height/2);
+			
+			new_videowindow_certre_x = epg_centre_x + int((old_videowindow_certre_x-mode_w/2)*vaxis_width/mode_w);
+      new_videowindow_certre_y = epg_centre_y + int((old_videowindow_certre_y-mode_h/2)*vaxis_height/mode_h);
+			new_videowindow_width = int(width2*vaxis_width/mode_w);
+      new_videowindow_height = int(height2*vaxis_height/mode_h);
+			
+			
+			
+		}
+		else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
+		{
+		    
+		    if(!strncmp(mode, "576i", 4))
+		    {
+          property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
+
+			}
+			else
+		    {            
+          property_get("ubootenv.var.576poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.576poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.576poutputwidth",vaxis_width_str,"720");			  
+			    property_get("ubootenv.var.576poutputheight",vaxis_height_str,"576");        
+			}
 
 
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+			epg_centre_x = vaxis_newx+int(vaxis_width/2);
+			epg_centre_y = vaxis_newy+int(vaxis_height/2);
+			
+			new_videowindow_certre_x = epg_centre_x + int((old_videowindow_certre_x-mode_w/2)*vaxis_width/mode_w);
+      new_videowindow_certre_y = epg_centre_y + int((old_videowindow_certre_y-mode_h/2)*vaxis_height/mode_h);
+			new_videowindow_width = int(width2*vaxis_width/mode_w);
+      new_videowindow_height = int(height2*vaxis_height/mode_h);
+		}
+		else if(!strncmp(mode, "720p", 4))
+		{
+		    
+			property_get("ubootenv.var.720poutputx",vaxis_newx_str,"0");			  
+			property_get("ubootenv.var.720poutputy",vaxis_newy_str,"0");			  
+			property_get("ubootenv.var.720poutputwidth",vaxis_width_str,"1280"); 		  
+			property_get("ubootenv.var.720poutputheight",vaxis_height_str,"720");
+
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_height_str:%s\n",
+		    						vaxis_height_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newy_str:%s\n",
+									vaxis_newy_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_width_str:%s\n",
+									vaxis_width_str);
+		   __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_height_str:%s\n",
+									vaxis_height_str);
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+      epg_centre_x = vaxis_newx+int(vaxis_width/2);
+			epg_centre_y = vaxis_newy+int(vaxis_height/2);
+			
+			new_videowindow_certre_x = epg_centre_x + int((old_videowindow_certre_x-mode_w/2)*vaxis_width/mode_w);
+      new_videowindow_certre_y = epg_centre_y + int((old_videowindow_certre_y-mode_h/2)*vaxis_height/mode_h);
+			new_videowindow_width = int(width2*vaxis_width/mode_w);
+      new_videowindow_height = int(height2*vaxis_height/mode_h);
+					    
+		}
+		else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
+		{
+		    
+		  if(!strncmp(mode, "1080i", 5))
+		  {
+          property_get("ubootenv.var.1080ioutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.1080ioutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.1080ioutputwidth",vaxis_width_str,"1920");			  
+			    property_get("ubootenv.var.1080ioutputheight",vaxis_height_str,"1080");
+
+			}
+			else
+		    {            
+          property_get("ubootenv.var.1080poutputx",vaxis_newx_str,"0");			  
+			    property_get("ubootenv.var.1080poutputy",vaxis_newy_str,"0");			  
+			    property_get("ubootenv.var.1080poutputwidth",vaxis_width_str,"1920");			  
+			    property_get("ubootenv.var.1080poutputheight",vaxis_height_str,"1080");        
+			}
+
+		    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "GL_2X_iptv_scale530 : 1080i");
+
+			vaxis_newx = atoi(vaxis_newx_str);
+			vaxis_newy = atoi(vaxis_newy_str);
+			vaxis_width = atoi(vaxis_width_str);
+			vaxis_height = atoi(vaxis_height_str);
+
+			__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "vaxis_newx:%d vaxis_newy:%d vaxis_width:%d vaxis_height:%d\n",
+				                                  vaxis_newx,vaxis_newy,vaxis_width,vaxis_height);
+      epg_centre_x = vaxis_newx+int(vaxis_width/2);
+			epg_centre_y = vaxis_newy+int(vaxis_height/2);
+			
+			new_videowindow_certre_x = epg_centre_x + int((old_videowindow_certre_x-mode_w/2)*vaxis_width/mode_w);
+      new_videowindow_certre_y = epg_centre_y + int((old_videowindow_certre_y-mode_h/2)*vaxis_height/mode_h);
+			new_videowindow_width = int(width2*vaxis_width/mode_w);
+      new_videowindow_height = int(height2*vaxis_height/mode_h);
+	}
+   
+  
    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer::mode_w = %d , mode_h = %d , mw = %d, mh = %d \n",mode_w,mode_h,m_nEPGWidth,m_nEPGHeight);
 
    if(m_nEPGWidth !=0 && m_nEPGHeight !=0)
-	{
-		x2=x*mode_w/m_nEPGWidth;
-		width2=width*mode_w/m_nEPGWidth;
-		y2=y*mode_h/m_nEPGHeight;
-		height2=height*mode_h/m_nEPGHeight;
-	}
-
-
-
+	 {
+			  fd_mode = open(path_mode, O_CREAT | O_RDWR | O_TRUNC, 0644);
+			  if (fd_mode >= 0)
+			  {
+			  	 write(fd_mode, "1", 1);
+			  	 close(fd_mode);
+			  }
+	 }
 	fd_axis = open(path_axis, O_CREAT | O_RDWR | O_TRUNC, 0644);
+  if (fd_axis >= 0) 
+  {
 
-
-	if (fd_axis >= 0) {
-
-		sprintf(bcmd, "%d %d %d %d", x2, y2, x2+width2, y2+height2);            
+		sprintf(bcmd, "%d %d %d %d", new_videowindow_certre_x-int(new_videowindow_width/2)-1,
+		                             new_videowindow_certre_y-int(new_videowindow_height/2)-1,
+		                             new_videowindow_certre_x+int(new_videowindow_width/2)+1,
+		                             new_videowindow_certre_y+int(new_videowindow_height/2)+1);            
             
 		write(fd_axis, bcmd, strlen(bcmd));
 		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "setvideoaxis: %s\n", bcmd);
-        close(fd_axis);
-
-        return 0;
-    	}
+    close(fd_axis);
+    //set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
+    return 0;
+  }
     	
    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
 

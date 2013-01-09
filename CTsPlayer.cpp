@@ -5,6 +5,11 @@
 #include <cutils/properties.h>
 #include <fcntl.h>
 #include "player.h"
+
+#include <sys/times.h>
+
+
+
 //#include "player_set_sys.c"
 //#include "../LibPlayer/amplayer/player/include/player.h"
 
@@ -1406,7 +1411,9 @@ bool CTsPlayer::Seek()
 
     set_sys_int("/sys/class/video/blackout_policy",1);
 	Stop();
-	return StartPlay();
+	usleep(500*1000);
+	StartPlay();
+	return true;
 	//return true;
 }
 int CTsPlayer::GetVolume()

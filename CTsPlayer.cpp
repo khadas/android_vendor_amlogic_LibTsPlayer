@@ -1398,8 +1398,11 @@ bool CTsPlayer::StartPlay()
 
 	if (!m_bFast)
 	{
-		pcodec->has_audio=1;
-	  pcodec->audio_pid=(int)a_aPara[0].pid;
+		if((int)a_aPara[0].pid != 0)
+		{
+		    pcodec->has_audio=1;
+	      pcodec->audio_pid=(int)a_aPara[0].pid;
+	    }
 	  //pcodec->audio_samplerate=a_aPara[0].nSampleRate;	
 	  //pcodec->audio_channels=a_aPara[0].nChannels;
 	  __android_log_print(ANDROID_LOG_INFO,"TsPlayer","pcodec->audio_samplerate:%d pcodec->audio_channels:%d\n",pcodec->audio_samplerate,pcodec->audio_channels);

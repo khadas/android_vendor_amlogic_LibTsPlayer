@@ -1845,6 +1845,9 @@ void CTsPlayer::SwitchAudioTrack(int pid)
        count++;
 	}
 	
+	if (!m_bIsPlay)
+		return ;
+	
 	codec_audio_automute(pcodec->adec_priv, 1);
   codec_close_audio(pcodec);
   pcodec->audio_pid = 0xffff;

@@ -15,6 +15,7 @@
 extern "C" {
 #include <amports/vformat.h>
 #include <amports/aformat.h>
+#include <amports/amstream.h>
 #include <codec.h>
 }
 
@@ -204,6 +205,7 @@ private:
 	int	m_nMode;
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
+	unsigned int writecount ;
 #ifdef WF
 	FILE*	m_fp;
 #endif

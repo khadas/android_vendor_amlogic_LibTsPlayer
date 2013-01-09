@@ -17,7 +17,8 @@
 #define RES_VIDEO_SIZE 256
 #define RES_AUDIO_SIZE 64
 #define UNIT_FREQ   96000
-#define MAX_WRITE_COUNT 100
+#define MAX_WRITE_COUNT 20
+
 
 #ifndef FBIOPUT_OSD_SRCCOLORKEY
 #define  FBIOPUT_OSD_SRCCOLORKEY    0x46fb
@@ -1208,13 +1209,13 @@ bool CTsPlayer::StartPlay()
 	}
     m_bWrFirstPkg = true;
     set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
+    writecount = 0;
 	return !ret;
 }
 
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 {	
 	int ret = -1;
-	static unsigned int writecount = 0;
     buf_status audio_buf;
 	buf_status video_buf;
 
@@ -1280,7 +1281,6 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 	  {
 	      m_bWrFirstPkg = false;
           writecount = 0;
-		  set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
 	  }
 
       if(m_bWrFirstPkg == true)

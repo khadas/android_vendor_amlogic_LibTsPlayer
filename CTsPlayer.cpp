@@ -916,7 +916,6 @@ void LunchIptv()
 {
 	
 		int ret;
-		
 		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "LunchIptv\n");
 
    ret = disable_freescale_MBX();
@@ -929,14 +928,15 @@ void LunchIptv()
     set_sys_int("/sys/class/graphics/fb0/free_scale",0);
     RmDefPath();
     AddIptvPath();
-	set_sys_int("/sys/class/video/blackout_policy",0);
+    
+    
     set_sys_str("/sys/class/deinterlace/di0/config","disable");
     set_sys_int("/sys/module/di/parameters/buf_mgr_mode",0);
     set_sys_str("/sys/class/display/rd_reg","m 0x1a2b");
     set_sys_str("/sys/class/display/wr_reg","m 0x1a2b 0x1dc20c81");
 //    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1920 1080 0 8");	
     //Active_video_viewport(0,0,1280,720);
-    set_sys_int("/sys/class/video/blackout_policy",0);
+    //set_sys_int("/sys/class/video/blackout_policy",0);
     //Active_osd_viewport(1280, 720);
 	//set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
 	
@@ -987,7 +987,9 @@ void QuitIptv()
 {
 
 
-     
+  set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
+	set_sys_int("/sys/class/video/blackout_policy",1);  
+	set_sys_int("/sys/class/video/disable_video",1);	
 	//enable_gl_2xscale("2");
     //enable_gl_2xscale("");
 		int ret;
@@ -1002,18 +1004,14 @@ void QuitIptv()
     RemoveIptvPath();
     RestoreDefPath();
 	enable_gl_2xscale("2 0 0");
- //   set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0");
-	set_sys_int("/sys/class/video/blackout_policy",1);
+
  	//set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",0);
     set_sys_int("/sys/class/graphics/fb0/free_scale",1);
 	
 	/*enable freescale for ui and disable opengl scale*/
 
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "QuitIptv\n");
-	   
-
-		               
-   
+	      
 }
 
 
@@ -1051,6 +1049,9 @@ int SYS_disable_colorkey(void)
 
 CTsPlayer::CTsPlayer()
 {
+	set_sys_int("/sys/class/graphics/fb0/blank",1);
+	set_sys_int("/sys/class/video/blackout_policy",1);
+	set_sys_int("/sys/class/video/disable_video",2);	
 	memset(a_aPara,0,sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
 	memset(&vPara,0,sizeof(vPara));
 	memset(&codec,0,sizeof(codec));
@@ -1087,6 +1088,7 @@ CTsPlayer::CTsPlayer()
 
 CTsPlayer::~CTsPlayer()
 {
+	  set_sys_int("/sys/class/graphics/fb0/blank",1);
 		QuitIptv();
 }
 
@@ -1309,15 +1311,12 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     //set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     return 0;
   }
-    	
-   set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
-
 	return 0 ;
 }
 
 int CTsPlayer::VideoShow(void)
 {
-	//set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
+	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
 	return 0;
 }
 
@@ -1347,7 +1346,7 @@ int CTsPlayer::VideoShow(void)
 
 int CTsPlayer::VideoHide(void)
 {
-	//set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
+	set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
 	return 0;
 }
 
@@ -1380,7 +1379,6 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
 bool CTsPlayer::StartPlay()
 {
 	int ret;
-	set_sys_int("/sys/module/amvdec_h264/parameters/error_recovery_mode",3);
 	memset(pcodec,0,sizeof(*pcodec));
 	pcodec->stream_type=STREAM_TYPE_TS;
 	pcodec->video_type = vPara.vFmt;
@@ -1415,14 +1413,14 @@ bool CTsPlayer::StartPlay()
     }
 	__android_log_print(ANDROID_LOG_INFO,"TsPlayer","set %d,%d,%d,%d\n",vPara.vFmt,a_aPara[0].aFmt,vPara.pid,a_aPara[0].pid);
 	pcodec->noblock = 0;
-		
+	
 	/*other setting*/
 	ret = codec_init(pcodec);
 	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "StartPlay codec_init After:%d\n", ret);
 	if (ret == 0)
 	{
 		if (m_nMode == M_LIVE)
-			set_sys_int("/sys/class/video/blackout_policy",1);
+       set_sys_int("/sys/class/video/blackout_policy",0);
 		m_bIsPlay = true;
 #ifdef WF
 		m_fp = fopen("/mnt/sda/sda1/Live.ts", "wb+");
@@ -1571,7 +1569,7 @@ bool CTsPlayer::StopFast()
 	ret = StartPlay();
 	if (!ret)
 		return false;
-	ret = set_sys_int("/sys/class/video/blackout_policy",1);
+	//ret = set_sys_int("/sys/class/video/blackout_policy",1);//for debug
 	if (ret)
 		return false;
 
@@ -1586,9 +1584,12 @@ bool CTsPlayer::Stop()
 
     
   	int ret;
+  	
+  	set_sys_int("/sys/class/video/disable_video",0);	
 	//if (m_nMode == M_LIVE)
 		//set_sys_int("/sys/class/video/blackout_policy",1);
-    set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
+    //set_sys_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
+    
 	if (m_bIsPlay){
 #ifdef WF
 		if (m_fp != NULL){
@@ -1598,10 +1599,12 @@ bool CTsPlayer::Stop()
 #endif
 
     m_bFast = false;
+    m_bIsPlay = false;
 	  ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
 		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "m_bIsPlay is true");
 		//codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
 		ret = codec_close(pcodec);
+		pcodec->handle = -1;
 		//codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
 		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "Stop  codec_close After:%d\n", ret);
 	}
@@ -1610,8 +1613,7 @@ bool CTsPlayer::Stop()
 	{
 		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "m_bIsPlay is false");
 	}
-	VideoHide(); 
-	m_bIsPlay = false;
+	//VideoHide(); 
 	if (m_bSetEPGSize){
 		if (m_nEPGWidth == 1280 && m_nEPGHeight == 720)
 			SwitchResolution(2, 0);
@@ -1626,7 +1628,7 @@ bool CTsPlayer::Seek()
 {	
 
 
-    set_sys_int("/sys/class/video/blackout_policy",1);
+  // set_sys_int("/sys/class/video/blackout_policy",1);
 	Stop();
 	usleep(500*1000);
 	StartPlay();
@@ -1819,7 +1821,6 @@ bool CTsPlayer::IsSoftFit()
 void CTsPlayer::SetEPGSize(int w, int h)
 {
 	LOGE("SetEPGSize:  w=%d, h=%d,  m_bIsPlay=%d,  m_bSetEPGSize=%d.\n", w, h, m_bIsPlay, m_bSetEPGSize);
-	set_sys_int("/sys/class/graphics/fb0/blank", 1);
 	//if (IsSoftFit())
 		//return;
 	m_nEPGWidth = w;
@@ -1831,7 +1832,6 @@ void CTsPlayer::SetEPGSize(int w, int h)
 			SwitchResolution(1, 0);	
 	}else
 		m_bSetEPGSize = true;
-	set_sys_int("/sys/class/graphics/fb0/blank", 0);
 }
 
 void CTsPlayer::SwitchAudioTrack(int pid)

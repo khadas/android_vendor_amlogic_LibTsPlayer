@@ -1727,7 +1727,83 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
 
 bool CTsPlayer::SetRatio(int nRatio)
 {
-	return true;
+	char mode[16]={0};
+	char writedata[40] = {0};
+	int width = 0;
+	int height = 0;
+	int new_x = 0;
+	int new_y = 0;
+	int new_width = 0;
+	int new_height = 0;
+	int mode_width = 0;
+	int mode_height = 0;
+	vdec_status vdec;
+	codec_get_vdec_state(pcodec,&vdec);
+	width = vdec.width;
+	height = vdec.height;
+	__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "SetRatio width:%d height:%d\n",width,height);
+  	
+	get_display_mode(mode);
+	if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
+	{
+     mode_width = 720;
+     mode_height = 480;
+	}
+	else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
+	{
+     mode_width = 720;
+     mode_height = 576;
+	}
+	else if(!strncmp(mode, "720p", 4))
+	{
+     mode_width = 1280;
+     mode_height = 720;
+	}
+	else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
+	{
+	   mode_width = 1920;
+     mode_height = 1080;
+	}
+	set_sys_int("/sys/class/video/disable_video",2);
+	if(nRatio == 1)
+	{
+		set_sys_int("/sys/class/video/screen_mode",1);
+		return true;
+	}
+	else if(nRatio == 2)
+	{
+		set_sys_int("/sys/class/video/screen_mode",1);
+		new_width=mode_width;
+		new_height=int(mode_width*height/width);
+		new_x = 0;
+		new_y = int((mode_height-new_height)/2);
+		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "SetRatio new_x:%d new_y:%d new_width:%d new_height%d\n"
+		                                     ,new_x,new_y,new_width,new_height);
+    sprintf(writedata,"%d %d %d %d",
+				         new_x,new_y,new_x+new_width-1,new_y+new_height-1);
+		set_sys_str("/sys/class/video/axis",writedata);
+		return true;
+	}
+	else if(nRatio == 3)
+	{
+		set_sys_int("/sys/class/video/screen_mode",1);
+		new_width = int(mode_height*width/height);
+		new_height = mode_height;
+		new_x = int((mode_width - new_width)/2);
+		new_y = 0;
+		__android_log_print(ANDROID_LOG_INFO, "TsPlayer", "SetRatio new_x:%d new_y:%d new_width:%d new_height%d\n"
+		                                     ,new_x,new_y,new_width,new_height);
+    sprintf(writedata,"%d %d %d %d",
+				         new_x,new_y,new_x+new_width-1,new_y+new_height-1);
+		set_sys_str("/sys/class/video/axis",writedata);
+		return true;
+	}
+	else if(nRatio == 255)
+	{
+		set_sys_int("/sys/class/video/disable_video",1);
+		return true;
+	}
+	return false;
 }
 /*
 ITsPlayer* GetTsPlayer()

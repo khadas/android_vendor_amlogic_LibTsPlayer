@@ -21,8 +21,9 @@ LOCAL_C_INCLUDES := \
 #LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 
 LOCAL_STATIC_LIBRARIES := libamcodec libamadec 
 
-LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder
+LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
+LOCAL_SHARED_LIBRARIES +=libgui
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

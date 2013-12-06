@@ -12,11 +12,11 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <surfaceflinger/Surface.h>
-#include <surfaceflinger/ISurface.h>
+#include <gui/Surface.h>
+#include <gui/ISurface.h>
 #include <gui/ISurfaceTexture.h>
 #include <gui/SurfaceTextureClient.h>
-#include <surfaceflinger/ISurfaceComposer.h>
+#include <gui/ISurfaceComposer.h>
 using namespace android;
 extern "C" {
 #include <amports/vformat.h>
@@ -117,7 +117,7 @@ public:
 	virtual void GetVideoPixels(int& width, int& height)=0;
 	virtual bool IsSoftFit()=0;
 	virtual void SetEPGSize(int w, int h)=0;
-    virtual void SetSurface(Surface* pSurface);
+    virtual void SetSurface(Surface* pSurface)=0;
 	
 	//16位色深需要设置colorkey来透出视频；
      virtual void SwitchAudioTrack(int pid) = 0;

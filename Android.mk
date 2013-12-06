@@ -16,6 +16,7 @@ LOCAL_C_INCLUDES := \
 	$(LIBPLAYER_PATH)/amffmpeg \
 	$(LIBPLAYER_PATH)/amcodec/include \
 	$(LIBPLAYER_PATH)/amadec/include \
+	$(LIBPLAYER_PATH)/amavutils/include \
 	$(JNI_H_INCLUDE)/ \
 	$(LOCAL_PATH)/../include
 #LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 

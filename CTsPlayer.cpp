@@ -1217,7 +1217,7 @@ bool CTsPlayer::Stop()
             __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "m_bIsPlay is false");
         }
     }
-    amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
+    //amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
     if (m_bSetEPGSize){
         if (m_nEPGWidth == 1280 && m_nEPGHeight == 720)
             SwitchResolution(2, 0);

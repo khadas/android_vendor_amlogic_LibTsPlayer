@@ -648,7 +648,7 @@ void SwitchResolution(int mode , int status)
 void QuitIptv()
 {
     amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
-    //amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);  
+    amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);  
     //amsysfs_set_sysfs_int("/sys/class/video/disable_video",1);
     int ret;
     ret = GL_2X_iptv_scale720(0);
@@ -1048,7 +1048,7 @@ bool CTsPlayer::StartPlay()
     if (ret == 0)
     {
         if (m_nMode == M_LIVE)
-        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
+        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
         m_bIsPlay = true;
 #ifdef WF
         m_fp = fopen("/mnt/sda/sda1/Live.ts", "wb+");
@@ -1178,6 +1178,10 @@ bool CTsPlayer::StopFast()
     if (!ret)
         return false;
 
+    ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+    if (ret)
+        return false;
+
     return true;
 }
 
@@ -1230,6 +1234,7 @@ bool CTsPlayer::Stop()
 }
 bool CTsPlayer::Seek()
 {
+    amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     Stop();
     usleep(500*1000);
     StartPlay();
@@ -1373,7 +1378,7 @@ bool CTsPlayer::SetRatio(int nRatio)
         mode_width = 1920;
         mode_height = 1080;
     }
-    amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
+    //amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
     if(nRatio == 1)
     {
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode",1);

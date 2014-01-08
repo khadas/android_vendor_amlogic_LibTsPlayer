@@ -143,21 +143,21 @@ int GL_2X_iptv_scale720(int mSwitch)
     }
     else if(mSwitch == 1)
     {
-        if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
+        if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4) || !strncmp(mode, "480cvbs", 7))
         {
-            if(!strncmp(mode, "480i", 4))
+            if(!strncmp(mode, "480p", 4))
             {
-                property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");
-                property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0"); 
-                property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");
-                property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
-            }
-            else
-            {            
                 property_get("ubootenv.var.480poutputx",vaxis_newx_str,"0");
                 property_get("ubootenv.var.480poutputy",vaxis_newy_str,"0");
                 property_get("ubootenv.var.480poutputwidth",vaxis_width_str,"720");
                 property_get("ubootenv.var.480poutputheight",vaxis_height_str,"480");        
+            }
+            else
+            {            
+                property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");
+                property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0"); 
+                property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");
+                property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
             }
 
             vaxis_newx = atoi(vaxis_newx_str);
@@ -190,21 +190,21 @@ int GL_2X_iptv_scale720(int mSwitch)
             amsysfs_set_sysfs_str("/sys/class/graphics/fb1/scale", "0x10001");
 
         }
-        else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
+        else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4) || !strncmp(mode, "576cvbs", 7))
         {
-            if(!strncmp(mode, "576i", 4))
+            if(!strncmp(mode, "576p", 4))
             {
-                property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");
-                property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");
-                property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");
-                property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
-            }
-            else
-            {            
                 property_get("ubootenv.var.576poutputx",vaxis_newx_str,"0");
                 property_get("ubootenv.var.576poutputy",vaxis_newy_str,"0");
                 property_get("ubootenv.var.576poutputwidth",vaxis_width_str,"720");
                 property_get("ubootenv.var.576poutputheight",vaxis_height_str,"576");        
+            }
+            else
+            {            
+                property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");
+                property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");
+                property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");
+                property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
             }
 
 
@@ -391,21 +391,21 @@ int GL_2X_iptv_scale530(int mSwitch)
     else if(mSwitch == 1)
     {
 
-        if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
+        if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4) || !strncmp(mode, "480cvbs", 7))
         {
-            if(!strncmp(mode, "480i", 4))
+            if(!strncmp(mode, "480p", 4))
             {
-                property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");  
-                property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");
-                property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");
-                property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
-            }
-            else
-            {            
                 property_get("ubootenv.var.480poutputx",vaxis_newx_str,"0");			  
                 property_get("ubootenv.var.480poutputy",vaxis_newy_str,"0");			  
                 property_get("ubootenv.var.480poutputwidth",vaxis_width_str,"720");			  
                 property_get("ubootenv.var.480poutputheight",vaxis_height_str,"480");        
+            }
+            else
+            {            
+                property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");  
+                property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");
+                property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");
+                property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
             }
 
             vaxis_newx = atoi(vaxis_newx_str);
@@ -439,23 +439,23 @@ int GL_2X_iptv_scale530(int mSwitch)
             amsysfs_set_sysfs_str("/sys/class/graphics/fb1/scale", "0x10001");
 
         }
-        else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
+        else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4) || !strncmp(mode, "576cvbs", 7))
         {
 
-            if(!strncmp(mode, "576i", 4))
+            if(!strncmp(mode, "576p", 4))
             {
-                property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");  
-                property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");
-                property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");
-                property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
-
-            }
-            else
-            {            
                 property_get("ubootenv.var.576poutputx",vaxis_newx_str,"0");
                 property_get("ubootenv.var.576poutputy",vaxis_newy_str,"0");
                 property_get("ubootenv.var.576poutputwidth",vaxis_width_str,"720");  
                 property_get("ubootenv.var.576poutputheight",vaxis_height_str,"576");        
+
+            }
+            else
+            {            
+                property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");  
+                property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");
+                property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");
+                property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
             }
 
 
@@ -706,7 +706,7 @@ int SYS_disable_colorkey(void)
 
 CTsPlayer::CTsPlayer()
 {
-    //property_get("iptv.shouldshowlog",&prop_shouldshowlog,"0");//initial the log switch
+    property_get("iptv.shouldshowlog",&prop_shouldshowlog,"0");//initial the log switch
     amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",1);
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
@@ -793,19 +793,19 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     old_videowindow_certre_x = x2+int(width2/2);
     old_videowindow_certre_y = y2+int(height2/2);
    
-    if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4)){
+    if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4) || !strncmp(mode, "480cvbs", 7)){
         
-        if(!strncmp(mode, "480i", 4)){
-            property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");
-            property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");
-            property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");
-            property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
-        }
-        else{            
+        if(!strncmp(mode, "480p", 4)){
             property_get("ubootenv.var.480poutputx",vaxis_newx_str,"0"); 
             property_get("ubootenv.var.480poutputy",vaxis_newy_str,"0");
             property_get("ubootenv.var.480poutputwidth",vaxis_width_str,"720");
             property_get("ubootenv.var.480poutputheight",vaxis_height_str,"480");        
+        }
+        else{            
+            property_get("ubootenv.var.480ioutputx",vaxis_newx_str,"0");
+            property_get("ubootenv.var.480ioutputy",vaxis_newy_str,"0");
+            property_get("ubootenv.var.480ioutputwidth",vaxis_width_str,"720");
+            property_get("ubootenv.var.480ioutputheight",vaxis_height_str,"480");
         }
 
         vaxis_newx = atoi(vaxis_newx_str);
@@ -825,19 +825,19 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         new_videowindow_width = int(width2*vaxis_width/mode_w);
         new_videowindow_height = int(height2*vaxis_height/mode_h);
     }
-    else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4)){
+    else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4) || !strncmp(mode, "576cvbs", 7)){
   
-        if(!strncmp(mode, "576i", 4)){
-            property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");
-            property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");
-            property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");
-            property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
-        }
-        else{            
+        if(!strncmp(mode, "576p", 4)){
             property_get("ubootenv.var.576poutputx",vaxis_newx_str,"0");
             property_get("ubootenv.var.576poutputy",vaxis_newy_str,"0");
             property_get("ubootenv.var.576poutputwidth",vaxis_width_str,"720");
             property_get("ubootenv.var.576poutputheight",vaxis_height_str,"576");        
+        }
+        else{            
+            property_get("ubootenv.var.576ioutputx",vaxis_newx_str,"0");
+            property_get("ubootenv.var.576ioutputy",vaxis_newy_str,"0");
+            property_get("ubootenv.var.576ioutputwidth",vaxis_width_str,"720");
+            property_get("ubootenv.var.576ioutputheight",vaxis_height_str,"576");
         }
         vaxis_newx = atoi(vaxis_newx_str);
         vaxis_newy = atoi(vaxis_newy_str);
@@ -1315,7 +1315,7 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
         }
         for(int i=0;i<(int)sizeof(buffer);i++)
         {
-            if ((buffer[i] == 'p') || (buffer[i] == 'P') || (buffer[i] == 'i') || (buffer[i] == 'I'))
+            if ((buffer[i] == 'p') || (buffer[i] == 'P') || (buffer[i] == 'i') || (buffer[i] == 'I') || (buffer[i] == 'c') || (buffer[i] == 'C'))
             {
                 buffer[i] = 0;
                 break;
@@ -1358,12 +1358,12 @@ bool CTsPlayer::SetRatio(int nRatio)
     }
 
     get_display_mode(mode);
-    if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4))
+    if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4) || !strncmp(mode, "480cvbs", 7))
     {
         mode_width = 720;
         mode_height = 480;
     }
-    else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4))
+    else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4) || !strncmp(mode, "576cvbs", 7))
     {
         mode_width = 720;
         mode_height = 576;

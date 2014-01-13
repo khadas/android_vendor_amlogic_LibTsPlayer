@@ -29,7 +29,10 @@ extern "C" {
 #include <utils/Timers.h>
 
 
-
+#define lock_t          pthread_mutex_t
+#define lp_lock_init(x,v)   pthread_mutex_init(x,v)
+#define lp_lock(x)      pthread_mutex_lock(x)
+#define lp_unlock(x)    pthread_mutex_unlock(x)
 
 //#define WF
 
@@ -217,6 +220,7 @@ private:
 #ifdef WF
 	FILE*	m_fp;
 #endif
+    lock_t mutex;
 
 };
 

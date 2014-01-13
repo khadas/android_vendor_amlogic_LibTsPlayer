@@ -716,6 +716,7 @@ CTsPlayer::CTsPlayer()
     player_pid=-1;
     pcodec=&codec;
     codec_audio_basic_init();
+    lp_lock_init(&mutex, NULL);
     //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
     amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
@@ -750,7 +751,7 @@ int  CTsPlayer::GetPlayMode()
     return 1;
 }
 int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
-{
+{	
     int epg_centre_x = 0;
     int epg_centre_y = 0;
     int old_videowindow_certre_x = 0;
@@ -1040,10 +1041,12 @@ bool CTsPlayer::StartPlay()
     pcodec->noblock = 0;
 
     /*other setting*/
+    lp_lock(&mutex);
     ret = codec_init(pcodec);
     if (prop_shouldshowlog == '1') {
         __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "StartPlay codec_init After:%d\n", ret);
     }
+    lp_unlock(&mutex);
     
     if (ret == 0)
     {
@@ -1051,7 +1054,7 @@ bool CTsPlayer::StartPlay()
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
         m_bIsPlay = true;
 #ifdef WF
-        m_fp = fopen("/mnt/sda/sda1/Live.ts", "wb+");
+        m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
 #endif
     }
     amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
@@ -1063,6 +1066,8 @@ bool CTsPlayer::StartPlay()
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 {
     int ret = -1;
+    static int retry_count = 0;
+
     buf_status audio_buf;
     buf_status video_buf;
 
@@ -1111,7 +1116,40 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         }
     }
 
-    ret = codec_write(pcodec,pBuffer,nSize);
+    lp_lock(&mutex);
+    //ret = codec_write(pcodec,pBuffer,nSize);
+    for(int retry_count=0;retry_count<10;retry_count++){
+        ret = codec_write(pcodec,pBuffer,nSize);
+        if((ret<0) || (ret>nSize)){
+            if(ret==EAGAIN){
+                usleep(10);
+                if (prop_shouldshowlog == '1')
+                    LOGI("WriteData : codec_write return EAGAIN \n");
+                continue;
+            }
+            else{
+            	if (prop_shouldshowlog == '1')
+                    LOGI("WriteData : codec_write return %d \n",ret);
+
+                if((pcodec->handle)&&(pcodec->adec_priv)){
+                    ret = codec_close(pcodec);
+                    ret = codec_init(pcodec);
+                    if (prop_shouldshowlog == '1')
+                        LOGI("WriteData : codec need close and reinit \n");
+                }
+                else{
+                	if (prop_shouldshowlog == '1')
+                        LOGI("WriteData : codec_write return error or stop by called \n");
+                    break;
+                }
+            }
+        }else{
+        	if (prop_shouldshowlog == '1')
+        		LOGI("WriteData : codec_write no error and nSize is %d! \n", nSize);
+            break;
+        }
+    }
+    lp_unlock(&mutex);
 
     if (ret > 0)
     {
@@ -1206,12 +1244,14 @@ bool CTsPlayer::Stop()
             __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "m_bIsPlay is true");
         }
 
+        lp_lock(&mutex);
         ret = codec_close(pcodec);
         pcodec->handle = -1;
 
         if (prop_shouldshowlog == '1') {
             __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "Stop  codec_close After:%d\n", ret);
         }
+        lp_unlock(&mutex);
 
     }
 
@@ -1521,6 +1561,35 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 
 void CTsPlayer::SwitchSubtitle(int pid) 
 {
+#if 0
+	if (prop_shouldshowlog == '1'){
+		__android_log_print(ANDROID_LOG_INFO,"TsPlayer","SwitchSubtitle be called pid is %d\n", pid);
+	}
+
+    /* first set an invalid sub id */
+    pcodec->sub_pid = 0xffff;
+    if (codec_set_sub_id(pcodec)) {
+		if (prop_shouldshowlog == '1'){
+            __android_log_print(ANDROID_LOG_INFO,"TsPlayer","[%s:%d]set invalid sub pid failed\n", __FUNCTION__, __LINE__);
+        }
+        return;
+    }
+
+    /* reset sub */
+    pcodec->sub_pid = pid;
+    if (codec_set_sub_id(pcodec)) {
+		if (prop_shouldshowlog == '1'){
+            __android_log_print(ANDROID_LOG_INFO,"TsPlayer","[%s:%d]set invalid sub pid failed\n", __FUNCTION__, __LINE__);
+        }        
+        return;
+    }
+
+    if (codec_reset_subtile(pcodec)) {
+		if (prop_shouldshowlog == '1'){
+            __android_log_print(ANDROID_LOG_INFO,"TsPlayer","[%s:%d]reset subtile failed\n", __FUNCTION__, __LINE__);
+        } 
+    }
+#endif
 }
 
 void CTsPlayer::SetProperty(int nType, int nSub, int nValue) 

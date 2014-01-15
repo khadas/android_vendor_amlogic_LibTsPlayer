@@ -1,30 +1,23 @@
+
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
-LOCAL_ARM_MODE := arm
-LOCAL_MODULE    := libCTC_MediaProcessor
-LOCAL_PRELINK_MODULE := false
+
 LOCAL_MODULE_TAGS := optional
-LOCAL_SRC_FILES := \
-	CTsPlayer.cpp \
-	CTC_MediaControl.cpp \
-	CTC_MediaProcessor.cpp
 
-LIBPLAYER_PATH := $(TOP)/packages/amlogic/LibPlayer
-LOCAL_C_INCLUDES := \
-	$(LIBPLAYER_PATH)/amplayer/player/include \
-	$(LIBPLAYER_PATH)/amplayer/control/include \
-	$(LIBPLAYER_PATH)/amffmpeg \
-	$(LIBPLAYER_PATH)/amcodec/include \
-	$(LIBPLAYER_PATH)/amadec/include \
-	$(LIBPLAYER_PATH)/amavutils/include \
-	$(JNI_H_INCLUDE)/ \
-	$(LOCAL_PATH)/../include
-#LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 
-LOCAL_STATIC_LIBRARIES := libamcodec libamadec 
+LOCAL_SRC_FILES := $(call all-subdir-java-files)
 
-LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils
-LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
-LOCAL_SHARED_LIBRARIES +=libgui
+LOCAL_REQUIRED_MODULES :=libCTC_MediaProcessorjni
 
-include $(BUILD_SHARED_LIBRARY)
-#include $(BUILD_EXECUTABLE)
+
+LOCAL_PROGUARD_FLAGS := -include $(LOCAL_PATH)/proguard.cfg
+
+LOCAL_PACKAGE_NAME := mediaProcessorDemo
+LOCAL_CERTIFICATE := platform
+
+LOCAL_JNI_SHARED_LIBRARIES := \
+	libCTC_MediaProcessorjni
+	
+include $(BUILD_PACKAGE)
+##################################################
+
+include $(call all-makefiles-under,$(LOCAL_PATH))

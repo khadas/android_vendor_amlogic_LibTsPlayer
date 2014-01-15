@@ -34,6 +34,18 @@ extern "C" {
 #define lp_lock(x)      pthread_mutex_lock(x)
 #define lp_unlock(x)    pthread_mutex_unlock(x)
 
+
+
+#define IN
+#define OUT
+
+typedef struct{
+	void *(*init)(IN int flags);
+  int (*read)(IN void *handle, IN unsigned char *buf, IN int size);
+  int (*ready)(IN void *handle);
+  int (*exit)(IN void *handle);
+}wiptv_callback;
+
 //#define WF
 
 #define TRICKMODE_NONE       0x00

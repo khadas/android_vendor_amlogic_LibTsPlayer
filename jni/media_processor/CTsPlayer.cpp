@@ -711,6 +711,7 @@ CTsPlayer::CTsPlayer()
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
     memset(a_aPara,0,sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
+    memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
     memset(&vPara,0,sizeof(vPara));
     memset(&codec,0,sizeof(codec));
     player_pid=-1;
@@ -995,6 +996,47 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
     return ;
 }
 
+void CTsPlayer::InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)
+{
+    int count = 0;
+    if(prop_shouldshowlog == '1') {
+        __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "InitSubtitle");
+    }
+    memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
+    while((pSubtitlePara->pid != 0)&&(count<MAX_SUBTITLE_PARAM_SIZE)){
+        sPara[count]= *pSubtitlePara;
+        if (prop_shouldshowlog == '1') {
+            __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "InitSubtitle pSubtitlePara->pid:%d\n",pSubtitlePara->pid);
+        }
+        pSubtitlePara++;
+        count++;
+    }
+    amsysfs_set_sysfs_int("/sys/class/subtitle/total",count);
+    return ;
+}
+
+void setSubType(PSUBTITLE_PARA_T pSubtitlePara){
+    if(!pSubtitlePara)
+	 return ;
+    if (prop_shouldshowlog == '1'){
+         __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "setSubType pSubtitlePara->pid:%d pSubtitlePara->sub_type:%d\n",pSubtitlePara->pid,pSubtitlePara->sub_type);
+    }
+    if (pSubtitlePara->sub_type== CODEC_ID_DVD_SUBTITLE){
+        set_subtitle_subtype(0);
+    } else if (pSubtitlePara->sub_type== CODEC_ID_HDMV_PGS_SUBTITLE) {
+        set_subtitle_subtype(1);
+    } else if (pSubtitlePara->sub_type== CODEC_ID_XSUB) {
+        set_subtitle_subtype(2);
+    } else if (pSubtitlePara->sub_type == CODEC_ID_TEXT || \
+               pSubtitlePara->sub_type == CODEC_ID_SSA) {
+        set_subtitle_subtype(3);
+    } else if (pSubtitlePara->sub_type == CODEC_ID_DVB_SUBTITLE) {
+    	set_subtitle_subtype(5);
+    } else {
+    	set_subtitle_subtype(4);
+    }
+}
+
 bool CTsPlayer::StartPlay()
 {
     int ret;
@@ -1027,6 +1069,17 @@ bool CTsPlayer::StartPlay()
         if (prop_shouldshowlog == '1') {
             __android_log_print(ANDROID_LOG_INFO,"TsPlayer","pcodec->audio_samplerate:%d pcodec->audio_channels:%d\n",pcodec->audio_samplerate,pcodec->audio_channels);
         }
+
+       if((int)sPara[0].pid != 0)
+        {
+            pcodec->has_sub=1;
+            pcodec->sub_pid=(int)sPara[0].pid;
+	    setSubType(&sPara[0]);
+        }
+        if (prop_shouldshowlog == '1') {
+            __android_log_print(ANDROID_LOG_INFO,"TsPlayer","pcodec->sub_pid:%d \n",pcodec->sub_pid);
+        }
+		
     }
   
     pcodec->video_pid=(int)vPara.pid;
@@ -1561,7 +1614,6 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 
 void CTsPlayer::SwitchSubtitle(int pid) 
 {
-#if 0
 	if (prop_shouldshowlog == '1'){
 		__android_log_print(ANDROID_LOG_INFO,"TsPlayer","SwitchSubtitle be called pid is %d\n", pid);
 	}
@@ -1574,7 +1626,16 @@ void CTsPlayer::SwitchSubtitle(int pid)
         }
         return;
     }
-
+    int count=0;
+    PSUBTITLE_PARA_T pSubtitlePara=sPara;
+    while((pSubtitlePara->pid != 0)&&(count<MAX_SUBTITLE_PARAM_SIZE)){
+	 if(pSubtitlePara->pid==pid){
+	     setSubType(pSubtitlePara);
+	     break;
+	 }
+	 count++;
+	 pSubtitlePara++;
+    }
     /* reset sub */
     pcodec->sub_pid = pid;
     if (codec_set_sub_id(pcodec)) {
@@ -1589,7 +1650,6 @@ void CTsPlayer::SwitchSubtitle(int pid)
             __android_log_print(ANDROID_LOG_INFO,"TsPlayer","[%s:%d]reset subtile failed\n", __FUNCTION__, __LINE__);
         } 
     }
-#endif
 }
 
 void CTsPlayer::SetProperty(int nType, int nSub, int nValue) 

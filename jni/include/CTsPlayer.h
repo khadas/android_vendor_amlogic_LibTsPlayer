@@ -52,6 +52,8 @@ typedef struct{
 #define TRICKMODE_I          0x01
 #define TRICKMODE_FFFB       0x02
 #define MAX_AUDIO_PARAM_SIZE 10
+#define MAX_SUBTITLE_PARAM_SIZE 10
+
 typedef struct{
 	unsigned short	pid;//pid
 	int				nVideoWidth;//视频宽度
@@ -68,6 +70,27 @@ typedef struct{
 	int				nExtraSize;
 	unsigned char*	pExtraData;	
 }AUDIO_PARA_T, *PAUDIO_PARA_T;
+
+typedef enum {
+	/* subtitle codecs */
+    CODEC_ID_DVD_SUBTITLE= 0x17000,
+    CODEC_ID_DVB_SUBTITLE,
+    CODEC_ID_TEXT,  ///< raw UTF-8 text
+    CODEC_ID_XSUB,
+    CODEC_ID_SSA,
+    CODEC_ID_MOV_TEXT,
+    CODEC_ID_HDMV_PGS_SUBTITLE,
+    CODEC_ID_DVB_TELETEXT,
+    CODEC_ID_SRT,
+    CODEC_ID_MICRODVD,
+	}SUB_TYPE;
+
+typedef struct{
+	unsigned short	pid;//pid
+	int sub_type; 
+	
+}SUBTITLE_PARA_T, *PSUBTITLE_PARA_T;
+
 typedef enum
 {
     IPTV_PLAYER_EVT_STREAM_VALID=0,
@@ -161,6 +184,8 @@ public:
 	virtual void InitVideo(PVIDEO_PARA_T pVideoPara);
 	//初始化音频参数
 	virtual void InitAudio(PAUDIO_PARA_T pAudioPara);
+	//
+	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara);
 	//开始播放
 	virtual bool StartPlay();
 	//把ts流写入
@@ -212,6 +237,7 @@ protected:
 	
 private:
 	AUDIO_PARA_T a_aPara[MAX_AUDIO_PARAM_SIZE];
+	SUBTITLE_PARA_T sPara[MAX_SUBTITLE_PARAM_SIZE];
 	VIDEO_PARA_T vPara;	
 	int player_pid;
 	codec_para_t codec;

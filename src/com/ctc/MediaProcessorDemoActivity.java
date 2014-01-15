@@ -32,10 +32,21 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.Log; 
 
+import com.subtitleparser.SubID;
+import com.subtitleparser.SubtitleUtils;
+import com.subtitleview.SubtitleView;
+import com.subtitleparser.Subtitle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.Gravity;
+import android.graphics.Typeface;
+
 
 public class MediaProcessorDemoActivity extends Activity {
+	private String TAG="MediaProcessorDemoActivity";
 	public String result_s = "success";
 	public int result_i = 0; 
+	public int sub_id = 0x109;//0x106, 0x107, 0x108, 0x109 
 	public boolean result_b = false;
 	Surface mySurface;
 	SurfaceHolder myHolder;
@@ -59,6 +70,7 @@ public class MediaProcessorDemoActivity extends Activity {
 	private Button isSoftFit;
 	private Button getPlayMode;
 	private Button setEPGSize;
+	private Button switchSubtitle;
 	
 	private TextView Function;
 	private TextView Return_t;
@@ -67,7 +79,19 @@ public class MediaProcessorDemoActivity extends Activity {
 	
 	private int flag = 0;
 	
-	
+	//for subtitle
+	private SubtitleUtils subtitleUtils = null;
+	private SubtitleView subTitleView = null;
+	private subview_set sub_para = null;
+	private Thread SubTitleThread=null;
+	private int PLAYER_INIT=0;
+	private int PLAYER_PALY=1;
+	private int PLAYER_STOP=2;
+	private int player_status=0;
+	private Handler MainHandler=null;
+	private final int MSG_INIT_SUBID=0;
+	private final int MSG_SUB_TICK=1;	
+		
 
 	class drawSurface implements Runnable{
 		public String url;
@@ -90,6 +114,7 @@ public class MediaProcessorDemoActivity extends Activity {
         super.onPause(); 
         // Log.i("CTC apk", "onPause"); 
         
+        player_status=PLAYER_STOP;
         Log.d(getClass().getName(), "onPause()"); 
         Log.d(getClass().getName(), "before nativeStop, time is: " + System.currentTimeMillis());
 
@@ -149,6 +174,60 @@ public class MediaProcessorDemoActivity extends Activity {
             playData.url = url;
             Thread player = new Thread(playData);
             player.start(); 
+            
+            subinit();
+
+			MainHandler=new Handler(){
+			
+				@Override
+				public void handleMessage(Message msg) {
+					// TODO Auto-generated method stub
+					Log.d(TAG, "get msg "+msg.what);
+					switch(msg.what){
+						case MSG_INIT_SUBID: 
+							setSubId();
+							break;
+						case MSG_SUB_TICK:
+							Log.d(TAG,"tick time "+msg.arg1);
+							subTitleView.tick(msg.arg1);
+							break;
+						default : break;
+					}
+					super.handleMessage(msg);
+				}
+				
+			};
+            
+			SubTitleThread=new Thread(){
+				public void run () {
+	              //  openFile(sub_para.sub_id);
+					while(player_status==PLAYER_PALY){
+					try {
+						sleep(500);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+	
+					if(subTitleView!=null&&sub_para.sub_id!=null&&nativeGetCurrentPlayTime()>0){
+						Message msg=MainHandler.obtainMessage(MSG_SUB_TICK);
+						msg.arg1=nativeGetCurrentPlayTime();
+						MainHandler.sendMessage(msg);
+					}else
+					{
+						if(sub_para.sub_id==null){
+							Message msg=MainHandler.obtainMessage(MSG_INIT_SUBID);
+							MainHandler.sendMessage(msg);
+						}
+					}
+					
+				 }
+					
+	            }
+			};	
+            player_status=PLAYER_PALY;
+            SubTitleThread.start();
+            
             super.onResume();
     }
 
@@ -554,11 +633,96 @@ public class MediaProcessorDemoActivity extends Activity {
         	}
         });    
         
- 
+        //SwitchSubtitle
+        switchSubtitle = (Button)findViewById(R.id.switchSubtitle);
+        switchSubtitle.setOnClickListener(new Button.OnClickListener(){ 
+        	public void onClick(View v)
+        	{
+        		nativeSwitchSubtitle(sub_id>0x106?(--sub_id):0x109);
+        	}
+        });   
         
         
     }
     
+    
+		protected void subinit() {
+		    subtitleUtils = new SubtitleUtils("/tmp/test.rmvb");
+		    sub_para = new subview_set();
+		     
+		    sub_para.totalnum = 0;
+		    sub_para.curid = 0;
+		
+		    sub_para.enable =true;  
+		    sub_para.color =  android.graphics.Color.RED ;//android.graphics.Color.WHITE;
+			sub_para.font= 20;//20;
+			sub_para.position_v=0;//0;   	
+		    sub_para.sub_id = null;
+		}
+	
+		private void setSubtitleView()
+		{
+			subTitleView = (SubtitleView) findViewById(R.id.subTitle);
+			subTitleView.clear();
+			subTitleView.setGravity(Gravity.CENTER);
+			subTitleView.setTextColor(sub_para.color);
+			subTitleView.setTextSize(sub_para.font);
+			subTitleView.setTextStyle(Typeface.BOLD);
+			subTitleView.setPadding(
+			subTitleView.getPaddingLeft(),
+			subTitleView.getPaddingTop(),
+			subTitleView.getPaddingRight(),
+			//100); //TODO getWindowManager().getDefaultDisplay().getRawHeight()*sub_para.position_v/20+10);
+			getWindowManager().getDefaultDisplay().getHeight()*sub_para.position_v/20+10);
+		//		FrameLayout.LayoutParams frameParams = (FrameLayout.LayoutParams) subTitleView.getLayoutParams();
+		//		frameParams.width = 1280;
+		//		frameParams.height=80;	        	
+		//   	subTitleView.setLayoutParams(frameParams);
+		}
+	
+		private void setSubId(){
+			 sub_para.totalnum =subtitleUtils.getInSubTotal();
+			 Log.d(TAG, "setSubId ==totalnum "+sub_para.totalnum);
+		     if(sub_para.totalnum >0){
+		
+		         sub_para.curid = subtitleUtils.getCurrentInSubtitleIndexByJni();
+		         Log.d(TAG, "setSubId ==curid "+sub_para.curid+"sub_para.enable "+sub_para.enable);
+		
+		         if(sub_para.curid == 0xff||sub_para.enable==false)
+		             sub_para.curid = sub_para.totalnum;
+		         if(sub_para.totalnum>0)
+		             sub_para.sub_id =subtitleUtils.getSubID(sub_para.curid);
+		         else
+		             sub_para.sub_id = null;
+		         if(sub_para.sub_id==null){
+		        	 Log.d(TAG, "fatal warning  get sud id null");
+		         }
+		         setSubtitleView();
+		         new Thread () {
+		             public void run () {
+		                 openFile(sub_para.sub_id);
+		             }
+		         }.start();
+		     }else{
+		         sub_para.sub_id = null;
+		     }
+		}
+		private void openFile(SubID filepath) {
+			
+			if(filepath==null)
+				return;
+			
+			try {
+				if(subTitleView.setFile(filepath,"GBK")==Subtitle.SUBTYPE.SUB_INVALID)
+					return;			
+			} 
+			catch(Exception e) {
+				Log.d(TAG, "open:error");
+				subTitleView = null;
+				e.printStackTrace();
+			}
+		
+		}    		
     
     static {
     	System.loadLibrary("CTC_MediaProcessorjni");   
@@ -589,4 +753,19 @@ public class MediaProcessorDemoActivity extends Activity {
     private static native boolean nativeDelete();
     private static native void nativeSetEPGSize(int w, int h);
     private static native void nativeWriteFile(String functionName, String returnValue, String resultValue);
+    
+    private static native int nativeGetCurrentPlayTime();
+    private static native void nativeInitSubtitle();
+    private static native void nativeSwitchSubtitle(int sub_pid);
+}
+
+class subview_set{
+	public int totalnum; 
+	public int curid;
+	public int color;
+	public int font; 
+	public SubID sub_id;
+    public SubID sub_id_bac;
+	public boolean enable;
+	public int position_v;
 }

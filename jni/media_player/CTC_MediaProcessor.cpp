@@ -121,7 +121,7 @@ void Java_com_ctc_MediaProcessorDemoActivity_nativeSetEPGSize(JNIEnv* env, jobje
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thiz)
 {
 	VIDEO_PARA_T  videoPara;
-	videoPara.pid = 101;
+	videoPara.pid = 0x101;//101;
 	videoPara.nVideoWidth = 544;
 	videoPara.nVideoHeight = 576;
 	videoPara.nFrameRate = 25;
@@ -129,7 +129,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	videoPara.cFmt = 0;
 	
 	AUDIO_PARA_T audioPara;
-	audioPara.pid = 144;
+	audioPara.pid = 0x102;//144;
 	audioPara.nChannels = 1;
 	audioPara.nSampleRate = 48000;
 	audioPara.aFmt = AFORMAT_MPEG;
@@ -138,6 +138,18 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	
 	proxy_mediaProcessor->Proxy_InitVideo(&videoPara);
 	proxy_mediaProcessor->Proxy_InitAudio(&audioPara);
+
+	SUBTITLE_PARA_T sParam[MAX_SUBTITLE_PARAM_SIZE]={0};
+	sParam[0].pid=0x106;
+	sParam[0].sub_type=CODEC_ID_DVB_SUBTITLE;
+	sParam[1].pid=0x107;
+	sParam[1].sub_type=CODEC_ID_DVB_SUBTITLE;
+	sParam[2].pid=0x108;
+	sParam[2].sub_type=CODEC_ID_DVB_SUBTITLE;
+	sParam[3].pid=0x109;
+	sParam[3].sub_type=CODEC_ID_DVB_SUBTITLE;
+	
+	proxy_mediaProcessor->Proxy_InitSubtitle(sParam);
 	return 0;
 }
 
@@ -323,6 +335,24 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeIsSoftFit(JNIEnv* env, jo
 {
 	jboolean result = proxy_mediaProcessor->Proxy_IsSoftFit();
 	return result;
+}
+
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetCurrentPlayTime(JNIEnv* env, jobject thiz)
+{
+	jint result = proxy_mediaProcessor->Proxy_GetCurrentPlayTime();
+	return result;
+}
+
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeInitSubtitle(JNIEnv* env, jobject thiz)
+{
+	//jboolean result = proxy_mediaProcessor->Proxy_InitSubtitle();
+	return true;//result;
+}
+
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSwitchSubtitle(JNIEnv* env, jobject thiz, jint sub_pid)
+{
+	proxy_mediaProcessor->Proxy_SwitchSubtitle(sub_pid);
+	return true;
 }
 
 #ifdef __cplusplus

@@ -162,3 +162,22 @@ void Proxy_MediaProcessor::Proxy_SetSurface(Surface* pSurface)
 	//ctc_MediaControl->SetSurface(pSurface);
 	return;
 }
+
+int Proxy_MediaProcessor::Proxy_GetCurrentPlayTime()
+{
+	long currentPlayTime=0;
+	currentPlayTime = ctc_MediaControl->GetCurrentPlayTime()/90;//ms
+	return currentPlayTime;	
+}
+
+void Proxy_MediaProcessor::Proxy_InitSubtitle(PSUBTITLE_PARA_T sParam)
+{
+	ctc_MediaControl->InitSubtitle(sParam);
+	return;
+}
+
+void Proxy_MediaProcessor::Proxy_SwitchSubtitle(int pid)
+{
+	ctc_MediaControl->SwitchSubtitle(pid);
+	return;
+}

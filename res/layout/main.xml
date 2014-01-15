@@ -128,10 +128,10 @@
 	        android:layout_height="wrap_content"
 	        android:text="@string/button_g_playmode" />
 	       <Button
-	        android:id="@+id/setEPGSize"
+	        android:id="@+id/switchSubtitle"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:text="@string/txt_1_space" />
+	        android:text="@string/button_s_sub" />
 	
 	       <TextView
 	           android:id="@+id/Function"
@@ -158,10 +158,24 @@
 	           android:textAppearance="?android:attr/textAppearanceLarge" />
 	     
 	    </LinearLayout>
-	    <SurfaceView 
-	        android:id="@+id/SurfaceView01"  
-	        android:layout_width="640dip" 
-	        android:layout_height="600dip"/>  
+		<FrameLayout
+	    android:id="@+id/player_window_root"
+	    android:layout_width="640dip"
+   		android:layout_height="600dip"
+	  	>	    
+			  <SurfaceView 
+			        android:id="@+id/SurfaceView01"  
+			        android:layout_width="fill_parent" 
+			        android:layout_height="fill_parent"/>  
+
+			  <com.subtitleview.SubtitleView
+		    	android:id="@+id/subTitle"
+		    	android:layout_height="80dp"
+		    	android:layout_width="fill_parent"
+		    	android:layout_gravity="center_horizontal|bottom"
+		    	android:paddingBottom="60dip">
+		    </com.subtitleview.SubtitleView>   
+		</FrameLayout>
 	     
 	</LinearLayout>
 	<LinearLayout 

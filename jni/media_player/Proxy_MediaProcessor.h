@@ -54,7 +54,10 @@ class Proxy_MediaProcessor
 		bool Proxy_IsSoftFit();//判断是否由软件拉伸
 		void Proxy_SetEPGSize(int w, int h);//设置EPG大小
 		void Proxy_SetSurface(Surface* pSurface);//设置显示用的surface
-		
+
+		int Proxy_GetCurrentPlayTime();
+		void Proxy_InitSubtitle(PSUBTITLE_PARA_T sParam);
+		void Proxy_SwitchSubtitle(int pid);//设置显示用的surface		
 };
 
 #endif

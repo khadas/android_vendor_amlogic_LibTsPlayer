@@ -1245,6 +1245,9 @@ bool CTsPlayer::Resume()
 bool CTsPlayer::Fast()
 {
     int ret;
+    if (prop_shouldshowlog == '1')
+        LOGI("Fast");
+
     ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
     if (ret)
         return false;
@@ -1254,14 +1257,18 @@ bool CTsPlayer::Fast()
     if (!ret)
         return false;
 
-
-    printf("Fast: codec_set_cntl_mode %d\n",TRICKMODE_I);
+    if (prop_shouldshowlog == '1')
+        LOGI("Fast: codec_set_cntl_mode %d\n",TRICKMODE_I);
     ret = codec_set_cntl_mode(pcodec, TRICKMODE_I);
     return !ret;
 }
+
 bool CTsPlayer::StopFast()
 {
     int ret;
+    if (prop_shouldshowlog == '1')
+        LOGI("StopFast");
+
     m_bFast = false;
     ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
     Stop();
@@ -1275,8 +1282,6 @@ bool CTsPlayer::StopFast()
 
     return true;
 }
-
-
 
 bool CTsPlayer::Stop()
 {    
@@ -1325,19 +1330,25 @@ bool CTsPlayer::Stop()
 
     return true;
 }
+
 bool CTsPlayer::Seek()
 {
+    if (prop_shouldshowlog == '1')
+        LOGI("Seek");
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     Stop();
     usleep(500*1000);
     StartPlay();
     return true;
 }
+
 int CTsPlayer::GetVolume()
 {
     float volume = 1.0f;
     int ret;
 
+    if (prop_shouldshowlog == '1')
+        LOGI("GetVolume");
     ret = codec_get_volume(pcodec, &volume);
     if (ret < 0)
     {
@@ -1349,6 +1360,7 @@ int CTsPlayer::GetVolume()
     
     return (int)(volume*100);
 }
+
 bool CTsPlayer::SetVolume(int volume)
 {
     if (prop_shouldshowlog == '1') {

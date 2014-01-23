@@ -46,7 +46,6 @@ typedef struct{
   int (*exit)(IN void *handle);
 }wiptv_callback;
 
-//#define WF
 
 #define TRICKMODE_NONE       0x00
 #define TRICKMODE_I          0x01
@@ -255,9 +254,7 @@ private:
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
 	unsigned int writecount ;
-#ifdef WF
 	FILE*	m_fp;
-#endif
     lock_t mutex;
 
 };

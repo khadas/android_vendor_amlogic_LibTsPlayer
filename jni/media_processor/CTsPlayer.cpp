@@ -49,6 +49,7 @@ using namespace android;
 
 //log switch
 char prop_shouldshowlog = '1';
+char prop_dumpfile = '1';
 
 #define VIDEO_SCREEN_W 1280
 #define VIDEO_SCREEN_H 720
@@ -707,6 +708,7 @@ int SYS_disable_colorkey(void)
 CTsPlayer::CTsPlayer()
 {
     property_get("iptv.shouldshowlog",&prop_shouldshowlog,"0");//initial the log switch
+    property_get("iptv.dumpfile",&prop_dumpfile,"0");
     amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",1);
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
@@ -733,11 +735,8 @@ CTsPlayer::CTsPlayer()
     m_bWrFirstPkg = false;
 
     m_nMode = M_LIVE;
-
     LunchIptv();
-#ifdef WF
-	m_fp = NULL;
-#endif
+    m_fp = NULL;
 }
 
 CTsPlayer::~CTsPlayer()
@@ -1106,9 +1105,11 @@ bool CTsPlayer::StartPlay()
         if (m_nMode == M_LIVE)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
         m_bIsPlay = true;
-#ifdef WF
-        m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
-#endif
+
+        if(prop_dumpfile == '1'){
+            m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
+        }
+
     }
     amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     m_bWrFirstPkg = true;
@@ -1206,12 +1207,10 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 
     if (ret > 0)
     {
-    #ifdef WF
         if (m_fp != NULL)
         {
             fwrite(pBuffer, 1, nSize, m_fp);
         }
-    #endif
         if(writecount >= MAX_WRITE_COUNT)
         {
             m_bWrFirstPkg = false;
@@ -1288,12 +1287,10 @@ bool CTsPlayer::Stop()
     int ret;
 
     if (m_bIsPlay){
-#ifdef WF
         if (m_fp != NULL){
             fclose(m_fp);
             m_fp = NULL;
         }
-#endif
 
         m_bFast = false;
         m_bIsPlay = false;

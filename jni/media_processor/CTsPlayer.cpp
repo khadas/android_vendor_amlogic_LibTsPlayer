@@ -1481,12 +1481,18 @@ bool CTsPlayer::SetRatio(int nRatio)
         mode_height = 1080;
     }
     //amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
-    if(nRatio == 1)
+    if(nRatio == 1)			//Full screen
     {
+        new_x=0;
+        new_y=0;
+        new_width=mode_width;
+        new_height=mode_height;
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode",1);
+        sprintf(writedata,"%d %d %d %d",new_x,new_y,new_width,new_height);
+        amsysfs_set_sysfs_str("/sys/class/video/axis",writedata);
         return true;
     }
-    else if(nRatio == 2)
+    else if(nRatio == 2)	//Fit by width
     {
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode",1);
         new_width=mode_width;
@@ -1503,7 +1509,7 @@ bool CTsPlayer::SetRatio(int nRatio)
         amsysfs_set_sysfs_str("/sys/class/video/axis",writedata);
         return true;
     }
-    else if(nRatio == 3)
+    else if(nRatio == 3)	//Fit by height
     {
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode",1);
         new_width = int(mode_height*width/height);

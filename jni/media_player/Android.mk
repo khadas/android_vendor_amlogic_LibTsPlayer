@@ -27,6 +27,7 @@ LOCAL_SHARED_LIBRARIES += 	\
     						libbinder \
     						libmedia\
     						libgui \
+    						libamplayer \
 							liblog \
 							libCTC_MediaProcessor
 

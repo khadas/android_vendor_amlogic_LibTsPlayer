@@ -154,15 +154,16 @@ public class MediaProcessorDemoActivity extends Activity {
     public void onResume()
     {
              
+            if (nativeInit(url) == 0)
+              Log.i("Init:", "success");
+            else {
+              Log.i("Init:", "error");
+            }
             Log.d(getClass().getName(), "onResume()");
             
             Log.i("create surface:", "next");  
             if (nativeCreateSurface(mySurface, 1280, 720) == 0) 
             	Log.i("create surface:", "success");  
-            if (nativeInit() == 0)
-            	Log.i("Init:", "success");
-            else 
-            	Log.i("Init:", "error"); 
 
     		nativeSetEPGSize(1280, 720);
             nativeSetVideoWindow(420, 40, 640, 480); 
@@ -730,7 +731,7 @@ public class MediaProcessorDemoActivity extends Activity {
     private TextView v;
     
     private static native int nativeCreateSurface(Surface mySurface, int width, int heigth);
-    private static native int nativeInit();
+    private static native int nativeInit(String url);
     private static native int nativeWriteData(String url);
     private static native int nativeSetVideoWindow(int x, int y, int width, int height);
     private static native boolean nativeStartPlay();

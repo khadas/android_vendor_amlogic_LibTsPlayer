@@ -70,6 +70,7 @@ typedef struct{
 	unsigned char*	pExtraData;	
 }AUDIO_PARA_T, *PAUDIO_PARA_T;
 
+#ifndef AVCODEC_AVCODEC_H
 typedef enum {
 	/* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -83,7 +84,7 @@ typedef enum {
     CODEC_ID_SRT,
     CODEC_ID_MICRODVD,
 	}SUB_TYPE;
-
+#endif
 typedef struct{
 	unsigned short	pid;//pid
 	int sub_type; 

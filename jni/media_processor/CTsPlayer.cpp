@@ -655,6 +655,7 @@ void SwitchResolution(int mode , int status)
 
 void QuitIptv()
 {
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",0);
     amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);  
     //amsysfs_set_sysfs_int("/sys/class/video/disable_video",1);
@@ -970,6 +971,10 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     if (prop_shouldshowlog == '1') {
         __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "setvideoaxis: %s\n", bcmd);
     }
+    if((width2 > 0)&&(height2 > 0)&&((width2 < (mode_w -10))||(height2< (mode_h -10))))
+        amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",1);
+    else
+        amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",0);
     return ret;
 }
 

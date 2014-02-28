@@ -50,7 +50,8 @@ using namespace android;
 //log switch
 char prop_shouldshowlog = '1';
 char prop_dumpfile = '1';
-
+char hasaudio = '1';
+char hasvideo = '1';
 #define VIDEO_SCREEN_W 1280
 #define VIDEO_SCREEN_H 720
 
@@ -1036,14 +1037,124 @@ void setSubType(PSUBTITLE_PARA_T pSubtitlePara){
     }
 }
 
+#define FILTER_AFMT_MPEG		(1 << 0)
+#define FILTER_AFMT_PCMS16L	    (1 << 1)
+#define FILTER_AFMT_AAC			(1 << 2)
+#define FILTER_AFMT_AC3			(1 << 3)
+#define FILTER_AFMT_ALAW		(1 << 4)
+#define FILTER_AFMT_MULAW		(1 << 5)
+#define FILTER_AFMT_DTS			(1 << 6)
+#define FILTER_AFMT_PCMS16B		(1 << 7)
+#define FILTER_AFMT_FLAC		(1 << 8)
+#define FILTER_AFMT_COOK		(1 << 9)
+#define FILTER_AFMT_PCMU8		(1 << 10)
+#define FILTER_AFMT_ADPCM		(1 << 11)
+#define FILTER_AFMT_AMR			(1 << 12)
+#define FILTER_AFMT_RAAC		(1 << 13)
+#define FILTER_AFMT_WMA			(1 << 14)
+#define FILTER_AFMT_WMAPRO		(1 << 15)
+#define FILTER_AFMT_PCMBLU		(1 << 16)
+#define FILTER_AFMT_ALAC		(1 << 17)
+#define FILTER_AFMT_VORBIS		(1 << 18)
+#define FILTER_AFMT_AAC_LATM		(1 << 19)
+#define FILTER_AFMT_APE		       (1 << 20)
+#define FILTER_AFMT_EAC3		       (1 << 21)
+
+int TsplayerGetAFilterFormat(const char *prop)
+{
+    char value[1024];
+    int filter_fmt = 0; 
+    /* check the dts/ac3 firmware status */
+    if(access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK)){
+        filter_fmt |= (FILTER_AFMT_AC3|FILTER_AFMT_EAC3);
+    }
+    if(access("/system/etc/firmware/audiodsp_codec_dtshd.bin",F_OK) ){
+        filter_fmt  |= FILTER_AFMT_DTS;
+    }
+    if (property_get(prop, value, NULL) > 0) {
+        LOGI("[%s:%d]disable_adec=%s\n", __FUNCTION__, __LINE__, value);
+        if (strstr(value,"mpeg") != NULL || strstr(value,"MPEG") != NULL) {
+            filter_fmt |= FILTER_AFMT_MPEG;
+        } 
+        if (strstr(value,"pcms16l") != NULL || strstr(value,"PCMS16L") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMS16L;
+        } 
+        if (strstr(value,"aac") != NULL || strstr(value,"AAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_AAC;
+        } 
+        if (strstr(value,"ac3") != NULL || strstr(value,"AC#") != NULL) {
+            filter_fmt |= FILTER_AFMT_AC3;
+        }   
+        if (strstr(value,"alaw") != NULL || strstr(value,"ALAW") != NULL) {
+            filter_fmt |= FILTER_AFMT_ALAW;
+        } 
+        if (strstr(value,"mulaw") != NULL || strstr(value,"MULAW") != NULL) {
+            filter_fmt |= FILTER_AFMT_MULAW;
+        } 
+        if (strstr(value,"dts") != NULL || strstr(value,"DTS") != NULL) {
+            filter_fmt |= FILTER_AFMT_DTS;
+        } 
+        if (strstr(value,"pcms16b") != NULL || strstr(value,"PCMS16B") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMS16B;
+        } 
+        if (strstr(value,"flac") != NULL || strstr(value,"FLAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_FLAC;
+        }
+        if (strstr(value,"cook") != NULL || strstr(value,"COOK") != NULL) {
+            filter_fmt |= FILTER_AFMT_COOK;
+        } 
+        if (strstr(value,"pcmu8") != NULL || strstr(value,"PCMU8") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMU8;
+        } 
+        if (strstr(value,"adpcm") != NULL || strstr(value,"ADPCM") != NULL) {
+            filter_fmt |= FILTER_AFMT_ADPCM;
+        } 
+        if (strstr(value,"amr") != NULL || strstr(value,"AMR") != NULL) {
+            filter_fmt |= FILTER_AFMT_AMR;
+        } 
+        if (strstr(value,"raac") != NULL || strstr(value,"RAAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_RAAC;
+        }
+        if (strstr(value,"wma") != NULL || strstr(value,"WMA") != NULL) {
+            filter_fmt |= FILTER_AFMT_WMA;
+        } 
+        if (strstr(value,"wmapro") != NULL || strstr(value,"WMAPRO") != NULL) {
+            filter_fmt |= FILTER_AFMT_WMAPRO;
+        } 
+        if (strstr(value,"pcmblueray") != NULL || strstr(value,"PCMBLUERAY") != NULL) {
+            filter_fmt |= FILTER_AFMT_PCMBLU;
+        } 
+        if (strstr(value,"alac") != NULL || strstr(value,"ALAC") != NULL) {
+            filter_fmt |= FILTER_AFMT_ALAC;
+        } 
+        if (strstr(value,"vorbis") != NULL || strstr(value,"VORBIS") != NULL) {
+            filter_fmt |= FILTER_AFMT_VORBIS;
+        }
+        if (strstr(value,"aac_latm") != NULL || strstr(value,"AAC_LATM") != NULL) {
+            filter_fmt |= FILTER_AFMT_AAC_LATM;
+        } 
+        if (strstr(value,"ape") != NULL || strstr(value,"APE") != NULL) {
+            filter_fmt |= FILTER_AFMT_APE;
+        }     
+        if (strstr(value,"eac3") != NULL || strstr(value,"EAC3") != NULL) {
+            filter_fmt |= FILTER_AFMT_EAC3;
+        }     
+    }
+    LOGI("[%s:%d]filter_afmt=%x\n", __FUNCTION__, __LINE__, filter_fmt);
+    return filter_fmt;
+}
+
 bool CTsPlayer::StartPlay()
 {
     int ret;
+    int filter_afmt;
     memset(pcodec,0,sizeof(*pcodec));
     pcodec->stream_type=STREAM_TYPE_TS;
     pcodec->video_type = vPara.vFmt;
     pcodec->has_video=1;
     pcodec->audio_type=a_aPara[0].aFmt;
+    property_get("iptv.hasaudio",&hasaudio,"1");
+    property_get("iptv.hasvideo",&hasvideo,"1");
 
     if ( pcodec->audio_type == 19)
     {
@@ -1086,6 +1197,16 @@ bool CTsPlayer::StartPlay()
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
         pcodec->am_sysinfo.param = (void *)(0);
     }
+	
+    filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");
+    if (((1 << pcodec->audio_type) & filter_afmt) != 0) {
+        LOGI("## filtered format audio_format=%d,----\n",pcodec->audio_type);
+        pcodec->has_audio = 0;
+    }
+    if (hasaudio == '0')
+        pcodec->has_audio = 0;
+    if (hasvideo == '0')
+        pcodec->has_video = 0;
 
     if (prop_shouldshowlog == '1') {
         __android_log_print(ANDROID_LOG_INFO,"TsPlayer","set %d,%d,%d,%d\n",vPara.vFmt,a_aPara[0].aFmt,vPara.pid,a_aPara[0].pid);

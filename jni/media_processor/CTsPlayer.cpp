@@ -1418,6 +1418,7 @@ bool CTsPlayer::Fast()
         return false;
     Stop();
     m_bFast = true;	
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all",1);
     ret = StartPlay();
     if (!ret)
         return false;
@@ -1436,6 +1437,7 @@ bool CTsPlayer::StopFast()
 
     m_bFast = false;
     ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all",0);
     Stop();
     ret = StartPlay();
     if (!ret)
@@ -1462,6 +1464,7 @@ bool CTsPlayer::Stop()
         m_bIsPlay = false;
         m_StartPlayTimePoint = 0;
         ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
+        amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all",0);
         if (prop_shouldshowlog == '1') {
             __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "m_bIsPlay is true");
         }

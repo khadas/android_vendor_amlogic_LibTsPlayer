@@ -7,6 +7,7 @@
 #include "player_set_sys.h"
 #include "Amsysfsutils.h"
 #include <sys/times.h>
+#include <time.h>
 
  
 using namespace android;
@@ -52,6 +53,11 @@ char prop_shouldshowlog = '1';
 char prop_dumpfile = '1';
 char hasaudio = '1';
 char hasvideo = '1';
+char prop_logprint[4] = {0};
+char prop_buffertime[10] = {0};
+char prop_audiobuflevel[10] = {0};
+char prop_videobuflevel[10] = {0};
+
 #define VIDEO_SCREEN_W 1280
 #define VIDEO_SCREEN_H 720
 
@@ -706,10 +712,23 @@ int SYS_disable_colorkey(void)
 
 }
 
+int64_t av_gettime(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
 CTsPlayer::CTsPlayer()
 {
-    property_get("iptv.shouldshowlog",&prop_shouldshowlog,"0");//initial the log switch
+    property_get("iptv.shouldshowlog",prop_logprint,"0");//initial the log switch
     property_get("iptv.dumpfile",&prop_dumpfile,"0");
+    property_get("iptv.buffer.time",prop_buffertime,"1100");
+    property_get("iptv.audio.bufferlevel",prop_audiobuflevel,"0.6");
+    property_get("iptv.video.bufferlevel",prop_videobuflevel,"0.8");
+    prop_shouldshowlog = prop_logprint[0];
+    LOGI("CTsPlayer, prop_buffertime : %d, audio bufferlevel : %f, video bufferlevel : %f \n", 
+            atoi(prop_buffertime), atof(prop_audiobuflevel), atof(prop_videobuflevel));
     amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",1);
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
@@ -734,6 +753,7 @@ CTsPlayer::CTsPlayer()
     m_bFast = false;
     m_bSetEPGSize = false;
     m_bWrFirstPkg = false;
+    m_StartPlayTimePoint = 0;
 
     m_nMode = M_LIVE;
     LunchIptv();
@@ -1213,6 +1233,11 @@ bool CTsPlayer::StartPlay()
     }
     pcodec->noblock = 0;
 
+    if(prop_dumpfile == '1'){
+        if(m_fp == NULL)
+            m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
+    }
+
     /*other setting*/
     lp_lock(&mutex);
     ret = codec_init(pcodec);
@@ -1226,15 +1251,18 @@ bool CTsPlayer::StartPlay()
         if (m_nMode == M_LIVE)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
         m_bIsPlay = true;
-
-        if(prop_dumpfile == '1'){
-            m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
+        if(!m_bFast)
+        {
+            if (prop_shouldshowlog == '1')
+                LOGI("StartPlay : codec_pause to buffer sometime");
+            codec_pause(pcodec);
         }
 
     }
     amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     m_bWrFirstPkg = true;
     writecount = 0;
+    m_StartPlayTimePoint = av_gettime();
     return !ret;
 }
 
@@ -1245,14 +1273,21 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 
     buf_status audio_buf;
     buf_status video_buf;
+    float audio_buf_level;
+    float video_buf_level;
 
     if (!m_bIsPlay)
         return -1;
+
+    codec_get_vbuf_state(pcodec,&audio_buf);
+    codec_get_vbuf_state(pcodec,&video_buf);
+    audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
+    video_buf_level = (float)video_buf.data_len / video_buf.size;
+	
+    if(prop_shouldshowlog == '1' && m_StartPlayTimePoint > 0)
+        LOGI("WriteData : audio_buf.data_len %d, video_buf.data_len %d \n", audio_buf.data_len, video_buf.data_len);
     if(m_bWrFirstPkg == false)
     {
-        codec_get_vbuf_state(pcodec,&audio_buf);
-        codec_get_vbuf_state(pcodec,&video_buf);
-
         if(pcodec->has_video)
         {
             if(pcodec->video_type == VFORMAT_MJPEG)
@@ -1323,6 +1358,16 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         		LOGI("WriteData : codec_write no error and nSize is %d! \n", nSize);
             break;
         }
+    }
+
+    if(!m_bFast && m_StartPlayTimePoint > 0 
+            && (((av_gettime() - m_StartPlayTimePoint)/1000 >= atoi(prop_buffertime)) 
+            || (audio_buf_level >= atof(prop_audiobuflevel) || video_buf_level >= atof(prop_videobuflevel))))
+    {
+        if (prop_shouldshowlog == '1')
+            LOGI("WriteData : resume play now");
+        codec_resume(pcodec);
+        m_StartPlayTimePoint = 0;
     }
     lp_unlock(&mutex);
 
@@ -1415,6 +1460,7 @@ bool CTsPlayer::Stop()
 
         m_bFast = false;
         m_bIsPlay = false;
+        m_StartPlayTimePoint = 0;
         ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
         if (prop_shouldshowlog == '1') {
             __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "m_bIsPlay is true");

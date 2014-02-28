@@ -255,6 +255,7 @@ private:
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
 	unsigned int writecount ;
+	int64_t  m_StartPlayTimePoint;
 	FILE*	m_fp;
     lock_t mutex;
 

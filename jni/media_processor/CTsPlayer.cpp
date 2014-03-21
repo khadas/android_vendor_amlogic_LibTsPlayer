@@ -735,8 +735,8 @@ CTsPlayer::CTsPlayer()
     property_get("iptv.video.bufferlevel",prop_videobuflevel,"0.8");
     property_get("iptv.softfit",&prop_softfit,"1");
     prop_shouldshowlog = prop_logprint[0];
-    LOGI("CTsPlayer, prop_buffertime : %d, audio bufferlevel : %f, video bufferlevel : %f \n", 
-            atoi(prop_buffertime), atof(prop_audiobuflevel), atof(prop_videobuflevel));
+    LOGI("CTsPlayer, prop_buffertime : %d, audio bufferlevel : %f, video bufferlevel : %f issoftfit : %c\n", 
+            atoi(prop_buffertime), atof(prop_audiobuflevel), atof(prop_videobuflevel), prop_softfit);
     amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",1);
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
@@ -762,7 +762,7 @@ CTsPlayer::CTsPlayer()
     m_bSetEPGSize = false;
     m_bWrFirstPkg = false;
     m_StartPlayTimePoint = 0;
-    m_isSoftFit = (prop_softfit == 1) ? true : false;
+    m_isSoftFit = (prop_softfit == '1') ? true : false;
 
     m_nMode = M_LIVE;
     LunchIptv(m_isSoftFit);

@@ -53,6 +53,7 @@ char prop_shouldshowlog = '1';
 char prop_dumpfile = '1';
 char hasaudio = '1';
 char hasvideo = '1';
+char prop_softfit = '1';
 char prop_logprint[4] = {0};
 char prop_buffertime[10] = {0};
 char prop_audiobuflevel[10] = {0};
@@ -611,25 +612,28 @@ int GL_2X_iptv_scale530(int mSwitch)
 }
 
 
-void LunchIptv()
+void LunchIptv(bool isSoftFit)
 {
     int ret;
     if(prop_shouldshowlog == '1') {
         __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "LunchIptv\n");
     }
-    ret = disable_freescale_MBX();
-    if (prop_shouldshowlog == '1') {
-        LOGI("disable freeacale:%d\n", ret);
+    if(!isSoftFit) {
+        ret = disable_freescale_MBX();
+        if (prop_shouldshowlog == '1') {
+            LOGI("disable freeacale:%d\n", ret);
+        }
+        amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
+        amsysfs_set_sysfs_int("/sys/class/graphics/fb0/free_scale",0);
+        amsysfs_set_sysfs_int("/sys/class/graphics/fb1/free_scale",0);
+        amsysfs_set_sysfs_int("/sys/class/ppmgr/ppscaler",0);
+        amsysfs_set_sysfs_str("/sys/class/deinterlace/di0/config","disable");
+        amsysfs_set_sysfs_int("/sys/module/di/parameters/buf_mgr_mode",0);
+        amsysfs_set_sysfs_str("/sys/class/display/rd_reg","m 0x1a2b");
+        amsysfs_set_sysfs_str("/sys/class/display/wr_reg","m 0x1a2b 0x1dc20c81");
+    }else {
+        amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",0);
     }
-    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
-    amsysfs_set_sysfs_int("/sys/class/graphics/fb0/free_scale",0);
-    amsysfs_set_sysfs_int("/sys/class/graphics/fb1/free_scale",0);
-    amsysfs_set_sysfs_int("/sys/class/ppmgr/ppscaler",0);
-    amsysfs_set_sysfs_str("/sys/class/deinterlace/di0/config","disable");
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/buf_mgr_mode",0);
-    amsysfs_set_sysfs_str("/sys/class/display/rd_reg","m 0x1a2b");
-    amsysfs_set_sysfs_str("/sys/class/display/wr_reg","m 0x1a2b 0x1dc20c81");
-
 }
 
 /*status : 0 - video stop status   1 - video play status*/
@@ -653,22 +657,24 @@ void SwitchResolution(int mode , int status)
 }
 
 
-void QuitIptv()
+void QuitIptv(bool isSoftFit)
 {
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",0);
     amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 0 0 0 0");
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);  
     //amsysfs_set_sysfs_int("/sys/class/video/disable_video",1);
     int ret;
-    ret = GL_2X_iptv_scale720(0);
-    GL_2X_iptv_scale530(0);
-
-    ret = enable_freescale_MBX();
-
-    if (prop_shouldshowlog == '1') {
-        LOGI("enableFreescaleMBX:%d\n", ret);
+    if(!isSoftFit) {
+        GL_2X_iptv_scale720(0);
+        GL_2X_iptv_scale530(0);
+        ret = enable_freescale_MBX();
+        if (prop_shouldshowlog == '1') {
+            LOGI("enableFreescaleMBX:%d\n", ret);
+        }
+    }else {
+        amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",0);
     }
-
+	
     if (prop_shouldshowlog == '1') {
         __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "QuitIptv\n");
     }
@@ -727,6 +733,7 @@ CTsPlayer::CTsPlayer()
     property_get("iptv.buffer.time",prop_buffertime,"1100");
     property_get("iptv.audio.bufferlevel",prop_audiobuflevel,"0.6");
     property_get("iptv.video.bufferlevel",prop_videobuflevel,"0.8");
+    property_get("iptv.softfit",&prop_softfit,"1");
     prop_shouldshowlog = prop_logprint[0];
     LOGI("CTsPlayer, prop_buffertime : %d, audio bufferlevel : %f, video bufferlevel : %f \n", 
             atoi(prop_buffertime), atof(prop_audiobuflevel), atof(prop_videobuflevel));
@@ -755,16 +762,17 @@ CTsPlayer::CTsPlayer()
     m_bSetEPGSize = false;
     m_bWrFirstPkg = false;
     m_StartPlayTimePoint = 0;
+    m_isSoftFit = (prop_softfit == 1) ? true : false;
 
     m_nMode = M_LIVE;
-    LunchIptv();
+    LunchIptv(m_isSoftFit);
     m_fp = NULL;
 }
 
 CTsPlayer::~CTsPlayer()
 {
     amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank",1);
-    QuitIptv();
+    QuitIptv(m_isSoftFit);
 }
 
 //取得播放模式,保留，暂不用
@@ -773,7 +781,7 @@ int  CTsPlayer::GetPlayMode()
     return 1;
 }
 int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
-{	
+{
     int epg_centre_x = 0;
     int epg_centre_y = 0;
     int old_videowindow_certre_x = 0;
@@ -803,7 +811,53 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         __android_log_print(ANDROID_LOG_INFO, "TsPlayer", 
                             "CTsPlayer::SetVideoWindow:  %d, %d ,%d ,%d\n",x ,y ,width,height);
     }
-  
+    if(m_isSoftFit) {
+        int x_b=0,y_b=0,w_b=0,h_b=0;
+        get_display_mode(mode);;
+        if(!strncmp(mode, "720p", 4))
+        {
+            x_b=x;
+            y_b=y;
+            w_b=width + x_b;
+            h_b=height + y_b; 
+        }
+        else if(!strncmp(mode, "1080i", 5) || !strncmp(mode, "1080p", 5))
+        { 
+            //restore to 1280*720
+            x_b=(int)(x*1280/1920);
+            y_b=(int)(y*720/1080);
+            w_b=(int)(width*1280/1920) + x_b;
+            h_b=(int)(height*720/1080) + y_b;
+        }
+        else if(!strncmp(mode, "480i", 4) || !strncmp(mode, "480p", 4) || !strncmp(mode, "480cvbs", 7))
+        {  
+            //restore to 1280*720
+            x_b=(int)(x*1280/720);
+            y_b=(int)(y*720/480);
+            w_b=(int)(width*1280/720) + x_b;
+            h_b=(int)(height*720/480) + y_b; 
+        }
+        else if(!strncmp(mode, "576i", 4) || !strncmp(mode, "576p", 4) || !strncmp(mode, "576cvbs", 7))
+        { 
+            //restore to 1280*720
+            x_b=(int)(x*1280/720);
+            y_b=(int)(y*720/576);
+            w_b=(int)(width*1280/720) + x_b;
+            h_b=(int)(height*720/576) + y_b; 
+        }
+        if(m_nEPGWidth !=0 && m_nEPGHeight !=0)
+        {
+            amsysfs_set_sysfs_str(path_mode, "1");
+        }
+        sprintf(bcmd, "%d %d %d %d", x_b, y_b, w_b, h_b);
+        ret = amsysfs_set_sysfs_str(path_axis, bcmd);
+        if (prop_shouldshowlog == '1') {
+            __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "setvideoaxis: %s\n", bcmd);
+        }
+		
+        return ret;
+    }
+	
     /*adjust axis as rate recurrence*/
     get_display_mode(mode);
     GetVideoPixels(mode_w, mode_h);
@@ -1492,7 +1546,7 @@ bool CTsPlayer::Stop()
         }
     }
     //amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);	
-    if (m_bSetEPGSize){
+    if (!m_isSoftFit && m_bSetEPGSize){
         if (m_nEPGWidth == 1280 && m_nEPGHeight == 720)
             SwitchResolution(2, 0);
         else
@@ -1711,7 +1765,7 @@ bool CTsPlayer::SetRatio(int nRatio)
 
 bool CTsPlayer::IsSoftFit()
 {
-	return false;
+	return m_isSoftFit;
 }
 
 void CTsPlayer::SetEPGSize(int w, int h)
@@ -1724,7 +1778,7 @@ void CTsPlayer::SetEPGSize(int w, int h)
         //return;
     m_nEPGWidth = w;
     m_nEPGHeight = h;
-    if (!m_bIsPlay){
+    if (!m_isSoftFit && !m_bIsPlay){
         if (w == 1280 && h == 720)
             SwitchResolution(2, 0);
         else

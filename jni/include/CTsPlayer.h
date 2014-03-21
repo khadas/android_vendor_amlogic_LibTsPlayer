@@ -256,6 +256,7 @@ private:
     void *player_evt_hander;
 	unsigned int writecount ;
 	int64_t  m_StartPlayTimePoint;
+	bool    m_isSoftFit;
 	FILE*	m_fp;
     lock_t mutex;
 

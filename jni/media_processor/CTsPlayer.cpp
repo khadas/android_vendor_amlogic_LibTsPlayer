@@ -53,7 +53,7 @@ char prop_shouldshowlog = '1';
 char prop_dumpfile = '1';
 char hasaudio = '1';
 char hasvideo = '1';
-char prop_softfit = '1';
+char prop_softfit = '0';
 char prop_logprint[4] = {0};
 char prop_buffertime[10] = {0};
 char prop_audiobuflevel[10] = {0};
@@ -733,7 +733,7 @@ CTsPlayer::CTsPlayer()
     property_get("iptv.buffer.time",prop_buffertime,"1100");
     property_get("iptv.audio.bufferlevel",prop_audiobuflevel,"0.6");
     property_get("iptv.video.bufferlevel",prop_videobuflevel,"0.8");
-    property_get("iptv.softfit",&prop_softfit,"1");
+    property_get("iptv.softfit",&prop_softfit,"0");
     prop_shouldshowlog = prop_logprint[0];
     LOGI("CTsPlayer, prop_buffertime : %d, audio bufferlevel : %f, video bufferlevel : %f issoftfit : %c\n", 
             atoi(prop_buffertime), atof(prop_audiobuflevel), atof(prop_videobuflevel), prop_softfit);

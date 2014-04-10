@@ -32,10 +32,10 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.Log; 
 
-import com.subtitleparser.SubID;
-import com.subtitleparser.SubtitleUtils;
-import com.subtitleview.SubtitleView;
-import com.subtitleparser.Subtitle;
+//import com.subtitleparser.SubID;
+//import com.subtitleparser.SubtitleUtils;
+//import com.subtitleview.SubtitleView;
+//import com.subtitleparser.Subtitle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -46,7 +46,7 @@ public class MediaProcessorDemoActivity extends Activity {
 	private String TAG="MediaProcessorDemoActivity";
 	public String result_s = "success";
 	public int result_i = 0; 
-	public int sub_id = 0x109;//0x106, 0x107, 0x108, 0x109 
+	//public int sub_id = 0x109;//0x106, 0x107, 0x108, 0x109 
 	public boolean result_b = false;
 	Surface mySurface;
 	SurfaceHolder myHolder;
@@ -80,17 +80,17 @@ public class MediaProcessorDemoActivity extends Activity {
 	private int flag = 0;
 	
 	//for subtitle
-	private SubtitleUtils subtitleUtils = null;
-	private SubtitleView subTitleView = null;
-	private subview_set sub_para = null;
-	private Thread SubTitleThread=null;
+	//private SubtitleUtils subtitleUtils = null;
+	//private SubtitleView subTitleView = null;
+	//private subview_set sub_para = null;
+	//private Thread SubTitleThread=null;
 	private int PLAYER_INIT=0;
 	private int PLAYER_PALY=1;
 	private int PLAYER_STOP=2;
 	private int player_status=0;
 	private Handler MainHandler=null;
-	private final int MSG_INIT_SUBID=0;
-	private final int MSG_SUB_TICK=1;	
+	//private final int MSG_INIT_SUBID=0;
+	//private final int MSG_SUB_TICK=1;	
 		
 
 	class drawSurface implements Runnable{
@@ -176,7 +176,7 @@ public class MediaProcessorDemoActivity extends Activity {
             Thread player = new Thread(playData);
             player.start(); 
             
-            subinit();
+            //subinit();
 
 			MainHandler=new Handler(){
 			
@@ -184,7 +184,7 @@ public class MediaProcessorDemoActivity extends Activity {
 				public void handleMessage(Message msg) {
 					// TODO Auto-generated method stub
 					Log.d(TAG, "get msg "+msg.what);
-					switch(msg.what){
+					/*switch(msg.what){
 						case MSG_INIT_SUBID: 
 							setSubId();
 							break;
@@ -194,12 +194,13 @@ public class MediaProcessorDemoActivity extends Activity {
 							break;
 						default : break;
 					}
+					*/
 					super.handleMessage(msg);
 				}
 				
 			};
             
-			SubTitleThread=new Thread(){
+			/*SubTitleThread=new Thread(){
 				public void run () {
 	              //  openFile(sub_para.sub_id);
 					while(player_status==PLAYER_PALY){
@@ -225,9 +226,9 @@ public class MediaProcessorDemoActivity extends Activity {
 				 }
 					
 	            }
-			};	
+			};*/	
             player_status=PLAYER_PALY;
-            SubTitleThread.start();
+            //SubTitleThread.start();
             
             super.onResume();
     }
@@ -635,18 +636,18 @@ public class MediaProcessorDemoActivity extends Activity {
         });    
         
         //SwitchSubtitle
-        switchSubtitle = (Button)findViewById(R.id.switchSubtitle);
+        /*switchSubtitle = (Button)findViewById(R.id.switchSubtitle);
         switchSubtitle.setOnClickListener(new Button.OnClickListener(){ 
         	public void onClick(View v)
         	{
         		nativeSwitchSubtitle(sub_id>0x106?(--sub_id):0x109);
         	}
-        });   
+        });*/ 
         
         
     }
     
-    
+    /*
 		protected void subinit() {
 		    subtitleUtils = new SubtitleUtils("/tmp/test.rmvb");
 		    sub_para = new subview_set();
@@ -724,7 +725,7 @@ public class MediaProcessorDemoActivity extends Activity {
 			}
 		
 		}    		
-    
+    */
     static {
     	System.loadLibrary("CTC_MediaProcessorjni");   
     }
@@ -759,7 +760,7 @@ public class MediaProcessorDemoActivity extends Activity {
     private static native void nativeInitSubtitle();
     private static native void nativeSwitchSubtitle(int sub_pid);
 }
-
+/*
 class subview_set{
 	public int totalnum; 
 	public int curid;
@@ -769,4 +770,4 @@ class subview_set{
     public SubID sub_id_bac;
 	public boolean enable;
 	public int position_v;
-}
+}*/

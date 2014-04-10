@@ -13,10 +13,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <gui/Surface.h>
-#include <gui/ISurface.h>
-#include <gui/ISurfaceTexture.h>
-#include <gui/SurfaceTextureClient.h>
-#include <gui/ISurfaceComposer.h>
+
 using namespace android;
 extern "C" {
 #include <amports/vformat.h>

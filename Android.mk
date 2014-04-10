@@ -15,7 +15,7 @@ LOCAL_PACKAGE_NAME := mediaProcessorDemo
 LOCAL_CERTIFICATE := platform
 
 LOCAL_PROGUARD_ENABLED := disabled
-LOCAL_STATIC_JAVA_LIBRARIES := amlogic.subtitle
+#LOCAL_STATIC_JAVA_LIBRARIES := amlogic.subtitle
 
 LOCAL_JNI_SHARED_LIBRARIES := \
 	libCTC_MediaProcessorjni

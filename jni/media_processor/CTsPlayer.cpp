@@ -29,6 +29,10 @@ int prop_softfit = 0;
 float prop_audiobuflevel = 0.0;
 float prop_videobuflevel = 0.0;
 
+char old_free_scale_axis[64] = {0};
+char old_window_axis[64] = {0};
+char old_free_scale[64] = {0};
+
 #define LOGV(...) \
     do { \
         if (prop_shouldshowlog) { \
@@ -158,6 +162,46 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
     *height = atoi(vaxis_height_str);
 }
 
+void InitOsdScale(int width, int height)
+{
+    LOGI("InitOsdScale, width: %d, height: %d\n", width, height);
+    int x = 0, y = 0, w = 0, h = 0;
+    char fsa_bcmd[64] = {0};
+    char wa_bcmd[64] = {0};
+    
+    sprintf(fsa_bcmd, "0 0 %d %d", width-1, height-1);
+    LOGI("InitOsdScale, free_scale_axis: %s\n", fsa_bcmd);
+    OUTPUT_MODE output_mode = get_display_mode();
+    getPosition(output_mode, &x, &y, &w, &h);
+    sprintf(wa_bcmd, "%d %d %d %d", x, y, x+w-1, y+h-1);
+    LOGI("InitOsdScale, window_axis: %s\n", wa_bcmd);
+    
+    amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 1);
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/freescale_mode", "1");
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/free_scale_axis", fsa_bcmd);
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/window_axis", wa_bcmd);
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/free_scale", "0x10001");
+    amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
+}
+
+void reinitOsdScale()
+{
+    LOGI("reinitOsdScale, old_free_scale_axis: %s\n", old_free_scale_axis);
+    LOGI("reinitOsdScale, old_window_axis: %s\n", old_window_axis);
+    LOGI("reinitOsdScale, old_free_scale: %s\n", old_free_scale);
+    amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 1);
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/freescale_mode", "1");
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/free_scale_axis", old_free_scale_axis);
+    amsysfs_set_sysfs_str("/sys/class/graphics/fb0/window_axis", old_window_axis);
+    if(!strncmp(old_free_scale, "free_scale_enable:[0x1]", 23)) {
+        amsysfs_set_sysfs_str("/sys/class/graphics/fb0/free_scale", "0x10001");
+    }
+    else {
+        amsysfs_set_sysfs_str("/sys/class/graphics/fb0/free_scale", "0x0");
+    }
+    amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
+}
+
 void LunchIptv(bool isSoftFit)
 {
     LOGI("LunchIptv\n");
@@ -176,7 +220,7 @@ void QuitIptv(bool isSoftFit)
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);  
     if(!isSoftFit) {
-        //do osd scale
+        reinitOsdScale();
     } else {
         amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
     }
@@ -218,6 +262,29 @@ CTsPlayer::CTsPlayer()
     prop_softfit = atoi(vaule);
     __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n", 
             prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
+            
+    char buf[64] = {0};
+    memset(old_free_scale_axis, 0, 64);
+    memset(old_window_axis, 0, 64);
+    memset(old_free_scale, 0, 64);
+    amsysfs_get_sysfs_str("/sys/class/graphics/fb0/free_scale_axis", old_free_scale_axis, 64);
+    amsysfs_get_sysfs_str("/sys/class/graphics/fb0/window_axis", buf, 64);
+    amsysfs_get_sysfs_str("/sys/class/graphics/fb0/free_scale", old_free_scale, 64);
+    
+    LOGI("window_axis: %s\n", buf);
+    char *pr = strstr(buf, "[");
+    if(pr != NULL) {
+        int len = strlen(pr);
+        int i = 0, j = 0;
+        for(i=1; i<len-1; i++) {
+            old_window_axis[j++] = pr[i];
+        }
+        old_window_axis[j] = 0;
+    }
+
+    LOGI("free_scale_axis: %s\n", old_free_scale_axis);
+    LOGI("window_axis: %s\n", old_window_axis);
+    LOGI("free_scale: %s\n", old_free_scale);
 
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
     amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);	
@@ -965,7 +1032,7 @@ void CTsPlayer::SetEPGSize(int w, int h)
     m_nEPGWidth = w;
     m_nEPGHeight = h;
     if(!m_isSoftFit && !m_bIsPlay){
-        //do osd scale
+        InitOsdScale(m_nEPGWidth, m_nEPGHeight);
     }
 }
 

@@ -256,7 +256,9 @@ private:
 	bool    m_isSoftFit;
 	FILE*	m_fp;
     lock_t mutex;
-
+    pthread_t mThread;
+    virtual void checkAbend();
+    static void *threadCheckAbend(void *pthis);
 };
 
 #endif

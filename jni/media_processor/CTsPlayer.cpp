@@ -19,6 +19,8 @@ using namespace android;
 #define RES_AUDIO_SIZE 64
 #define MAX_WRITE_COUNT 20
 
+static bool m_StopThread = false;
+
 //log switch
 static int prop_shouldshowlog = 0;
 int prop_dumpfile = 0;
@@ -348,6 +350,12 @@ CTsPlayer::CTsPlayer()
     m_StartPlayTimePoint = 0;
     m_isSoftFit = (prop_softfit == 1) ? true : false;
 
+    m_StopThread = false;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_create(&mThread, &attr, threadCheckAbend, this);
+    pthread_attr_destroy(&attr);
+
     m_nMode = M_LIVE;
     LunchIptv(m_isSoftFit);
     m_fp = NULL;
@@ -355,6 +363,8 @@ CTsPlayer::CTsPlayer()
 
 CTsPlayer::~CTsPlayer()
 {
+    m_StopThread = true;
+    pthread_join(mThread, NULL);
     QuitIptv(m_isSoftFit);
 }
 
@@ -758,7 +768,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 	
     if(m_StartPlayTimePoint > 0)
         LOGI("WriteData: audio_buf.data_len: %d, video_buf.data_len: %d!\n", audio_buf.data_len, video_buf.data_len);
-    if(m_bWrFirstPkg == false) {
+    /*if(m_bWrFirstPkg == false) {
         if(pcodec->has_video) {
             if(pcodec->video_type == VFORMAT_MJPEG) {
                 if(video_buf.data_len < (RES_VIDEO_SIZE >> 2)) {
@@ -782,7 +792,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 }
             }
         }
-    }
+    }*/
 
     lp_lock(&mutex);
     for(int retry_count=0; retry_count<10; retry_count++) {
@@ -912,6 +922,7 @@ bool CTsPlayer::Stop()
     } else {
         LOGI("m_bIsPlay is false");
     }
+    m_bWrFirstPkg = true;
     return true;
 }
 
@@ -1192,4 +1203,59 @@ void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hande
 {
     pfunc_player_evt = pfunc;
     player_evt_hander = hander;
+}
+
+void CTsPlayer::checkAbend() {
+    int ret = 0;
+    buf_status audio_buf;
+    buf_status video_buf;
+
+    if(!m_bWrFirstPkg){
+        bool checkAudio = true;
+        codec_get_abuf_state(pcodec, &audio_buf);
+        codec_get_vbuf_state(pcodec, &video_buf);
+        LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
+        if(pcodec->has_video) {
+            if(pcodec->video_type == VFORMAT_MJPEG) {
+                if(video_buf.data_len < (RES_VIDEO_SIZE >> 2)) {
+                    if(pfunc_player_evt != NULL) {
+                        pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
+                    }
+                    checkAudio = false;
+                    LOGW("checkAbend video low level\n");
+                }
+            }
+            else {
+                if(video_buf.data_len< RES_VIDEO_SIZE) {
+                    if(pfunc_player_evt != NULL) {
+                        pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
+                    }
+                    checkAudio = false;
+                    LOGW("checkAbend video low level\n");
+                }
+            }
+        }
+        LOGI("checkAbend audio_buf.data_len is %d\n", audio_buf.data_len);
+        if(pcodec->has_audio && checkAudio) {
+            if(audio_buf.data_len < RES_AUDIO_SIZE) {
+                if(pfunc_player_evt != NULL) {
+                    pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
+                }
+                LOGW("checkAbend audio low level\n");
+            }
+        }
+    }
+}
+
+void *CTsPlayer::threadCheckAbend(void *pthis) {
+    LOGV("threadCheckAbend start pthis: %p\n", pthis);
+    CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
+    do {
+        //usleep(1000 * 1000);
+        sleep(2);
+        tsplayer->checkAbend();
+    }
+    while(!m_StopThread);
+    LOGV("threadCheckAbend end\n");
+    return NULL;
 }

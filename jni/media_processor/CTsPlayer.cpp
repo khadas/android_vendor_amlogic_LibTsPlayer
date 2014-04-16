@@ -402,7 +402,13 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     OUTPUT_MODE output_mode = get_display_mode();
     if(m_isSoftFit) {
         int x_b=0, y_b=0, w_b=0, h_b=0;
-        if((output_mode == OUTPUT_MODE_720P) || (output_mode == OUTPUT_MODE_1080I)
+        /*int mode_width = 0, mode_height = 0;
+        GetVideoPixels(mode_width, mode_height);
+        if(mode_width <= 0)
+            mode_width = 1280;
+        if(mode_height <= 0)
+            mode_height = 720;
+        if((output_mode == OUTPUT_MODE_720P) || (output_mode == OUTPUT_MODE_1080I) 
                 || (output_mode == OUTPUT_MODE_1080P)) {
             x_b = x;
             y_b = y;
@@ -410,24 +416,24 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
             h_b = height + y_b;
         } else if((output_mode == OUTPUT_MODE_4K2K24HZ) || (output_mode == OUTPUT_MODE_4K2K25HZ)
                 || (output_mode == OUTPUT_MODE_4K2K30HZ) || (output_mode == OUTPUT_MODE_4K2KSMPTE)) {
+            //restore to 1920*1080
+            x_b = (int)(x*mode_width/1920);
+            y_b = (int)(y*mode_height/1080);
+            w_b = (int)(width*mode_width/1920) + x_b;
+            h_b = (int)(height*mode_height/1080) + y_b;
+        } else if((output_mode == OUTPUT_MODE_480I) || (output_mode == OUTPUT_MODE_480P)
+                || (output_mode == OUTPUT_MODE_576I) || (output_mode == OUTPUT_MODE_576P)) {  
             //restore to 1280*720
-            x_b = (int)(x*1280/1920);
-            y_b = (int)(y*720/1080);
-            w_b = (int)(width*1280/1920) + x_b;
-            h_b = (int)(height*720/1080) + y_b;
-        } else if((output_mode == OUTPUT_MODE_480I) || (output_mode == OUTPUT_MODE_480P)) {  
-            //restore to 1280*720
-            x_b = (int)(x*1280/720);
-            y_b = (int)(y*720/480);
-            w_b = (int)(width*1280/720) + x_b;
-            h_b = (int)(height*720/480) + y_b;
-        } else if((output_mode == OUTPUT_MODE_576I) || (output_mode == OUTPUT_MODE_576P)) { 
-            //restore to 1280*720
-            x_b = (int)(x*1280/720);
-            y_b = (int)(y*720/576);
-            w_b = (int)(width*1280/720) + x_b;
-            h_b = (int)(height*720/576) + y_b;
+            x_b = (int)(x*1280/mode_width);
+            y_b = (int)(y*720/mode_height);
+            w_b = (int)(width*1280/mode_width) + x_b;
+            h_b = (int)(height*720/mode_height) + y_b;
         }
+        */
+        x_b = x;
+        y_b = y;
+        w_b = width + x_b;
+        h_b = height + y_b;
         if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
             amsysfs_set_sysfs_str(path_mode, "1");
         }
@@ -1005,6 +1011,15 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
     else if((output_mode == OUTPUT_MODE_1080I) || (output_mode == OUTPUT_MODE_1080P)) {
         width = 1920;
         height = 1080;
+    }
+    else if((output_mode == OUTPUT_MODE_4K2K24HZ) || (output_mode == OUTPUT_MODE_4K2K25HZ)
+            || (output_mode == OUTPUT_MODE_4K2K30HZ)) {
+        width = 3840;
+        height = 2160;
+    }
+    else if(output_mode == OUTPUT_MODE_4K2KSMPTE) {
+        width = 4096;
+        height = 2160;
     }
     else {
         width = 1280;

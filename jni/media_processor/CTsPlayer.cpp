@@ -294,7 +294,7 @@ CTsPlayer::CTsPlayer()
     prop_videobuflevel = atof(vaule);
 
     memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.softfit", vaule, "0");
+    property_get("iptv.softfit", vaule, "1");
     prop_softfit = atoi(vaule);
     __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n", 
             prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
@@ -392,12 +392,14 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     OUTPUT_MODE output_mode = get_display_mode();
     if(m_isSoftFit) {
         int x_b=0, y_b=0, w_b=0, h_b=0;
-        if((output_mode == OUTPUT_MODE_720P)) {
+        if((output_mode == OUTPUT_MODE_720P) || (output_mode == OUTPUT_MODE_1080I)
+                || (output_mode == OUTPUT_MODE_1080P)) {
             x_b = x;
             y_b = y;
             w_b = width + x_b;
             h_b = height + y_b;
-        } else if((output_mode == OUTPUT_MODE_1080I) || (output_mode == OUTPUT_MODE_1080P)) {
+        } else if((output_mode == OUTPUT_MODE_4K2K24HZ) || (output_mode == OUTPUT_MODE_4K2K25HZ)
+                || (output_mode == OUTPUT_MODE_4K2K30HZ) || (output_mode == OUTPUT_MODE_4K2KSMPTE)) {
             //restore to 1280*720
             x_b = (int)(x*1280/1920);
             y_b = (int)(y*720/1080);

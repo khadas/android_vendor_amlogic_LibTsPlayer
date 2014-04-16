@@ -68,6 +68,10 @@ typedef enum {
     OUTPUT_MODE_720P,
     OUTPUT_MODE_1080I,
     OUTPUT_MODE_1080P,
+    OUTPUT_MODE_4K2K24HZ,
+    OUTPUT_MODE_4K2K25HZ,
+    OUTPUT_MODE_4K2K30HZ,
+    OUTPUT_MODE_4K2KSMPTE,
 }OUTPUT_MODE;
 
 OUTPUT_MODE get_display_mode()
@@ -95,6 +99,14 @@ OUTPUT_MODE get_display_mode()
             return OUTPUT_MODE_1080I;
         } else if(!strncmp(mode, "1080p", 5)) {
             return OUTPUT_MODE_1080P;
+        } else if(!strncmp(mode, "4k2k24hz", 8)) {
+            return OUTPUT_MODE_4K2K24HZ;
+        } else if(!strncmp(mode, "4k2k25hz", 8)) {
+            return OUTPUT_MODE_4K2K25HZ;
+        } else if(!strncmp(mode, "4k2k30hz", 8)) {
+            return OUTPUT_MODE_4K2K30HZ;
+        } else if(!strncmp(mode, "4k2ksmpte", 8)) {
+            return OUTPUT_MODE_4K2KSMPTE;
         }
     } else {
         LOGE("get_display_mode open file %s error\n", path);
@@ -151,6 +163,30 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.1080poutputy", vaxis_newy_str, "0");
         property_get("ubootenv.var.1080poutputwidth", vaxis_width_str, "1920");
         property_get("ubootenv.var.1080poutputheight", vaxis_height_str, "1080");
+        break;
+    case OUTPUT_MODE_4K2K24HZ:
+        property_get("ubootenv.var.4k2k24hz_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.4k2k24hz_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.4k2k24hz_width", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k24hz_height", vaxis_height_str, "2160");
+        break;
+    case OUTPUT_MODE_4K2K25HZ:
+        property_get("ubootenv.var.4k2k25hz_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.4k2k25hz_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.4k2k25hz_width", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k25hz_height", vaxis_height_str, "2160");
+        break;
+    case OUTPUT_MODE_4K2K30HZ:
+        property_get("ubootenv.var.4k2k30hz_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.4k2k30hz_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.4k2k30hz_width", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k30hz_height", vaxis_height_str, "2160");
+        break;
+    case OUTPUT_MODE_4K2KSMPTE:
+        property_get("ubootenv.var.4k2ksmpte_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.4k2ksmpte_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.4k2ksmpte_width", vaxis_width_str, "4096");
+        property_get("ubootenv.var.4k2ksmpte_height", vaxis_height_str, "2160");
         break;
     default:
         LOGW("UNKNOW MODE:%d", output_mode);

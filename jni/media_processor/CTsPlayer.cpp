@@ -737,7 +737,6 @@ bool CTsPlayer::StartPlay()
     ret = codec_init(pcodec);
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);
-
     if(ret == 0) {
         if(m_nMode == M_LIVE)
             amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
@@ -890,8 +889,9 @@ bool CTsPlayer::StopFast()
     LOGI("StopFast");
     m_bFast = false;
     ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+    //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     Stop();
+	amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     ret = StartPlay();
     if(!ret)
         return false;

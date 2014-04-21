@@ -28,6 +28,7 @@ int prop_buffertime = 0;
 int hasaudio = 0;
 int hasvideo = 0;
 int prop_softfit = 0;
+int prop_blackout_policy = 1; 
 float prop_audiobuflevel = 0.0;
 float prop_videobuflevel = 0.0;
 
@@ -252,11 +253,12 @@ void LunchIptv(bool isSoftFit)
     }
 }
 
-void QuitIptv(bool isSoftFit)
+void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
 {
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd", 0);
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
-    amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);  
+    if(isBlackoutPolicy)
+        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     if(!isSoftFit) {
         reinitOsdScale();
     } else {
@@ -298,6 +300,10 @@ CTsPlayer::CTsPlayer()
     memset(vaule, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.softfit", vaule, "1");
     prop_softfit = atoi(vaule);
+
+    memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.blackout.policy",vaule,"0");
+    prop_blackout_policy = atoi(vaule);
     __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n", 
             prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
             
@@ -349,7 +355,7 @@ CTsPlayer::CTsPlayer()
     m_bWrFirstPkg = false;
     m_StartPlayTimePoint = 0;
     m_isSoftFit = (prop_softfit == 1) ? true : false;
-
+    m_isBlackoutPolicy = (prop_blackout_policy == 1) ? true : false;
     m_StopThread = false;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -365,7 +371,7 @@ CTsPlayer::~CTsPlayer()
 {
     m_StopThread = true;
     pthread_join(mThread, NULL);
-    QuitIptv(m_isSoftFit);
+    QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
 }
 
 //取得播放模式,保留，暂不用
@@ -489,6 +495,12 @@ int CTsPlayer::VideoShow(void)
 {
     LOGI("VideoShow\n");
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 1280 720 0 8");
+    if(!m_isBlackoutPolicy) {
+        if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
+            amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
+        else
+            __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "video is enable, no need to set disable_video again\n");
+    }
     return 0;
 }
 
@@ -496,6 +508,8 @@ int CTsPlayer::VideoHide(void)
 {
     LOGI("VideoHide\n");
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
+    if(!m_isBlackoutPolicy)
+        amsysfs_set_sysfs_int("/sys/class/video/disable_video",1);
     return 0;
 }
 
@@ -738,8 +752,12 @@ bool CTsPlayer::StartPlay()
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);
     if(ret == 0) {
-        if(m_nMode == M_LIVE)
-            amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
+        if (m_nMode == M_LIVE) {
+            if(m_isBlackoutPolicy)
+                amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+            else
+                amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
+        }
         m_bIsPlay = true;
         if(!m_bFast) {
             LOGI("StartPlay: codec_pause to buffer sometime");
@@ -895,10 +913,11 @@ bool CTsPlayer::StopFast()
     ret = StartPlay();
     if(!ret)
         return false;
-
-    ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
-    if(ret)
-        return false;
+    if(m_isBlackoutPolicy) {
+        ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+        if (ret)
+            return false;
+	}
 
     return true;
 }
@@ -935,7 +954,8 @@ bool CTsPlayer::Stop()
 bool CTsPlayer::Seek()
 {
     LOGI("Seek");
-    amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
+    if(m_isBlackoutPolicy)
+        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     Stop();
     usleep(500*1000);
     StartPlay();

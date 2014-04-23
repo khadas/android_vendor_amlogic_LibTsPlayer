@@ -259,6 +259,7 @@ void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
     if(isBlackoutPolicy)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+    amsysfs_set_sysfs_int("/sys/class/video/disable_video", 1);
     if(!isSoftFit) {
         reinitOsdScale();
     } else {
@@ -909,7 +910,7 @@ bool CTsPlayer::StopFast()
     ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     Stop();
-	amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     ret = StartPlay();
     if(!ret)
         return false;

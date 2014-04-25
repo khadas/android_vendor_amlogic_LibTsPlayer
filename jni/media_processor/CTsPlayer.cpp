@@ -819,8 +819,9 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     }*/
 
     lp_lock(&mutex);
+    int temp_size = 0;
     for(int retry_count=0; retry_count<10; retry_count++) {
-        ret = codec_write(pcodec, pBuffer, nSize);
+        ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
         if((ret < 0) || (ret > nSize)) {
             if(ret == EAGAIN) {
                 usleep(10);
@@ -828,18 +829,22 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 continue;
             } else {
                 LOGI("WriteData: codec_write return %d!\n", ret);
-                if((pcodec->handle)&&(pcodec->adec_priv)) {
+                if(pcodec->handle > 0){
                     ret = codec_close(pcodec);
                     ret = codec_init(pcodec);
-                    LOGI("WriteData: codec need close and reinit!\n");
+                    if(m_bFast)
+                        codec_set_cntl_mode(pcodec, TRICKMODE_I);
+                    LOGI("WriteData : codec need close and reinit m_bFast=%d\n", m_bFast);
                 } else {
                     LOGI("WriteData: codec_write return error or stop by called!\n");
                     break;
                 }
             }
         } else {
-            LOGI("WriteData: codec_write no error and nSize is %d!\n", nSize);
-            break;
+            temp_size += ret;
+            LOGI("WriteData : codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
+            if(temp_size >= nSize)
+                break;
         }
     }
 

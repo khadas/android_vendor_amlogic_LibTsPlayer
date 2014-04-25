@@ -896,7 +896,7 @@ bool CTsPlayer::Fast()
         return false;
     Stop();
     m_bFast = true;
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
+    //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
     ret = StartPlay();
     if(!ret)
         return false;
@@ -915,7 +915,7 @@ bool CTsPlayer::StopFast()
     ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     Stop();
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+    //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     ret = StartPlay();
     if(!ret)
         return false;
@@ -942,7 +942,7 @@ bool CTsPlayer::Stop()
         m_bIsPlay = false;
         m_StartPlayTimePoint = 0;
         ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
-        amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+        //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
         LOGI("m_bIsPlay is true");
 
         lp_lock(&mutex);

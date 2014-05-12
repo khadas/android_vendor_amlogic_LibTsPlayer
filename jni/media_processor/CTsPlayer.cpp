@@ -19,6 +19,9 @@ using namespace android;
 #define RES_AUDIO_SIZE 64
 #define MAX_WRITE_COUNT 20
 
+#define MAX_WRITE_ALEVEL 0.99
+#define MAX_WRITE_VLEVEL 0.99 
+
 static bool m_StopThread = false;
 
 //log switch
@@ -789,7 +792,12 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     codec_get_vbuf_state(pcodec, &video_buf);
     audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
     video_buf_level = (float)video_buf.data_len / video_buf.size;
-	
+
+    if((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
+        LOGI("WriteData : audio_buf_level= %.5f, video_buf_level=%.5f, Don't writedate()\n", audio_buf_level, video_buf_level);
+        return -1;
+    } 
+
     if(m_StartPlayTimePoint > 0)
         LOGI("WriteData: audio_buf.data_len: %d, video_buf.data_len: %d!\n", audio_buf.data_len, video_buf.data_len);
     /*if(m_bWrFirstPkg == false) {

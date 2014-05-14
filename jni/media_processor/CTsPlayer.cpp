@@ -35,12 +35,9 @@ int prop_blackout_policy = 1;
 float prop_audiobuflevel = 0.0;
 float prop_videobuflevel = 0.0;
 
-int is_pause=0;
 char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
 char old_free_scale[64] = {0};
-
-//unsigned int am_sysinfo_param =0x08;
 
 #define LOGV(...) \
     do { \
@@ -82,15 +79,6 @@ typedef enum {
     OUTPUT_MODE_4K2K30HZ,
     OUTPUT_MODE_4K2KSMPTE,
 }OUTPUT_MODE;
-
-
-#ifndef MIN
-#define MIN(x,y) (((x)<(y))?(x):(y))
-#endif
-
-#ifndef MAX
-#define MAX(a,b)   ((a>b)? a:b)
-#endif
 
 OUTPUT_MODE get_display_mode()
 {
@@ -742,16 +730,7 @@ bool CTsPlayer::StartPlay()
     pcodec->video_pid = (int)vPara.pid;
     if(pcodec->video_type == VFORMAT_H264) {
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
-
-		//if(m_bFast){
-		//	pcodec->am_sysinfo.param=(void *)&am_sysinfo_param;
-		//	pcodec->am_sysinfo.height = vPara.nVideoHeight;
-		//	pcodec->am_sysinfo.width = vPara.nVideoWidth;
-			
-		//}
-		//else{
-        //	pcodec->am_sysinfo.param = (void *)(0);
-		//}
+        pcodec->am_sysinfo.param = (void *)(0);
     }
 
     filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");
@@ -767,18 +746,12 @@ bool CTsPlayer::StartPlay()
     pcodec->noblock = 0;
 
     if(prop_dumpfile){
-        if(m_fp == NULL){
-			char tmpfilename[1024]="";
-			static int tmpfileindex=0;
-			sprintf(tmpfilename,"/storage/external_storage/sda1/Live%d.ts",tmpfileindex);
-			tmpfileindex++;
-            m_fp = fopen(tmpfilename, "wb+");
-        }
+        if(m_fp == NULL)
+            m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
     }
 
     /*other setting*/
     lp_lock(&mutex);
-
     ret = codec_init(pcodec);
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);
@@ -889,22 +862,6 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         codec_resume(pcodec);
         m_StartPlayTimePoint = 0;
     }
-
-	if(!m_bFast){
-		
-		float minlevel, maxlevel;
-        minlevel = MIN(audio_buf_level, video_buf_level);
-        maxlevel = MAX(audio_buf_level, video_buf_level);
-		if((is_pause==0) && (minlevel < 0.001)  && (maxlevel < 0.8* 3 / 4)){
-			codec_pause(pcodec);
-			is_pause=1;
-		}
-		else if((is_pause==1)&& (minlevel>0.02) || (maxlevel>0.8)){
-			codec_resume(pcodec);
-			is_pause=0;
-		}
-		
-	}
     lp_unlock(&mutex);
 
     if(ret > 0) {
@@ -982,7 +939,6 @@ bool CTsPlayer::StopFast()
 bool CTsPlayer::Stop()
 {    
     int ret;
-	is_pause=0;
 
     if(m_bIsPlay) {
         if(m_fp != NULL) {

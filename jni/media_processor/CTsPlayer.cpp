@@ -39,6 +39,8 @@ char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
 char old_free_scale[64] = {0};
 
+unsigned int am_sysinfo_param =0x08;
+
 #define LOGV(...) \
     do { \
         if (prop_shouldshowlog) { \
@@ -730,7 +732,16 @@ bool CTsPlayer::StartPlay()
     pcodec->video_pid = (int)vPara.pid;
     if(pcodec->video_type == VFORMAT_H264) {
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
-        pcodec->am_sysinfo.param = (void *)(0);
+
+		if(m_bFast){
+			pcodec->am_sysinfo.param=(void *)am_sysinfo_param;
+			pcodec->am_sysinfo.height = vPara.nVideoHeight;
+			pcodec->am_sysinfo.width = vPara.nVideoWidth;
+			
+		}
+		else{
+        	pcodec->am_sysinfo.param = (void *)(0);
+		}
     }
 
     filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");
@@ -746,12 +757,18 @@ bool CTsPlayer::StartPlay()
     pcodec->noblock = 0;
 
     if(prop_dumpfile){
-        if(m_fp == NULL)
-            m_fp = fopen("/storage/external_storage/sda1/Live.ts", "wb+");
+        if(m_fp == NULL){
+			char tmpfilename[1024]="";
+			static int tmpfileindex=0;
+			sprintf(tmpfilename,"/storage/external_storage/sda1/Live%d.ts",tmpfileindex);
+			tmpfileindex++;
+            m_fp = fopen(tmpfilename, "wb+");
+        }
     }
 
     /*other setting*/
     lp_lock(&mutex);
+
     ret = codec_init(pcodec);
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);

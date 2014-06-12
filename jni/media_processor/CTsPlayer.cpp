@@ -925,6 +925,7 @@ bool CTsPlayer::Fast()
     Stop();
     m_bFast = true;
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
     ret = StartPlay();
     if(!ret)
         return false;
@@ -944,6 +945,7 @@ bool CTsPlayer::StopFast()
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     Stop();
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
     ret = StartPlay();
     if(!ret)
         return false;

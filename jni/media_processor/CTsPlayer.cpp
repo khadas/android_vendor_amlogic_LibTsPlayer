@@ -39,7 +39,7 @@ char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
 char old_free_scale[64] = {0};
 
-unsigned int am_sysinfo_param =0x08;
+//unsigned int am_sysinfo_param =0x08;
 
 #define LOGV(...) \
     do { \
@@ -733,7 +733,7 @@ bool CTsPlayer::StartPlay()
     if(pcodec->video_type == VFORMAT_H264) {
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
 
-		if(m_bFast){
+		/*if(m_bFast){
 			pcodec->am_sysinfo.param=(void *)am_sysinfo_param;
 			pcodec->am_sysinfo.height = vPara.nVideoHeight;
 			pcodec->am_sysinfo.width = vPara.nVideoWidth;
@@ -741,7 +741,8 @@ bool CTsPlayer::StartPlay()
 		}
 		else{
         	pcodec->am_sysinfo.param = (void *)(0);
-		}
+		}*/
+		pcodec->am_sysinfo.param = (void *)(0);
     }
 
     filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");

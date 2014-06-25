@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.os.SystemProperties;
 import android.widget.Button;
 import android.widget.TextView; 
 import android.view.KeyEvent;
@@ -51,8 +52,11 @@ public class MediaProcessorDemoActivity extends Activity {
 	Surface mySurface;
 	SurfaceHolder myHolder;
 	SurfaceView mySurfaceView;
-	String url = "/storage/external_storage/sda1/TV_2008911.ts";   
-	
+	String url = getUrl(); 
+	private static String getUrl() {
+		return SystemProperties.get("iptv.demo.url",
+			"/storage/external_storage/sdcard1/iptv_test.ts");
+	}
 	private Button pause;
 	private Button resume; 
 	private Button seek;

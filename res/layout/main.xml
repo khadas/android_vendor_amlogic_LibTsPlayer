@@ -167,14 +167,15 @@
 			        android:id="@+id/SurfaceView01"  
 			        android:layout_width="fill_parent" 
 			        android:layout_height="fill_parent"/>  
-
+<!--
 			  <com.subtitleview.SubtitleView
 		    	android:id="@+id/subTitle"
 		    	android:layout_height="80dp"
 		    	android:layout_width="fill_parent"
 		    	android:layout_gravity="center_horizontal|bottom"
 		    	android:paddingBottom="60dip">
-		    </com.subtitleview.SubtitleView>   
+		    </com.subtitleview.SubtitleView>
+-->
 		</FrameLayout>
 	     
 	</LinearLayout>

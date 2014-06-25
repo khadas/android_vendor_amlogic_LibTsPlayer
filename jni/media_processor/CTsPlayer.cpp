@@ -861,8 +861,9 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 if(pcodec->handle > 0){
                     ret = codec_close(pcodec);
                     ret = codec_init(pcodec);
-                    if(m_bFast)
-                        codec_set_cntl_mode(pcodec, TRICKMODE_I);
+                    if(m_bFast) {
+                        codec_set_mode(pcodec, TRICKMODE_I);
+                    }
                     LOGI("WriteData : codec need close and reinit m_bFast=%d\n", m_bFast);
                 } else {
                     LOGI("WriteData: codec_write return error or stop by called!\n");
@@ -931,8 +932,8 @@ bool CTsPlayer::Fast()
     if(!ret)
         return false;
 
-    LOGI("Fast: codec_set_cntl_mode: %d\n", TRICKMODE_I);
-    ret = codec_set_cntl_mode(pcodec, TRICKMODE_I);
+    LOGI("Fast: codec_set_mode: %d\n", pcodec->handle);
+    ret = codec_set_mode(pcodec, TRICKMODE_I);
     return !ret;
 }
 
@@ -942,7 +943,7 @@ bool CTsPlayer::StopFast()
 
     LOGI("StopFast");
     m_bFast = false;
-    ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
+    ret = codec_set_mode(pcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     Stop();
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
@@ -972,7 +973,7 @@ bool CTsPlayer::Stop()
         m_bFast = false;
         m_bIsPlay = false;
         m_StartPlayTimePoint = 0;
-        ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
+        ret = codec_set_mode(pcodec, TRICKMODE_NONE);
         //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
         LOGI("m_bIsPlay is true");
 

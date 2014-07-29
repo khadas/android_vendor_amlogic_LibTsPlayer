@@ -1102,9 +1102,11 @@ bool CTsPlayer::SetRatio(int nRatio)
     width = vdec.width;
     height = vdec.height;
 
-    LOGI("SetRatio width: %d, height: %d\n", width, height);
+    LOGI("SetRatio width: %d, height: %d, nRatio: %d\n", width, height, nRatio);
     GetVideoPixels(mode_width, mode_height);
-
+    
+    if((nRatio != 255) && (amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1))
+        amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
     if(nRatio == 1) {	 //Full screen
         new_x = 0;
         new_y = 0;

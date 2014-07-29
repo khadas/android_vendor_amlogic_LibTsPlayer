@@ -1040,13 +1040,19 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
     m_nAudioBalance = nAudioBalance;
     if(nAudioBalance == 1) {
         LOGI("SetAudioBalance 1\n");
-        codec_left_mono(pcodec);
+        //codec_left_mono(pcodec);
+        //0: mute right; 1: mute left
+        amsysfs_set_sysfs_int("/sys/class/amaudio/mute_left_right", 0);
     } else if(nAudioBalance == 2) {
         LOGI("SetAudioBalance 2\n");
-        codec_right_mono(pcodec);
+        //codec_right_mono(pcodec);
+        //0: mute right; 1: mute left
+        amsysfs_set_sysfs_int("/sys/class/amaudio/mute_left_right", 1);
     } else if(nAudioBalance == 3) {
         LOGI("SetAudioBalance 3\n");
-        codec_stereo(pcodec);
+        //codec_stereo(pcodec);
+        //0: unmute; 1: mute
+        amsysfs_set_sysfs_int("/sys/class/amaudio/mute_unmute", 0);
     }
     return true;
 }

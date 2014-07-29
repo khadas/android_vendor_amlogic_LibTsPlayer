@@ -442,6 +442,15 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
             h_b = (int)(height*720/mode_height) + y_b;
         }
         */
+        int mode_width = 0, mode_height = 0;
+        GetVideoPixels(mode_width, mode_height);
+        LOGI("SetVideoWindow mode_width = %d, mode_height = %d\n", mode_width, mode_height);
+        if((width < (mode_width -1)) && (height < (mode_height - 1))) {
+            LOGW("SetVideoWindow this is not full window!\n");
+            amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
+        } else {
+            amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+        }
         x_b = x;
         y_b = y;
         w_b = width + x_b;

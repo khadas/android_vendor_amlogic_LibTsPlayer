@@ -197,8 +197,12 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.4k2ksmpte_height", vaxis_height_str, "2160");
         break;
     default:
+    	  *x = 0;
+    	  *y = 0;
+    	  *width = 1280;
+    	  *height = 720;
         LOGW("UNKNOW MODE:%d", output_mode);
-        break;
+        return;
     }
     *x = atoi(vaxis_newx_str);
     *y = atoi(vaxis_newy_str);
@@ -414,47 +418,21 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     OUTPUT_MODE output_mode = get_display_mode();
     if(m_isSoftFit) {
         int x_b=0, y_b=0, w_b=0, h_b=0;
-        /*int mode_width = 0, mode_height = 0;
-        GetVideoPixels(mode_width, mode_height);
-        if(mode_width <= 0)
-            mode_width = 1280;
-        if(mode_height <= 0)
-            mode_height = 720;
-        if((output_mode == OUTPUT_MODE_720P) || (output_mode == OUTPUT_MODE_1080I) 
-                || (output_mode == OUTPUT_MODE_1080P)) {
-            x_b = x;
-            y_b = y;
-            w_b = width + x_b;
-            h_b = height + y_b;
-        } else if((output_mode == OUTPUT_MODE_4K2K24HZ) || (output_mode == OUTPUT_MODE_4K2K25HZ)
-                || (output_mode == OUTPUT_MODE_4K2K30HZ) || (output_mode == OUTPUT_MODE_4K2KSMPTE)) {
-            //restore to 1920*1080
-            x_b = (int)(x*mode_width/1920);
-            y_b = (int)(y*mode_height/1080);
-            w_b = (int)(width*mode_width/1920) + x_b;
-            h_b = (int)(height*mode_height/1080) + y_b;
-        } else if((output_mode == OUTPUT_MODE_480I) || (output_mode == OUTPUT_MODE_480P)
-                || (output_mode == OUTPUT_MODE_576I) || (output_mode == OUTPUT_MODE_576P)) {  
-            //restore to 1280*720
-            x_b = (int)(x*1280/mode_width);
-            y_b = (int)(y*720/mode_height);
-            w_b = (int)(width*1280/mode_width) + x_b;
-            h_b = (int)(height*720/mode_height) + y_b;
-        }
-        */
-        int mode_width = 0, mode_height = 0;
-        GetVideoPixels(mode_width, mode_height);
-        LOGI("SetVideoWindow mode_width = %d, mode_height = %d\n", mode_width, mode_height);
-        if((width < (mode_width -1)) && (height < (mode_height - 1))) {
+        int mode_x = 0, mode_y = 0, mode_width = 0, mode_height = 0;
+        getPosition(output_mode, &mode_x, &mode_y, &mode_width, &mode_height);
+        LOGI("SetVideoWindow mode_x: %d, mode_y: %d, mode_width: %d, mode_height: %d\n", 
+                mode_x, mode_y, mode_width, mode_height);
+        if(((mode_x == 0) && (mode_y == 0) &&(width < (mode_width -1)) && (height < (mode_height - 1))) 
+                || (mode_x != 0) || (mode_y != 0)) {
             LOGW("SetVideoWindow this is not full window!\n");
             amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
         } else {
             amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
         }
-        x_b = x;
-        y_b = y;
-        w_b = width + x_b;
-        h_b = height + y_b;
+        x_b = x + mode_x;
+        y_b = y + mode_y;
+        w_b = width + x_b - 1;
+        h_b = height + y_b - 1;
         if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
             amsysfs_set_sysfs_str(path_mode, "1");
         }
@@ -1068,37 +1046,10 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 
 void CTsPlayer::GetVideoPixels(int& width, int& height)
 {
+    int x = 0, y = 0;
     OUTPUT_MODE output_mode = get_display_mode();
-    if((output_mode == OUTPUT_MODE_480I) || (output_mode == OUTPUT_MODE_480P)) {
-        width = 720;
-        height = 480;
-    }
-    else if((output_mode == OUTPUT_MODE_576I) || (output_mode == OUTPUT_MODE_576P)) {
-        width = 720;
-        height = 576;
-    }
-    else if(output_mode == OUTPUT_MODE_720P) {
-        width = 1280;
-        height = 720;
-    }
-    else if((output_mode == OUTPUT_MODE_1080I) || (output_mode == OUTPUT_MODE_1080P)) {
-        width = 1920;
-        height = 1080;
-    }
-    else if((output_mode == OUTPUT_MODE_4K2K24HZ) || (output_mode == OUTPUT_MODE_4K2K25HZ)
-            || (output_mode == OUTPUT_MODE_4K2K30HZ)) {
-        width = 3840;
-        height = 2160;
-    }
-    else if(output_mode == OUTPUT_MODE_4K2KSMPTE) {
-        width = 4096;
-        height = 2160;
-    }
-    else {
-        width = 1280;
-        height = 720;
-    }
-    LOGI("GetVideoPixels, width: %d, height: %d", width, height);
+    getPosition(output_mode, &x, &y, &width, &width);
+    LOGI("GetVideoPixels, x: %d, y: %d, width: %d, height: %d", x, y, width, height);
 }
 
 bool CTsPlayer::SetRatio(int nRatio)
@@ -1110,6 +1061,8 @@ bool CTsPlayer::SetRatio(int nRatio)
     int new_y = 0;
     int new_width = 0;
     int new_height = 0;
+    int mode_x = 0;
+    int mode_y = 0;
     int mode_width = 0;
     int mode_height = 0;
     vdec_status vdec;
@@ -1118,25 +1071,26 @@ bool CTsPlayer::SetRatio(int nRatio)
     height = vdec.height;
 
     LOGI("SetRatio width: %d, height: %d, nRatio: %d\n", width, height, nRatio);
-    GetVideoPixels(mode_width, mode_height);
+    OUTPUT_MODE output_mode = get_display_mode();
+    getPosition(output_mode, &mode_x, &mode_y, &mode_width, &mode_height);
     
     if((nRatio != 255) && (amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1))
         amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
     if(nRatio == 1) {	 //Full screen
-        new_x = 0;
-        new_y = 0;
+        new_x = mode_x;
+        new_y = mode_y;
         new_width = mode_width;
         new_height = mode_height;
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
-        sprintf(writedata, "%d %d %d %d", new_x, new_y, new_width, new_height);
+        sprintf(writedata, "%d %d %d %d", new_x, new_y, new_x +new_width - 1, new_y+new_height - 1);
         amsysfs_set_sysfs_str("/sys/class/video/axis", writedata);
         return true;
     } else if(nRatio == 2) {	//Fit by width
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
         new_width = mode_width;
         new_height = int(mode_width*height/width);
-        new_x = 0;
-        new_y = int((mode_height-new_height)/2);
+        new_x = mode_x;
+        new_y = mode_y + int((mode_height-new_height)/2);
         LOGI("SetRatio new_x: %d, new_y: %d, new_width: %d, new_height: %d\n"
                 , new_x, new_y, new_width, new_height);
         sprintf(writedata, "%d %d %d %d", new_x, new_y, new_x+new_width-1, new_y+new_height-1);
@@ -1146,8 +1100,8 @@ bool CTsPlayer::SetRatio(int nRatio)
         amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
         new_width = int(mode_height*width/height);
         new_height = mode_height;
-        new_x = int((mode_width - new_width)/2);
-        new_y = 0;
+        new_x = mode_x + int((mode_width - new_width)/2);
+        new_y = mode_y;
         LOGI("SetRatio new_x: %d, new_y: %d, new_width: %d, new_height: %d\n"
                 , new_x, new_y, new_width, new_height);
         sprintf(writedata, "%d %d %d %d", new_x, new_y, new_x+new_width-1, new_y+new_height-1);

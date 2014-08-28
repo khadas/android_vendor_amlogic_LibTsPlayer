@@ -1048,7 +1048,7 @@ void CTsPlayer::GetVideoPixels(int& width, int& height)
 {
     int x = 0, y = 0;
     OUTPUT_MODE output_mode = get_display_mode();
-    getPosition(output_mode, &x, &y, &width, &width);
+    getPosition(output_mode, &x, &y, &width, &height);
     LOGI("GetVideoPixels, x: %d, y: %d, width: %d, height: %d", x, y, width, height);
 }
 

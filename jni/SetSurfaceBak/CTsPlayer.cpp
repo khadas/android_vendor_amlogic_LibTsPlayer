@@ -907,7 +907,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     if(m_bWrFirstPkg == false)
     {
 		
-	   codec_get_vbuf_state(pcodec,&audio_buf);
+	   codec_get_abuf_state(pcodec,&audio_buf);
 	   codec_get_vbuf_state(pcodec,&video_buf);
 
        if(pcodec->has_video)

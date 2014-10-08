@@ -796,7 +796,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     if(!m_bIsPlay)
         return -1;
 
-    codec_get_vbuf_state(pcodec, &audio_buf);
+    codec_get_abuf_state(pcodec, &audio_buf);
     codec_get_vbuf_state(pcodec, &video_buf);
     audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
     video_buf_level = (float)video_buf.data_len / video_buf.size;

@@ -867,12 +867,14 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         }
     }
 
+#if 0
     if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime) 
             || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {
         LOGI("WriteData: resume play now!\n");
         codec_resume(pcodec);
         m_StartPlayTimePoint = 0;
     }
+#endif
     lp_unlock(&mutex);
 
     if(ret > 0) {

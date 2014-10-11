@@ -296,7 +296,7 @@ CTsPlayer::CTsPlayer()
     prop_dumpfile = atoi(vaule);
 
     memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.buffer.time", vaule, "1100");
+    property_get("iptv.buffer.time", vaule, "2300");
     prop_buffertime = atoi(vaule);
 
     memset(vaule, 0, PROPERTY_VALUE_MAX);
@@ -862,6 +862,8 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
             LOGI("WriteData : codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
             if(temp_size >= nSize)
                 break;
+			// release 10ms to other thread, for example decoder and drop pcm
+            usleep(10000);
         }
     }
 
@@ -1254,10 +1256,14 @@ void CTsPlayer::checkAbend() {
     buf_status audio_buf;
     buf_status video_buf;
 
+  float audio_buf_level, video_buf_level;
     if(!m_bWrFirstPkg){
         bool checkAudio = true;
         codec_get_abuf_state(pcodec, &audio_buf);
         codec_get_vbuf_state(pcodec, &video_buf);
+        audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
+        video_buf_level = (float)video_buf.data_len / video_buf.size;
+
         LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
         if(pcodec->has_video) {
             if(pcodec->video_type == VFORMAT_MJPEG) {
@@ -1289,14 +1295,23 @@ void CTsPlayer::checkAbend() {
             }
         }
     }
+
+    if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime) 
+            || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {
+        LOGI("av_gettime()=%lld, m_StartPlayTimePoint=%lld, prop_buffertime=%d\n", av_gettime(), m_StartPlayTimePoint, prop_buffertime);
+        LOGI("audio_buffer_level=%f, prop_audiobuflevel=%f, video_buf_level=%f, prop_videobuflevel=%f\n", audio_buf_level, prop_audiobuflevel, video_buf_level, prop_videobuflevel);
+        LOGI("WriteData: resume play now!\n");
+        codec_resume(pcodec);
+        m_StartPlayTimePoint = 0;
+    }
 }
 
 void *CTsPlayer::threadCheckAbend(void *pthis) {
     LOGV("threadCheckAbend start pthis: %p\n", pthis);
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
     do {
-        //usleep(1000 * 1000);
-        sleep(2);
+        usleep(50 * 1000);
+        //sleep(2);
         tsplayer->checkAbend();
     }
     while(!m_StopThread);

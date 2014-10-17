@@ -258,6 +258,7 @@ private:
     lock_t mutex;
     pthread_t mThread;
     virtual void checkAbend();
+    virtual void checkBuffLevel();
     static void *threadCheckAbend(void *pthis);
     bool    m_isBlackoutPolicy;
 };

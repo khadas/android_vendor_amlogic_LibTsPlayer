@@ -34,6 +34,7 @@ int prop_softfit = 0;
 int prop_blackout_policy = 1; 
 float prop_audiobuflevel = 0.0;
 float prop_videobuflevel = 0.0;
+int checkcount = 0;
 
 char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
@@ -362,7 +363,7 @@ CTsPlayer::CTsPlayer()
     m_nVolume = 100;
     m_bFast = false;
     m_bSetEPGSize = false;
-    m_bWrFirstPkg = false;
+    m_bWrFirstPkg = true;
     m_StartPlayTimePoint = 0;
     m_isSoftFit = (prop_softfit == 1) ? true : false;
     m_isBlackoutPolicy = (prop_blackout_policy == 1) ? true : false;
@@ -1253,18 +1254,39 @@ void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hande
     player_evt_hander = hander;
 }
 
-void CTsPlayer::checkAbend() {
-    int ret = 0;
+void CTsPlayer::checkBuffLevel()
+{
+    float audio_buf_level, video_buf_level;
     buf_status audio_buf;
     buf_status video_buf;
-
-  float audio_buf_level, video_buf_level;
-    if(!m_bWrFirstPkg){
-        bool checkAudio = true;
+    
+    if(m_bIsPlay) {
         codec_get_abuf_state(pcodec, &audio_buf);
         codec_get_vbuf_state(pcodec, &video_buf);
         audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
         video_buf_level = (float)video_buf.data_len / video_buf.size;
+
+        if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime)
+                || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {
+            LOGI("av_gettime()=%lld, m_StartPlayTimePoint=%lld, prop_buffertime=%d\n", av_gettime(), m_StartPlayTimePoint, prop_buffertime);
+            LOGI("audio_buffer_level=%f, prop_audiobuflevel=%f, video_buf_level=%f, prop_videobuflevel=%f\n", audio_buf_level, prop_audiobuflevel, video_buf_level, prop_videobuflevel);
+            LOGI("WriteData: resume play now!\n");
+            codec_resume(pcodec);
+            m_StartPlayTimePoint = 0;
+        }
+    }
+}
+
+void CTsPlayer::checkAbend() 
+{
+    int ret = 0;
+    buf_status audio_buf;
+    buf_status video_buf;
+
+    if(!m_bWrFirstPkg){
+        bool checkAudio = true;
+        codec_get_abuf_state(pcodec, &audio_buf);
+        codec_get_vbuf_state(pcodec, &video_buf);
 
         LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
         if(pcodec->has_video) {
@@ -1297,15 +1319,6 @@ void CTsPlayer::checkAbend() {
             }
         }
     }
-
-    if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime) 
-            || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {
-        LOGI("av_gettime()=%lld, m_StartPlayTimePoint=%lld, prop_buffertime=%d\n", av_gettime(), m_StartPlayTimePoint, prop_buffertime);
-        LOGI("audio_buffer_level=%f, prop_audiobuflevel=%f, video_buf_level=%f, prop_videobuflevel=%f\n", audio_buf_level, prop_audiobuflevel, video_buf_level, prop_videobuflevel);
-        LOGI("WriteData: resume play now!\n");
-        codec_resume(pcodec);
-        m_StartPlayTimePoint = 0;
-    }
 }
 
 void *CTsPlayer::threadCheckAbend(void *pthis) {
@@ -1314,7 +1327,12 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     do {
         usleep(50 * 1000);
         //sleep(2);
-        tsplayer->checkAbend();
+        tsplayer->checkBuffLevel();
+        checkcount++;
+        if(checkcount >= 40) {
+            tsplayer->checkAbend();
+            checkcount = 0;
+        }
     }
     while(!m_StopThread);
     LOGV("threadCheckAbend end\n");

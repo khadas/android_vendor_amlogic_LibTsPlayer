@@ -774,9 +774,12 @@ bool CTsPlayer::StartPlay()
             codec_pause(pcodec);
         }
     }
-	if(amsysfs_get_sysfs_int("/sys/class/video/slowsync_flag")!=1){
-		amsysfs_set_sysfs_int("/sys/class/video/slowsync_flag",1);
-	}
+    //init tsync_syncthresh
+    codec_set_cntl_syncthresh(pcodec, pcodec->has_audio);
+
+    if(amsysfs_get_sysfs_int("/sys/class/video/slowsync_flag")!=1){
+        amsysfs_set_sysfs_int("/sys/class/video/slowsync_flag",1);
+    }
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     m_bWrFirstPkg = true;
     writecount = 0;

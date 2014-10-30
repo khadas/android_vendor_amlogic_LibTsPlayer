@@ -268,8 +268,9 @@ void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd", 0);
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
     if(isBlackoutPolicy)
-        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
-    amsysfs_set_sysfs_int("/sys/class/video/disable_video", 1);
+        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
+    if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
+        amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
     if(!isSoftFit) {
         reinitOsdScale();
     } else {
@@ -342,7 +343,8 @@ CTsPlayer::CTsPlayer()
     LOGI("free_scale: %s\n", old_free_scale);
 
     amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
-    amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);	
+    if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
+        amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
     memset(a_aPara, 0, sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
     memset(sPara, 0, sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
     memset(&vPara, 0, sizeof(vPara));
@@ -493,7 +495,7 @@ int CTsPlayer::VideoShow(void)
         if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
             amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
         else
-            __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "video is enable, no need to set disable_video again\n");
+            LOGW("video is enable, no need to set disable_video again\n");
     }
     return 0;
 }

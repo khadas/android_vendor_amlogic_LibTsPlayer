@@ -717,6 +717,9 @@ bool CTsPlayer::StartPlay()
             setSubType(&sPara[0]);
         }
         LOGI("pcodec->sub_pid: %d \n", pcodec->sub_pid);
+    } else {
+        pcodec->has_audio = 0;
+        pcodec->audio_pid = -1;
     }
 
     pcodec->video_pid = (int)vPara.pid;
@@ -744,7 +747,9 @@ bool CTsPlayer::StartPlay()
         pcodec->has_audio = 0;
     if(hasvideo == 0)
         pcodec->has_video = 0;
-    LOGI("set %d, %d, %d, %d\n",vPara.vFmt, a_aPara[0].aFmt, vPara.pid, a_aPara[0].pid);
+    LOGI("set vFmt:%d, aFmt:%d, vpid:%d, apid:%d\n", vPara.vFmt, a_aPara[0].aFmt, vPara.pid, a_aPara[0].pid);
+    LOGI("set has_video:%d, has_audio:%d, video_pid:%d, audio_pid:%d\n", pcodec->has_video, pcodec->has_audio, 
+            pcodec->video_pid, pcodec->audio_pid);
     pcodec->noblock = 0;
 
     if(prop_dumpfile){

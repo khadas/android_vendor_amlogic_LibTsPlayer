@@ -801,16 +801,18 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     static int retry_count = 0;
     buf_status audio_buf;
     buf_status video_buf;
-    float audio_buf_level;
-    float video_buf_level;
+    float audio_buf_level = 0.00f;
+    float video_buf_level = 0.00f;
 
     if(!m_bIsPlay)
         return -1;
 
     codec_get_abuf_state(pcodec, &audio_buf);
     codec_get_vbuf_state(pcodec, &video_buf);
-    audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
-    video_buf_level = (float)video_buf.data_len / video_buf.size;
+    if(audio_buf.size != 0)
+        audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
+    if(video_buf.size != 0)
+        video_buf_level = (float)video_buf.data_len / video_buf.size;
 
     if((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
         LOGI("WriteData : audio_buf_level= %.5f, video_buf_level=%.5f, Don't writedate()\n", audio_buf_level, video_buf_level);
@@ -1266,15 +1268,17 @@ void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hande
 
 void CTsPlayer::checkBuffLevel()
 {
-    float audio_buf_level, video_buf_level;
+    float audio_buf_level = 0.00f, video_buf_level = 0.00f;
     buf_status audio_buf;
     buf_status video_buf;
     
     if(m_bIsPlay) {
         codec_get_abuf_state(pcodec, &audio_buf);
         codec_get_vbuf_state(pcodec, &video_buf);
-        audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
-        video_buf_level = (float)video_buf.data_len / video_buf.size;
+        if(audio_buf.size != 0)
+            audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
+        if(video_buf.size != 0)
+            video_buf_level = (float)video_buf.data_len / video_buf.size;
 
         if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime)
                 || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {

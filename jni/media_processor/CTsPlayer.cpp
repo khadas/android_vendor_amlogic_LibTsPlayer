@@ -680,6 +680,8 @@ bool CTsPlayer::StartPlay()
     int ret;
     int filter_afmt;
     char vaule[PROPERTY_VALUE_MAX] = {0};
+    
+    set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
 
     memset(pcodec,0,sizeof(*pcodec));
     pcodec->stream_type = STREAM_TYPE_TS;

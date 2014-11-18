@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE    := libCTC_MediaProcessorjni2222
+LOCAL_MODULE    := libCTC_MediaProcessorjni
 
 LOCAL_SRC_FILES := CTC_MediaProcessor.cpp \
 				   Proxy_MediaProcessor.cpp 

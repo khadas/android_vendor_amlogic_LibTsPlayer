@@ -235,21 +235,15 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	        videoPara.pid=minfo.video_info[0]->id;
 	        videoPara.vFmt=minfo.video_info[0]->format;
 	        ALOGI("player_get_media_info get video pid  %d  ",videoPara.pid);
-	        //if(videoPara.vFmt!=VFORMAT_H264){
-	        //ALOGI("player_get_media_info failed vFmt %d !=VFORMAT_H264 ",videoPara.vFmt);
-	        //goto fail;
-	        //}
+	        if(videoPara.vFmt!=VFORMAT_H264){
+	        ALOGI("player_get_media_info failed vFmt %d !=VFORMAT_H264 ",videoPara.vFmt);
+	        goto fail;
+	        }
 	      }
 	      if(minfo.stream_info.has_audio && minfo.stream_info.total_audio_num> 0){
 	        for(i = 0;i<minfo.stream_info.total_audio_num;i++){
 	          audioPara[i].pid=minfo.audio_info[i]->id; 
-	          audioPara[i].nChannels = minfo.audio_info[i]->channel;
-	          audioPara[i].nSampleRate = minfo.audio_info[i]->sample_rate;
-	          audioPara[i].aFmt = minfo.audio_info[i]->aformat;
-	          ALOGI("player_get_media_info get audio pid  %d  ",audioPara[i].pid);
-	          ALOGI("player_get_media_info get audio nChannels  %d  ",audioPara[i].nChannels);
-	          ALOGI("player_get_media_info get audio nSampleRate  %d  ",audioPara[i].nSampleRate);
-	          ALOGI("player_get_media_info get audio aFmt  %d  ",audioPara[i].aFmt);
+	          ALOGI("player_get_media_info get audio pid  %d  ",audioPara[i].pid);                
 	        }
 	      }       
 	      if(minfo.stream_info.has_sub &&minfo.stream_info.total_sub_num>0){
@@ -301,7 +295,6 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	audioPara.aFmt = AFORMAT_MPEG;
 	audioPara.nExtraSize = 0;
 	audioPara.pExtraData = NULL;*/
-	
 	
 	proxy_mediaProcessor->Proxy_InitVideo(&videoPara);
 	proxy_mediaProcessor->Proxy_InitAudio(audioPara);

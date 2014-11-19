@@ -34,6 +34,9 @@ int prop_softfit = 0;
 int prop_blackout_policy = 1; 
 float prop_audiobuflevel = 0.0;
 float prop_videobuflevel = 0.0;
+int prop_audiobuftime = 1000;
+int prop_videobuftime = 1000;
+
 int checkcount = 0;
 
 char old_free_scale_axis[64] = {0};
@@ -288,37 +291,46 @@ int64_t av_gettime(void)
 
 CTsPlayer::CTsPlayer()
 {
-    char vaule[PROPERTY_VALUE_MAX] = {0};
+    char value[PROPERTY_VALUE_MAX] = {0};
     
-    property_get("iptv.shouldshowlog", vaule, "0");//initial the log switch
-    prop_shouldshowlog = atoi(vaule);
+    property_get("iptv.shouldshowlog", value, "0");//initial the log switch
+    prop_shouldshowlog = atoi(value);
 
-    memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.dumpfile", vaule, "0");
-    prop_dumpfile = atoi(vaule);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.dumpfile", value, "0");
+    prop_dumpfile = atoi(value);
 
-    memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.buffer.time", vaule, "2300");
-    prop_buffertime = atoi(vaule);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.buffer.time", value, "2300");
+    prop_buffertime = atoi(value);
 
-    memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.audio.bufferlevel", vaule, "0.6");
-    prop_audiobuflevel = atof(vaule);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.audio.bufferlevel", value, "0.6");
+    prop_audiobuflevel = atof(value);
 
-    memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.video.bufferlevel", vaule, "0.8");
-    prop_videobuflevel = atof(vaule);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.video.bufferlevel", value, "0.8");
+    prop_videobuflevel = atof(value);
 
-    memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.softfit", vaule, "1");
-    prop_softfit = atoi(vaule);
+	memset(value, 0, PROPERTY_VALUE_MAX);
+	property_get("iptv.audio.buffertime", value, "1000");
+	prop_audiobuftime = atoi(value);
+	
+	memset(value, 0, PROPERTY_VALUE_MAX);
+	property_get("iptv.video.buffertime", value, "1000");
+	prop_videobuftime = atoi(value);
+	
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.softfit", value, "1");
+    prop_softfit = atoi(value);
 
-    memset(vaule, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.blackout.policy",vaule,"0");
-    prop_blackout_policy = atoi(vaule);
-    __android_log_print(ANDROID_LOG_INFO, "TsPlayer", "CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n", 
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.blackout.policy",value,"0");
+    prop_blackout_policy = atoi(value);
+    LOGI("TsPlayer", "CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n", 
             prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
-            
+    LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d\n", prop_audiobuftime, prop_videobuftime);
+	
     char buf[64] = {0};
     memset(old_free_scale_axis, 0, 64);
     memset(old_window_axis, 0, 64);
@@ -524,7 +536,7 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
     memset(a_aPara,0,sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
     while((pAP->pid != 0)&&(count<MAX_AUDIO_PARAM_SIZE)) {
         a_aPara[count]= *pAP;
-        LOGI("InitAudio pAP->pid: %d, pAP->aFmt: %d\n", pAP->pid, pAP->aFmt);
+        LOGI("InitAudio pAP->pid: %d, pAP->aFmt: %d, channel=%d, samplerate=%d\n", pAP->pid, pAP->aFmt, pAP->nChannels, pAP->nSampleRate);
         pAP++;
         count++;
     }
@@ -1270,22 +1282,28 @@ void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hande
 
 void CTsPlayer::checkBuffLevel()
 {
+	int audio_delay=0, video_delay=0;
     float audio_buf_level = 0.00f, video_buf_level = 0.00f;
     buf_status audio_buf;
     buf_status video_buf;
     
     if(m_bIsPlay) {
+	#if 0
         codec_get_abuf_state(pcodec, &audio_buf);
         codec_get_vbuf_state(pcodec, &video_buf);
         if(audio_buf.size != 0)
             audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
         if(video_buf.size != 0)
             video_buf_level = (float)video_buf.data_len / video_buf.size;
-
+	#else
+		codec_get_audio_cur_delay_ms(pcodec, &audio_delay);
+		codec_get_video_cur_delay_ms(pcodec, &video_delay);
+	#endif			
+		
         if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime)
-                || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {
+                || (audio_delay >= prop_audiobuftime || video_delay >= prop_videobuftime))) {
             LOGI("av_gettime()=%lld, m_StartPlayTimePoint=%lld, prop_buffertime=%d\n", av_gettime(), m_StartPlayTimePoint, prop_buffertime);
-            LOGI("audio_buffer_level=%f, prop_audiobuflevel=%f, video_buf_level=%f, prop_videobuflevel=%f\n", audio_buf_level, prop_audiobuflevel, video_buf_level, prop_videobuflevel);
+            LOGI("audio_delay=%d, prop_audiobuftime=%d, video_delay=%d, prop_videobuftime=%d\n", audio_delay, prop_audiobuftime, video_delay, prop_videobuftime);
             LOGI("WriteData: resume play now!\n");
             codec_resume(pcodec);
             m_StartPlayTimePoint = 0;

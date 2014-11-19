@@ -1043,34 +1043,36 @@ bool CTsPlayer::SetVolume(int volume)
     return true;
 }
 
-//获取当前声道,1:左声道，2:右声道，3:双声道
+//get current sound track
+//return parameter: 1, Left Mono; 2, Right Mono; 3, Stereo; 4, Sound Mixing
 int CTsPlayer::GetAudioBalance()
 {
     return m_nAudioBalance;
 }
 
-//设置声道
-//nAudioBlance:,1:左声道，2:右声道，3:双声道
+//set sound track 
+//input paramerter: nAudioBlance, 1, Left Mono; 2, Right Mono; 3, Stereo; 4, Sound Mixing
 bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 {
-    if((nAudioBalance < 1) && (nAudioBalance > 3))
+    if((nAudioBalance < 1) && (nAudioBalance > 4))
         return false;
     m_nAudioBalance = nAudioBalance;
     if(nAudioBalance == 1) {
-        LOGI("SetAudioBalance 1\n");
+        LOGI("SetAudioBalance 1 Left Mono\n");
         //codec_left_mono(pcodec);
-        //0: mute right; 1: mute left
-        amsysfs_set_sysfs_int("/sys/class/amaudio/mute_left_right", 0);
+         amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "l");
     } else if(nAudioBalance == 2) {
-        LOGI("SetAudioBalance 2\n");
+        LOGI("SetAudioBalance 2 Right Mono\n");
         //codec_right_mono(pcodec);
-        //0: mute right; 1: mute left
-        amsysfs_set_sysfs_int("/sys/class/amaudio/mute_left_right", 1);
+        amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "r");
     } else if(nAudioBalance == 3) {
-        LOGI("SetAudioBalance 3\n");
+        LOGI("SetAudioBalance 3 Stereo\n");
         //codec_stereo(pcodec);
-        //0: unmute; 1: mute
-        amsysfs_set_sysfs_int("/sys/class/amaudio/mute_unmute", 0);
+        amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "s");
+    } else if(nAudioBalance == 4) {
+        LOGI("SetAudioBalance 4 Sound Mixing\n");
+        //codec_stereo(pcodec);
+        amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "c");
     }
     return true;
 }

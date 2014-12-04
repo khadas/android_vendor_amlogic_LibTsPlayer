@@ -36,6 +36,7 @@ float prop_audiobuflevel = 0.0;
 float prop_videobuflevel = 0.0;
 int prop_audiobuftime = 1000;
 int prop_videobuftime = 1000;
+int prop_show_first_frame_nosync = 0;
 
 int checkcount = 0;
 
@@ -319,6 +320,10 @@ CTsPlayer::CTsPlayer()
 	memset(value, 0, PROPERTY_VALUE_MAX);
 	property_get("iptv.video.buffertime", value, "1000");
 	prop_videobuftime = atoi(value);
+
+	memset(value, 0, PROPERTY_VALUE_MAX);
+	property_get("iptv.show_first_frame_nosync", value, "1");
+	prop_show_first_frame_nosync = atoi(value);
 	
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.softfit", value, "1");
@@ -694,6 +699,7 @@ bool CTsPlayer::StartPlay()
     char vaule[PROPERTY_VALUE_MAX] = {0};
     
     set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
+    set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
 
     memset(pcodec,0,sizeof(*pcodec));
     pcodec->stream_type = STREAM_TYPE_TS;

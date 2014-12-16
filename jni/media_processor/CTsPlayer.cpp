@@ -322,7 +322,7 @@ CTsPlayer::CTsPlayer()
 	prop_videobuftime = atoi(value);
 
 	memset(value, 0, PROPERTY_VALUE_MAX);
-	property_get("iptv.show_first_frame_nosync", value, "1");
+	property_get("iptv.show_first_frame_nosync", value, "0");
 	prop_show_first_frame_nosync = atoi(value);
 	
     memset(value, 0, PROPERTY_VALUE_MAX);

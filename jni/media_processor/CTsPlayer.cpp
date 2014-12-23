@@ -756,6 +756,8 @@ bool CTsPlayer::StartPlay()
         	pcodec->am_sysinfo.param = (void *)(0);
 		}*/
 		pcodec->am_sysinfo.param = (void *)(0);
+    }else if(pcodec->video_type == VFORMAT_H264_4K2K) {
+        pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264_4K2K;
     }
 
     filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");
@@ -1319,6 +1321,25 @@ void CTsPlayer::checkBuffLevel()
     }
 }
 
+void CTsPlayer::checkBuffstate()
+{
+    struct vdec_status video_buf;
+    if(m_bIsPlay) {
+        codec_get_vdec_state(pcodec, &video_buf);
+        if (video_buf.status & DECODER_ERROR_MASK) {
+            LOGI("decoder error vdec.status: %x\n", video_buf.status);
+            int is_decoder_fatal_error = video_buf.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW;
+	    if(is_decoder_fatal_error && (pcodec->video_type == VFORMAT_H264)) {
+	        //change format  h264--> h264 4K
+                Stop();
+                usleep(500*1000);
+                vPara.vFmt = VFORMAT_H264_4K2K;
+                StartPlay();
+            }
+       }
+    }	
+}
+
 void CTsPlayer::checkAbend() 
 {
     int ret = 0;
@@ -1369,6 +1390,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     do {
         usleep(50 * 1000);
         //sleep(2);
+        tsplayer->checkBuffstate();
         tsplayer->checkBuffLevel();
         checkcount++;
         if(checkcount >= 40) {

@@ -259,6 +259,7 @@ private:
     pthread_t mThread;
     virtual void checkAbend();
     virtual void checkBuffLevel();
+    virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
     bool    m_isBlackoutPolicy;
 };

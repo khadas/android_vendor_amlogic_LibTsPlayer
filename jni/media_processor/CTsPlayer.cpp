@@ -772,6 +772,11 @@ bool CTsPlayer::StartPlay()
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264_4K2K;
     }
 
+    if(pcodec->video_type == VFORMAT_MPEG4) {
+        pcodec->am_sysinfo.format= VIDEO_DEC_FORMAT_MPEG4_5;
+        LOGI("VIDEO_DEC_FORMAT_MPEG4_5\n");
+    }
+
     filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");
     if(((1 << pcodec->audio_type) & filter_afmt) != 0) {
         LOGI("## filtered format audio_format=%d,----\n", pcodec->audio_type);

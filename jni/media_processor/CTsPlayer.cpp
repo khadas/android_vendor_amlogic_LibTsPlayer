@@ -257,7 +257,7 @@ void reinitOsdScale()
 
 void LunchIptv(bool isSoftFit)
 {
-    LOGI("LunchIptv\n");
+    LOGI("LunchIptv isSoftFit:%d\n", isSoftFit);
     if(!isSoftFit) {
         //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 1280 720 0 8");
         amsysfs_set_sysfs_str("/sys/class/deinterlace/di0/config", "disable");
@@ -332,7 +332,7 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.blackout.policy",value,"0");
     prop_blackout_policy = atoi(value);
-    LOGI("TsPlayer", "CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n", 
+    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n",
             prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
     LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d\n", prop_audiobuftime, prop_videobuftime);
 	
@@ -697,7 +697,12 @@ bool CTsPlayer::StartPlay()
     int ret;
     int filter_afmt;
     char vaule[PROPERTY_VALUE_MAX] = {0};
-    
+
+    if (m_bIsPlay) {
+        LOGE("[%s:%d]Already StartPlay: m_bIsPlay=%s\n", __FUNCTION__, __LINE__, (m_bIsPlay ? "true" : "false"));
+        return true;
+    }
+
     set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
     set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
 
@@ -714,7 +719,7 @@ bool CTsPlayer::StartPlay()
     property_get("iptv.hasvideo", vaule, "1");
     hasvideo = atoi(vaule);
 
-    if(pcodec->audio_type == 19) {
+    if(pcodec->audio_type == AFORMAT_AAC_LATM) {
         pcodec->audio_type = AFORMAT_EAC3;
     }
 
@@ -991,27 +996,28 @@ bool CTsPlayer::Stop()
     int ret;
 
     if(m_bIsPlay) {
+        LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {
             fclose(m_fp);
             m_fp = NULL;
         }
 
+        //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+        lp_lock(&mutex);
         m_bFast = false;
         m_bIsPlay = false;
         m_StartPlayTimePoint = 0;
         ret = codec_set_mode(pcodec, TRICKMODE_NONE);
-        //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
-        LOGI("m_bIsPlay is true");
-
-        lp_lock(&mutex);
+        LOGI("codec_close start");
         ret = codec_close(pcodec);
         pcodec->handle = -1;
         LOGI("Stop  codec_close After:%d\n", ret);
+        m_bWrFirstPkg = true;
         lp_unlock(&mutex);
     } else {
         LOGI("m_bIsPlay is false");
     }
-    m_bWrFirstPkg = true;
+
     return true;
 }
 

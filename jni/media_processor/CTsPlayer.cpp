@@ -371,7 +371,14 @@ CTsPlayer::CTsPlayer()
     codec_audio_basic_init();
     lp_lock_init(&mutex, NULL);
     //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
-    amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
+    int screen_mode = 0;
+    property_get("ubootenv.var.screenmode",value,"full");
+    if(!strcmp(value,"normal")
+         screen_mode = 0;
+    else if(!strcmp(value,"full")
+         screen_mode = 1;
+
+    amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
 
     m_bIsPlay = false;
@@ -1128,12 +1135,10 @@ bool CTsPlayer::SetRatio(int nRatio)
         new_y = mode_y;
         new_width = mode_width;
         new_height = mode_height;
-        amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
         sprintf(writedata, "%d %d %d %d", new_x, new_y, new_x +new_width - 1, new_y+new_height - 1);
         amsysfs_set_sysfs_str("/sys/class/video/axis", writedata);
         return true;
     } else if(nRatio == 2) {	//Fit by width
-        amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
         new_width = mode_width;
         new_height = int(mode_width*height/width);
         new_x = mode_x;
@@ -1144,7 +1149,6 @@ bool CTsPlayer::SetRatio(int nRatio)
         amsysfs_set_sysfs_str("/sys/class/video/axis",writedata);
         return true;
     } else if(nRatio == 3) {	//Fit by height
-        amsysfs_set_sysfs_int("/sys/class/video/screen_mode", 1);
         new_width = int(mode_height*width/height);
         new_height = mode_height;
         new_x = mode_x + int((mode_width - new_width)/2);

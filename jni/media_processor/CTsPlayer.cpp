@@ -373,9 +373,9 @@ CTsPlayer::CTsPlayer()
     //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
     int screen_mode = 0;
     property_get("ubootenv.var.screenmode",value,"full");
-    if(!strcmp(value,"normal")
+    if(!strcmp(value,"normal"))
          screen_mode = 0;
-    else if(!strcmp(value,"full")
+    else if(!strcmp(value,"full"))
          screen_mode = 1;
 
     amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);

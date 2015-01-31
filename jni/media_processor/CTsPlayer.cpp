@@ -377,6 +377,10 @@ CTsPlayer::CTsPlayer()
          screen_mode = 0;
     else if(!strcmp(value,"full"))
          screen_mode = 1;
+    else if(!strcmp(value,"4_3"))
+         screen_mode = 2;
+    else if(!strcmp(value,"16_9"))
+         screen_mode = 3;
 
     amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);

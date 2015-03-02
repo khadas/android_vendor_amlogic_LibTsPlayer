@@ -1090,19 +1090,23 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
     if(nAudioBalance == 1) {
         LOGI("SetAudioBalance 1 Left Mono\n");
         //codec_left_mono(pcodec);
+        codec_lr_mix_set(pcodec, 0);
          amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "l");
     } else if(nAudioBalance == 2) {
         LOGI("SetAudioBalance 2 Right Mono\n");
         //codec_right_mono(pcodec);
+        codec_lr_mix_set(pcodec, 0);
         amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "r");
     } else if(nAudioBalance == 3) {
         LOGI("SetAudioBalance 3 Stereo\n");
         //codec_stereo(pcodec);
+        codec_lr_mix_set(pcodec, 0);
         amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "s");
     } else if(nAudioBalance == 4) {
         LOGI("SetAudioBalance 4 Sound Mixing\n");
         //codec_stereo(pcodec);
-        amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "c");
+        codec_lr_mix_set(pcodec, 1);
+        //amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "c");
     }
     return true;
 }

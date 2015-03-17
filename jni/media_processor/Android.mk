@@ -1,5 +1,10 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
+
+ifeq ($(BUILD_SH_TELECOM_APKS),true)
+LOCAL_CFLAGS += -DSH_TELCOM_SUPPORT
+endif
+
 LOCAL_ARM_MODE := arm
 LOCAL_MODULE    := libCTC_MediaProcessor
 LOCAL_PRELINK_MODULE := false

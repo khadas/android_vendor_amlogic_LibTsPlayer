@@ -73,6 +73,78 @@ char old_free_scale[64] = {0};
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN  , "TsPlayer", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
 
+#ifdef SH_TELCOM_SUPPORT
+/*
+typedef enum {
+    VIDEO_DEC_FORMAT_UNKNOW,
+    VIDEO_DEC_FORMAT_MPEG4_3,
+    VIDEO_DEC_FORMAT_MPEG4_4,
+    VIDEO_DEC_FORMAT_MPEG4_5,
+    VIDEO_DEC_FORMAT_H264,
+    VIDEO_DEC_FORMAT_MJPEG,
+    VIDEO_DEC_FORMAT_MP4,
+    VIDEO_DEC_FORMAT_H263,
+    VIDEO_DEC_FORMAT_REAL_8,
+    VIDEO_DEC_FORMAT_REAL_9,
+    VIDEO_DEC_FORMAT_WMV3,
+    VIDEO_DEC_FORMAT_WVC1,
+    VIDEO_DEC_FORMAT_H265,
+    VIDEO_DEC_FORMAT_SW,
+    VIDEO_DEC_FORMAT_MAX,
+} vdec_type_t;
+*/
+vdec_type_t VdecTypeMap [] = {
+    VIDEO_DEC_FORMAT_UNKNOW,
+    VIDEO_DEC_FORMAT_MPEG4_3,
+    VIDEO_DEC_FORMAT_MPEG4_4,
+    VIDEO_DEC_FORMAT_MPEG4_5,
+    VIDEO_DEC_FORMAT_H264,
+    VIDEO_DEC_FORMAT_MJPEG,
+    VIDEO_DEC_FORMAT_MP4,
+    VIDEO_DEC_FORMAT_H263,
+    VIDEO_DEC_FORMAT_REAL_8,
+    VIDEO_DEC_FORMAT_REAL_9,
+    VIDEO_DEC_FORMAT_WMV3,
+    VIDEO_DEC_FORMAT_WVC1,
+    VIDEO_DEC_FORMAT_HEVC,
+    VIDEO_DEC_FORMAT_SW,
+    VIDEO_DEC_FORMAT_MAX,
+};
+
+/*
+typedef enum {
+    VFORMAT_UNKNOWN = -1,
+    VFORMAT_MPEG12 = 0,
+    VFORMAT_MPEG4,
+    VFORMAT_H264,
+    VFORMAT_MJPEG,
+    VFORMAT_REAL,
+    VFORMAT_JPEG,
+    VFORMAT_VC1,
+    VFORMAT_AVS,
+    VFORMAT_H265,
+    VFORMAT_SW,
+    VFORMAT_UNSUPPORT,
+    VFORMAT_MAX,
+} vformat_t;
+*/
+vformat_t VFormatMap[] = {
+    VFORMAT_UNKNOWN,
+    VFORMAT_MPEG12,
+    VFORMAT_MPEG4,
+    VFORMAT_H264,
+    VFORMAT_MJPEG,
+    VFORMAT_REAL,
+    VFORMAT_JPEG,
+    VFORMAT_VC1,
+    VFORMAT_AVS,
+    VFORMAT_HEVC,
+    VFORMAT_SW,
+    VFORMAT_UNSUPPORT,
+    VFORMAT_MAX,
+};
+#endif
+
 typedef enum {
     OUTPUT_MODE_480I = 0,
     OUTPUT_MODE_480P,
@@ -313,17 +385,17 @@ CTsPlayer::CTsPlayer()
     property_get("iptv.video.bufferlevel", value, "0.8");
     prop_videobuflevel = atof(value);
 
-	memset(value, 0, PROPERTY_VALUE_MAX);
-	property_get("iptv.audio.buffertime", value, "1000");
-	prop_audiobuftime = atoi(value);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.audio.buffertime", value, "1000");
+    prop_audiobuftime = atoi(value);
 	
-	memset(value, 0, PROPERTY_VALUE_MAX);
-	property_get("iptv.video.buffertime", value, "1000");
-	prop_videobuftime = atoi(value);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.video.buffertime", value, "1000");
+    prop_videobuftime = atoi(value);
 
-	memset(value, 0, PROPERTY_VALUE_MAX);
-	property_get("iptv.show_first_frame_nosync", value, "0");
-	prop_show_first_frame_nosync = atoi(value);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.show_first_frame_nosync", value, "0");
+    prop_show_first_frame_nosync = atoi(value);
 	
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.softfit", value, "1");
@@ -540,6 +612,13 @@ int CTsPlayer::VideoHide(void)
 void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
 {
     vPara=*pVideoPara;
+#ifdef SH_TELCOM_SUPPORT
+    int index = vPara.vFmt + 1;
+    int map_size = sizeof(VFormatMap)/sizeof(vformat_t);
+    if(index < map_size) {
+        vPara.vFmt = VFormatMap[index];
+    }
+#endif
     LOGI("InitVideo vPara->pid: %d, vPara->vFmt: %d\n", vPara.pid, vPara.vFmt);
 }
 

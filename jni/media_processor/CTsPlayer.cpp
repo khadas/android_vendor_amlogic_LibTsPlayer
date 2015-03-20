@@ -809,9 +809,10 @@ bool CTsPlayer::StartPlay()
     property_get("iptv.hasvideo", vaule, "1");
     hasvideo = atoi(vaule);
 
-    if(pcodec->audio_type == AFORMAT_AAC_LATM) {
+
+    /*if(pcodec->audio_type == AFORMAT_AAC_LATM) {
         pcodec->audio_type = AFORMAT_EAC3;
-    }
+    }*/
 
     if(IS_AUIDO_NEED_EXT_INFO(pcodec->audio_type)) {
         pcodec->audio_info.valid = 1;

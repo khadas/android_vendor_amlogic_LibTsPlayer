@@ -1060,7 +1060,11 @@ bool CTsPlayer::Fast()
         return false;
 
     LOGI("Fast: codec_set_mode: %d\n", pcodec->handle);
-    ret = codec_set_mode(pcodec, TRICKMODE_I);
+    amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0); 
+    if(pcodec->video_type == VFORMAT_HEVC) 
+        ret = codec_set_mode(pcodec, TRICKMODE_I_HEVC); 
+    else 
+        ret = codec_set_mode(pcodec, TRICKMODE_I);
     return !ret;
 }
 
@@ -1075,6 +1079,7 @@ bool CTsPlayer::StopFast()
     Stop();
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
+    amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
     ret = StartPlay();
     if(!ret)
         return false;

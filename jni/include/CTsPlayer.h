@@ -46,6 +46,7 @@ typedef struct{
 
 #define TRICKMODE_NONE       0x00
 #define TRICKMODE_I          0x01
+#define TRICKMODE_I_HEVC     0x07
 #define TRICKMODE_FFFB       0x02
 #define MAX_AUDIO_PARAM_SIZE 10
 #define MAX_SUBTITLE_PARAM_SIZE 10

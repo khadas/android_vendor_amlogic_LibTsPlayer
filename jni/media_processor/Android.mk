@@ -23,7 +23,8 @@ LOCAL_C_INCLUDES := \
 	$(LIBPLAYER_PATH)/amadec/include \
 	$(LIBPLAYER_PATH)/amavutils/include \
 	$(JNI_H_INCLUDE)/ \
-	$(LOCAL_PATH)/../include
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../../../../frameworks/av/
 #LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 
 LOCAL_STATIC_LIBRARIES := libamcodec libamadec 
 

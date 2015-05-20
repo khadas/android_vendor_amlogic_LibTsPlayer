@@ -10,6 +10,11 @@
 #include <sys/times.h>
 #include <time.h>
 
+#include <binder/Parcel.h>
+#include <binder/ProcessState.h>
+#include <binder/IServiceManager.h>
+#include <media/IMediaPlayerService.h>
+
 using namespace android;
 
 #define M_LIVE	1
@@ -478,6 +483,13 @@ CTsPlayer::CTsPlayer()
     m_nMode = M_LIVE;
     LunchIptv(m_isSoftFit);
     m_fp = NULL;
+    sp<IBinder> binder =defaultServiceManager()->getService(String16("media.player"));
+    sp<IMediaPlayerService> service = interface_cast<IMediaPlayerService>(binder);
+    if(service.get() != NULL){
+			  LOGI("CTsPlayer stopPlayerIfNeed \n");
+			  service->stopPlayerIfNeed();
+		  	LOGI("CTsPlayer stopPlayerIfNeed ==end\n");
+    }
 }
 
 CTsPlayer::~CTsPlayer()
@@ -884,7 +896,6 @@ bool CTsPlayer::StartPlay()
             m_fp = fopen(tmpfilename, "wb+");
         }
     }
-
     /*other setting*/
     lp_lock(&mutex);
 

@@ -1442,6 +1442,7 @@ void CTsPlayer::checkBuffLevel()
 
 void CTsPlayer::checkBuffstate()
 {
+    char filter_mode[PROPERTY_VALUE_MAX] = {0};
     struct vdec_status video_buf;
     if(m_bIsPlay) {
         codec_get_vdec_state(pcodec, &video_buf);
@@ -1452,8 +1453,13 @@ void CTsPlayer::checkBuffstate()
 	        //change format  h264--> h264 4K
                 Stop();
                 usleep(500*1000);
-                vPara.vFmt = VFORMAT_H264_4K2K;
-                StartPlay();
+                if(property_get("ro.platform.filter.modes",filter_mode,NULL) > 0){
+                    if(strncmp(filter_mode, "4k2k", 4))
+                    {
+                        vPara.vFmt = VFORMAT_H264_4K2K;
+                        StartPlay();
+                    }
+                }
             }
        }
     }	

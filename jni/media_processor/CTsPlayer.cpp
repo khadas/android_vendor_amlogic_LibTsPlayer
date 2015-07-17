@@ -1054,6 +1054,21 @@ bool CTsPlayer::Resume()
     return true;
 }
 
+#define AML_VFM_MAP "/sys/class/vfm/map"
+static int add_di()
+{
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr deinterlace amvideo");
+    return 0;
+}
+
+static int remove_di()
+{
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr amvideo");
+    return 0;
+}
+
 bool CTsPlayer::Fast()
 {
     int ret;
@@ -1064,6 +1079,10 @@ bool CTsPlayer::Fast()
         return false;
     Stop();
     m_bFast = true;
+
+    // remove di from vfm path
+    remove_di();
+
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
     ret = StartPlay();
@@ -1125,6 +1144,7 @@ bool CTsPlayer::Stop()
         pcodec->handle = -1;
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
+        add_di();
         lp_unlock(&mutex);
     } else {
         LOGI("m_bIsPlay is false");

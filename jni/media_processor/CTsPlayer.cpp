@@ -944,6 +944,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     if(!m_bIsPlay)
         return -1;
 
+    checkBuffstate();
     codec_get_abuf_state(pcodec, &audio_buf);
     codec_get_vbuf_state(pcodec, &video_buf);
     if(audio_buf.size != 0)
@@ -1476,12 +1477,10 @@ void CTsPlayer::checkBuffstate()
 	        //change format  h264--> h264 4K
                 Stop();
                 usleep(500*1000);
-                if(property_get("ro.platform.filter.modes",filter_mode,NULL) > 0){
-                    if(strncmp(filter_mode, "4k2k", 4))
-                    {
+                if(property_get("ro.platform.filter.modes",filter_mode,NULL) ==  0){
                         vPara.vFmt = VFORMAT_H264_4K2K;
                         StartPlay();
-                    }
+                        LOGI("start play vh264_4k2k");
                 }
             }
        }
@@ -1538,7 +1537,6 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     do {
         usleep(50 * 1000);
         //sleep(2);
-        tsplayer->checkBuffstate();
         tsplayer->checkBuffLevel();
         checkcount++;
         if(checkcount >= 40) {

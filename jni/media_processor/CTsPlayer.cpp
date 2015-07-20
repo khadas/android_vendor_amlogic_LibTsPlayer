@@ -78,7 +78,7 @@ char old_free_scale[64] = {0};
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN  , "TsPlayer", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
 
-#ifdef SH_TELCOM_SUPPORT
+#ifdef TELECOM_VFORMAT_SUPPORT
 /*
 typedef enum {
     VIDEO_DEC_FORMAT_UNKNOW,

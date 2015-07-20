@@ -623,7 +623,6 @@ int CTsPlayer::VideoHide(void)
 
 void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
 {
-    char value[PROPERTY_VALUE_MAX];
     vPara=*pVideoPara;
 #ifdef SH_TELCOM_SUPPORT
     int index = vPara.vFmt + 1;
@@ -632,10 +631,6 @@ void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
         vPara.vFmt = VFormatMap[index];
     }
 #endif
-    if(property_get("iptv.unicom.sy", value, NULL) > 0 && atoi(value) == 1){
-        if((int)vPara.vFmt == 8) vPara.vFmt = (vformat_t)11;
-        LOGI("change format 8 to 11 only for SY unicom");
-    }
     LOGI("InitVideo vPara->pid: %d, vPara->vFmt: %d\n", vPara.pid, vPara.vFmt);
 }
 
@@ -929,11 +924,6 @@ bool CTsPlayer::StartPlay()
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     m_bWrFirstPkg = true;
     writecount = 0;
-
-    if(pcodec->has_video && pcodec->video_type == VFORMAT_HEVC) {
-		amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
-    }
-
     m_StartPlayTimePoint = av_gettime();
     LOGI("StartPlay: m_StartPlayTimePoint = %d\n", m_StartPlayTimePoint);
     return !ret;
@@ -951,7 +941,6 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     if(!m_bIsPlay)
         return -1;
 
-    checkBuffstate();
     codec_get_abuf_state(pcodec, &audio_buf);
     codec_get_vbuf_state(pcodec, &video_buf);
     if(audio_buf.size != 0)
@@ -1490,10 +1479,6 @@ void CTsPlayer::checkBuffstate()
                         vPara.vFmt = VFORMAT_H264_4K2K;
                         StartPlay();
                     }
-                }else{
-                    LOGI("change format h264 to h264_4k2k");
-                    vPara.vFmt = VFORMAT_H264_4K2K;
-                    StartPlay();
                 }
             }
        }
@@ -1550,7 +1535,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     do {
         usleep(50 * 1000);
         //sleep(2);
-        //tsplayer->checkBuffstate();
+        tsplayer->checkBuffstate();
         tsplayer->checkBuffLevel();
         checkcount++;
         if(checkcount >= 40) {

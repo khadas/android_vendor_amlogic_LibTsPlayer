@@ -924,6 +924,9 @@ bool CTsPlayer::StartPlay()
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     m_bWrFirstPkg = true;
     writecount = 0;
+    if(pcodec->has_video && pcodec->video_type == VFORMAT_HEVC) {
+       amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+    }
     m_StartPlayTimePoint = av_gettime();
     LOGI("StartPlay: m_StartPlayTimePoint = %d\n", m_StartPlayTimePoint);
     return !ret;

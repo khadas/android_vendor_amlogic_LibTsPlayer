@@ -624,7 +624,7 @@ int CTsPlayer::VideoHide(void)
 void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
 {
     vPara=*pVideoPara;
-#ifdef SH_TELCOM_SUPPORT
+#ifdef TELECOM_VFORMAT_SUPPORT
     int index = vPara.vFmt + 1;
     int map_size = sizeof(VFormatMap)/sizeof(vformat_t);
     if(index < map_size) {

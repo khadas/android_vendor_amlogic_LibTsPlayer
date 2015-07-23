@@ -1548,3 +1548,29 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     LOGV("threadCheckAbend end\n");
     return NULL;
 }
+
+int CTsPlayer::GetRealTimeFrameRate()
+{
+    int nRTfps = 0;
+
+    nRTfps = amsysfs_get_sysfs_int("/sys/class/video/current_fps");
+    if (nRTfps > 0)
+        LOGI( "realtime fps:%d\n", nRTfps);
+
+    return nRTfps;
+}
+
+int CTsPlayer::GetVideoFrameRate()
+{
+    int nVideoFrameRate = 0;
+    struct vdec_status video_status;
+
+    if (NULL != pcodec)
+    {
+        codec_get_vdec_state(pcodec, &video_status);
+        nVideoFrameRate = video_status.fps;
+        LOGI("video frame rate:%d\n", nVideoFrameRate);
+    }
+
+    return nVideoFrameRate;
+}

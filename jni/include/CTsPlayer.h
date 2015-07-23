@@ -162,6 +162,8 @@ public:
      virtual long GetCurrentPlayTime() = 0;
      virtual void leaveChannel() = 0;
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
+    virtual int GetRealTimeFrameRate() = 0;
+    virtual int GetVideoFrameRate() = 0;
 };
 
 class CTsPlayer : public ITsPlayer
@@ -229,6 +231,8 @@ public:
     
     virtual void leaveChannel() ;
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
+    virtual int GetRealTimeFrameRate();
+    virtual int GetVideoFrameRate();
 	
 protected:
 	int		m_bLeaveChannel;

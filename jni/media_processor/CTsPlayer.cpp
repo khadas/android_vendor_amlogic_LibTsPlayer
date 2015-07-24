@@ -990,7 +990,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     for(int retry_count=0; retry_count<10; retry_count++) {
         ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
         if((ret < 0) || (ret > nSize)) {
-            if(ret == EAGAIN) {
+            if(ret < 0 && (errno == EAGAIN)) {
                 usleep(10);
                 LOGI("WriteData: codec_write return EAGAIN!\n");
                 continue;

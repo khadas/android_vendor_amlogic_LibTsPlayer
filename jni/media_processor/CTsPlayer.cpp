@@ -523,7 +523,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     int fd_axis, fd_mode;
     int x2 = 0, y2 = 0, width2 = 0, height2 = 0;
     int ret = 0;
-    const char *path_mode = "/sys/class/video/screen_mode";
+    //const char *path_mode = "/sys/class/video/screen_mode";
     const char *path_axis = "/sys/class/video/axis";
     char bcmd[32];
     char buffer[15];
@@ -548,9 +548,9 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         y_b = y + mode_y;
         w_b = width + x_b - 1;
         h_b = height + y_b - 1;
-        if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
+        /*if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
             amsysfs_set_sysfs_str(path_mode, "1");
-        }
+        }*/
         sprintf(bcmd, "%d %d %d %d", x_b, y_b, w_b, h_b);
         ret = amsysfs_set_sysfs_str(path_axis, bcmd);
         LOGI("setvideoaxis: %s\n", bcmd);
@@ -580,9 +580,9 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     LOGI("CTsPlayer::mode_w = %d, mode_h = %d, mw = %d, mh = %d \n",
             mode_w, mode_h, m_nEPGWidth, m_nEPGHeight);
 
-    if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
+    /*if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
         amsysfs_set_sysfs_str(path_mode, "1");
-    }
+    }*/
 
     sprintf(bcmd, "%d %d %d %d", new_videowindow_certre_x-int(new_videowindow_width/2)-1,
             new_videowindow_certre_y-int(new_videowindow_height/2)-1,

@@ -794,6 +794,60 @@ int TsplayerGetAFilterFormat(const char *prop)
     return filter_fmt;
 }
 
+/* 
+ * player_startsync_set
+ *
+ * reset start sync using prop media.amplayer.startsync.mode
+ * 0 none start sync
+ * 1 slow sync repeate mode
+ * 2 drop pcm mode
+ *
+ * */
+
+int player_startsync_set(int mode)
+{
+    const char * startsync_mode = "/sys/class/tsync/startsync_mode";
+    const char * droppcm_prop = "sys.amplayer.drop_pcm"; // default enable
+    const char * slowsync_path = "/sys/class/tsync/slowsync_enable";
+    const char * slowsync_repeate_path = "/sys/class/video/slowsync_repeat_enable";
+   
+/*
+    char value[PROPERTY_VALUE_MAX];
+    int mode = get_sysfs_int(startsync_mode);
+    int ret = property_get(startsync_prop, value, NULL);
+    if (ret <= 0) {
+        log_print("start sync mode prop not setting ,using default none \n");
+    }
+    else
+        mode = atoi(value);
+*/
+    LOGI("start sync mode desp: 0 -none 1-slowsync repeate 2-droppcm \n"); 
+    LOGI("start sync mode = %d \n",mode); 
+    
+    if(mode == 0) // none case
+    {
+        set_sysfs_int(slowsync_path,0); 
+        //property_set(droppcm_prop, "0");
+        set_sysfs_int(slowsync_repeate_path,0); 
+    }
+    
+    if(mode == 1) // slow sync repeat mode
+    {
+        set_sysfs_int(slowsync_path,1); 
+        //property_set(droppcm_prop, "0");
+        set_sysfs_int(slowsync_repeate_path,1); 
+    }
+    
+    if(mode == 2) // drop pcm mode
+    {
+        set_sysfs_int(slowsync_path,0); 
+        //property_set(droppcm_prop, "1");
+        set_sysfs_int(slowsync_repeate_path,0); 
+    }
+
+    return 0;
+}
+
 bool CTsPlayer::StartPlay()
 {
     int ret;
@@ -896,6 +950,11 @@ bool CTsPlayer::StartPlay()
             m_fp = fopen(tmpfilename, "wb+");
         }
     }
+
+    // enable avsync only when av both exists, not including trick
+    if(hasaudio && hasvideo)
+        player_startsync_set(2);
+
     /*other setting*/
     lp_lock(&mutex);
 

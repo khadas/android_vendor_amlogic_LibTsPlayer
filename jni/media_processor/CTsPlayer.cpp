@@ -213,70 +213,70 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
 
     switch(output_mode) {
     case OUTPUT_MODE_480I:
-        property_get("ubootenv.var.480ioutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.480ioutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.480ioutputwidth", vaxis_width_str, "720");
-        property_get("ubootenv.var.480ioutputheight", vaxis_height_str, "480");
+        property_get("ubootenv.var.480i_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.480i_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.480i_w", vaxis_width_str, "720");
+        property_get("ubootenv.var.480i_h", vaxis_height_str, "480");
         break;
     case OUTPUT_MODE_480P:
-        property_get("ubootenv.var.480poutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.480poutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.480poutputwidth", vaxis_width_str, "720");
-        property_get("ubootenv.var.480poutputheight", vaxis_height_str, "480");
+        property_get("ubootenv.var.480_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.480_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.480_w", vaxis_width_str, "720");
+        property_get("ubootenv.var.480_h", vaxis_height_str, "480");
         break;
     case OUTPUT_MODE_576I:
-        property_get("ubootenv.var.576ioutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.576ioutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.576ioutputwidth", vaxis_width_str, "720");
-        property_get("ubootenv.var.576ioutputheight", vaxis_height_str, "576");
+        property_get("ubootenv.var.576i_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.576i_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.576i_w", vaxis_width_str, "720");
+        property_get("ubootenv.var.576i_h", vaxis_height_str, "576");
         break;
     case OUTPUT_MODE_576P:
-        property_get("ubootenv.var.576poutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.576poutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.576poutputwidth", vaxis_width_str, "720");
-        property_get("ubootenv.var.576poutputheight", vaxis_height_str, "576");
+        property_get("ubootenv.var.576_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.576_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.576_w", vaxis_width_str, "720");
+        property_get("ubootenv.var.576_h", vaxis_height_str, "576");
         break;
     case OUTPUT_MODE_720P:
-        property_get("ubootenv.var.720poutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.720poutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.720poutputwidth", vaxis_width_str, "1280");
-        property_get("ubootenv.var.720poutputheight", vaxis_height_str, "720");
+        property_get("ubootenv.var.720_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.720_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.720_w", vaxis_width_str, "1280");
+        property_get("ubootenv.var.720_h", vaxis_height_str, "720");
         break;
     case OUTPUT_MODE_1080I:
-        property_get("ubootenv.var.1080ioutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.1080ioutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.1080ioutputwidth", vaxis_width_str, "1920");
-        property_get("ubootenv.var.1080ioutputheight", vaxis_height_str, "1080");
+        property_get("ubootenv.var.1080i_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.1080i_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.1080i_w", vaxis_width_str, "1920");
+        property_get("ubootenv.var.1080i_h", vaxis_height_str, "1080");
         break;
     case OUTPUT_MODE_1080P:
-        property_get("ubootenv.var.1080poutputx", vaxis_newx_str, "0");
-        property_get("ubootenv.var.1080poutputy", vaxis_newy_str, "0");
-        property_get("ubootenv.var.1080poutputwidth", vaxis_width_str, "1920");
-        property_get("ubootenv.var.1080poutputheight", vaxis_height_str, "1080");
+        property_get("ubootenv.var.1080_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.1080_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.1080_w", vaxis_width_str, "1920");
+        property_get("ubootenv.var.1080_h", vaxis_height_str, "1080");
         break;
     case OUTPUT_MODE_4K2K24HZ:
         property_get("ubootenv.var.4k2k24hz_x", vaxis_newx_str, "0");
         property_get("ubootenv.var.4k2k24hz_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2k24hz_width", vaxis_width_str, "3840");
-        property_get("ubootenv.var.4k2k24hz_height", vaxis_height_str, "2160");
+        property_get("ubootenv.var.4k2k24hz_w", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k24hz_h", vaxis_height_str, "2160");
         break;
     case OUTPUT_MODE_4K2K25HZ:
         property_get("ubootenv.var.4k2k25hz_x", vaxis_newx_str, "0");
         property_get("ubootenv.var.4k2k25hz_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2k25hz_width", vaxis_width_str, "3840");
-        property_get("ubootenv.var.4k2k25hz_height", vaxis_height_str, "2160");
+        property_get("ubootenv.var.4k2k25hz_w", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k25hz_h", vaxis_height_str, "2160");
         break;
     case OUTPUT_MODE_4K2K30HZ:
         property_get("ubootenv.var.4k2k30hz_x", vaxis_newx_str, "0");
         property_get("ubootenv.var.4k2k30hz_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2k30hz_width", vaxis_width_str, "3840");
-        property_get("ubootenv.var.4k2k30hz_height", vaxis_height_str, "2160");
+        property_get("ubootenv.var.4k2k30hz_w", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k30hz_h", vaxis_height_str, "2160");
         break;
     case OUTPUT_MODE_4K2KSMPTE:
         property_get("ubootenv.var.4k2ksmpte_x", vaxis_newx_str, "0");
         property_get("ubootenv.var.4k2ksmpte_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2ksmpte_width", vaxis_width_str, "4096");
-        property_get("ubootenv.var.4k2ksmpte_height", vaxis_height_str, "2160");
+        property_get("ubootenv.var.4k2ksmpte_w", vaxis_width_str, "4096");
+        property_get("ubootenv.var.4k2ksmpte_h", vaxis_height_str, "2160");
         break;
     default:
     	  *x = 0;

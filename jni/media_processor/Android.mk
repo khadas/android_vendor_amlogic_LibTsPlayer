@@ -20,15 +20,17 @@ LOCAL_C_INCLUDES := \
 	$(LIBPLAYER_PATH)/amplayer/control/include \
 	$(LIBPLAYER_PATH)/amffmpeg \
 	$(LIBPLAYER_PATH)/amcodec/include \
+	$(LIBPLAYER_PATH)/amcodec/amsub_ctl \
 	$(LIBPLAYER_PATH)/amadec/include \
 	$(LIBPLAYER_PATH)/amavutils/include \
+	$(LIBPLAYER_PATH)/amsubdec \
 	$(JNI_H_INCLUDE)/ \
 	$(LOCAL_PATH)/../include \
 	$(LOCAL_PATH)/../../../../../frameworks/av/
 #LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 
 LOCAL_STATIC_LIBRARIES := libamcodec libamadec 
 
-LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils
+LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils libamsubdec
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
 LOCAL_SHARED_LIBRARIES +=libgui
 

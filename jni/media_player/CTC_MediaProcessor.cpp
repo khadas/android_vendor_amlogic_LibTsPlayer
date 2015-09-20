@@ -17,7 +17,6 @@
 #include "Proxy_MediaProcessor.h"
 using namespace android;
 
-
 #include "android/log.h"
 #include "jni.h"
 #include "stdio.h"
@@ -35,29 +34,23 @@ static FILE * g_TestResultLogHandle = NULL;
 
 static FILE * GetTestResultLogHandle()
 {
-	  if(g_TestResultLogHandle == NULL)
-	  {
-	    g_TestResultLogHandle = fopen("/data/data/com.ctc/mediaTestSuite.txt", "wb");
-	    if(g_TestResultLogHandle == NULL)
-		  {
-		    LOGE("create file :error");
-		    return NULL;
-		  }
-		  else
-		  {
-		  		char  writebuf[2000];
-	        unsigned int buflen = 2000;
-	        memset(writebuf,0,buflen);
-	        snprintf(writebuf,buflen,"%s\r\n%s\r\n","ctc_player test result:","*********************"); 
-	        writebuf[buflen -1] = 0;
-	        fwrite(writebuf,1,strlen(writebuf),g_TestResultLogHandle);
-	        fflush(g_TestResultLogHandle);
-		  }
-	   }
-	
+	if(g_TestResultLogHandle == NULL) {
+		g_TestResultLogHandle = fopen("/data/data/com.ctc/mediaTestSuite.txt", "wb");
+		if(g_TestResultLogHandle == NULL) {
+			LOGE("create file :error");
+			return NULL;
+		} else {
+			char writebuf[2000];
+			unsigned int buflen = 2000;
+			memset(writebuf,0,buflen);
+			snprintf(writebuf,buflen,"%s\r\n%s\r\n","ctc_player test result:","*********************"); 
+			writebuf[buflen -1] = 0;
+			fwrite(writebuf,1,strlen(writebuf),g_TestResultLogHandle);
+			fflush(g_TestResultLogHandle);
+		}
+	}
 
 	return g_TestResultLogHandle;
-	
 }
 
 #ifdef __cplusplus
@@ -68,13 +61,11 @@ Proxy_MediaProcessor* proxy_mediaProcessor = NULL;
 FILE *fp;
 int isPause = 0;
 
-//将test结果输出到文件
 void Java_com_ctc_MediaProcessorDemoActivity_nativeWriteFile(JNIEnv* env, jobject thiz, jstring Function, jstring Return, jstring Result)
 {
 	FILE *result_fp = GetTestResultLogHandle();
 	
-	if(result_fp == NULL)
-	{
+	if(result_fp == NULL) {
 		LOGE("create file :error");
 		return;
 	}
@@ -92,32 +83,23 @@ void Java_com_ctc_MediaProcessorDemoActivity_nativeWriteFile(JNIEnv* env, jobjec
 	return;
 }
 
-//从java层获取surface
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeCreateSurface(JNIEnv* env, jobject thiz, jobject pSurface, int w, int h)
 {
-	
 	LOGI("get the surface");
-	//sp<Surface> surface(Surface_getSurface(env, pSurface));	//This is for ICS
 	sp<Surface> surface(android_view_Surface_getSurface(env, pSurface));
-	
-//mySurface = getNativeSurface(env, pSurface);
-//ctc_MediaControl->SetSurface(mySurface);
 	LOGI("success: get surface");
 	proxy_mediaProcessor->Proxy_SetSurface(surface.get());
 	LOGI("success: set surface ");
 	proxy_mediaProcessor->Proxy_SetEPGSize(w, h);
-	
-		
+
 	return 0;
 } 
 
-//设置EPG大小
 void Java_com_ctc_MediaProcessorDemoActivity_nativeSetEPGSize(JNIEnv* env, jobject thiz, int w, int h)
 {
 	proxy_mediaProcessor->Proxy_SetEPGSize(w, h);
 	return;
 }
-
 
 static void signal_handler(int signum)
 {   
@@ -129,73 +111,64 @@ static void signal_handler(int signum)
 
 int _media_info_dump(media_info_t* minfo)
 {
-    int i = 0;
-    ALOGI("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    ALOGI("======||file size:%lld\n",minfo->stream_info.file_size);
-    ALOGI("======||file type:%d\n",minfo->stream_info.type); 
-    ALOGI("======||has internal subtitle?:%s\n",minfo->stream_info.has_sub>0?"YES!":"NO!");
-    ALOGI("======||internal subtile counts:%d\n",minfo->stream_info.total_sub_num);
-    ALOGI("======||has video track?:%s\n",minfo->stream_info.has_video>0?"YES!":"NO!");
-    ALOGI("======||has audio track?:%s\n",minfo->stream_info.has_audio>0?"YES!":"NO!");    
-    ALOGI("======||duration:%d\n",minfo->stream_info.duration);
-    if(minfo->stream_info.has_video &&minfo->stream_info.total_video_num>0)
-    {        
-        ALOGI("======||video counts:%d\n",minfo->stream_info.total_video_num);
-        ALOGI("======||video width:%d\n",minfo->video_info[0]->width);
-        ALOGI("======||video height:%d\n",minfo->video_info[0]->height);
-        ALOGI("======||video bitrate:%d\n",minfo->video_info[0]->bit_rate);
-        ALOGI("======||video format:%d\n",minfo->video_info[0]->format);
+	int i = 0;
+	ALOGI("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+	ALOGI("======||file size:%lld\n",minfo->stream_info.file_size);
+	ALOGI("======||file type:%d\n",minfo->stream_info.type); 
+	ALOGI("======||has internal subtitle?:%s\n",minfo->stream_info.has_sub>0?"YES!":"NO!");
+	ALOGI("======||internal subtile counts:%d\n",minfo->stream_info.total_sub_num);
+	ALOGI("======||has video track?:%s\n",minfo->stream_info.has_video>0?"YES!":"NO!");
+	ALOGI("======||has audio track?:%s\n",minfo->stream_info.has_audio>0?"YES!":"NO!");
+	ALOGI("======||duration:%d\n",minfo->stream_info.duration);
+	if(minfo->stream_info.has_video &&minfo->stream_info.total_video_num > 0) {
+		ALOGI("======||video counts:%d\n",minfo->stream_info.total_video_num);
+		ALOGI("======||video width:%d\n",minfo->video_info[0]->width);
+		ALOGI("======||video height:%d\n",minfo->video_info[0]->height);
+		ALOGI("======||video bitrate:%d\n",minfo->video_info[0]->bit_rate);
+		ALOGI("======||video format:%d\n",minfo->video_info[0]->format);
+	}
 
-    }
-    if(minfo->stream_info.has_audio && minfo->stream_info.total_audio_num> 0)
-    {
-        ALOGI("======||audio counts:%d\n",minfo->stream_info.total_audio_num);
-        
-        if(NULL !=minfo->audio_info[0]->audio_tag)
-        {
-            ALOGI("======||track title:%s",minfo->audio_info[0]->audio_tag->title!=NULL?minfo->audio_info[0]->audio_tag->title:"unknow");   
-            ALOGI("\n======||track album:%s",minfo->audio_info[0]->audio_tag->album!=NULL?minfo->audio_info[0]->audio_tag->album:"unknow"); 
-            ALOGI("\n======||track author:%s\n",minfo->audio_info[0]->audio_tag->author!=NULL?minfo->audio_info[0]->audio_tag->author:"unknow");
-            ALOGI("\n======||track year:%s\n",minfo->audio_info[0]->audio_tag->year!=NULL?minfo->audio_info[0]->audio_tag->year:"unknow");
-            ALOGI("\n======||track comment:%s\n",minfo->audio_info[0]->audio_tag->comment!=NULL?minfo->audio_info[0]->audio_tag->comment:"unknow"); 
-            ALOGI("\n======||track genre:%s\n",minfo->audio_info[0]->audio_tag->genre!=NULL?minfo->audio_info[0]->audio_tag->genre:"unknow");
-            ALOGI("\n======||track copyright:%s\n",minfo->audio_info[0]->audio_tag->copyright!=NULL?minfo->audio_info[0]->audio_tag->copyright:"unknow");  
-            ALOGI("\n======||track track:%d\n",minfo->audio_info[0]->audio_tag->track);  
-        }
-            
+	if(minfo->stream_info.has_audio && minfo->stream_info.total_audio_num> 0) {
+		ALOGI("======||audio counts:%d\n",minfo->stream_info.total_audio_num);
+		if(NULL !=minfo->audio_info[0]->audio_tag) {
+			ALOGI("======||track title:%s",minfo->audio_info[0]->audio_tag->title!=NULL?minfo->audio_info[0]->audio_tag->title:"unknow");   
+			ALOGI("\n======||track album:%s",minfo->audio_info[0]->audio_tag->album!=NULL?minfo->audio_info[0]->audio_tag->album:"unknow"); 
+			ALOGI("\n======||track author:%s\n",minfo->audio_info[0]->audio_tag->author!=NULL?minfo->audio_info[0]->audio_tag->author:"unknow");
+			ALOGI("\n======||track year:%s\n",minfo->audio_info[0]->audio_tag->year!=NULL?minfo->audio_info[0]->audio_tag->year:"unknow");
+			ALOGI("\n======||track comment:%s\n",minfo->audio_info[0]->audio_tag->comment!=NULL?minfo->audio_info[0]->audio_tag->comment:"unknow"); 
+			ALOGI("\n======||track genre:%s\n",minfo->audio_info[0]->audio_tag->genre!=NULL?minfo->audio_info[0]->audio_tag->genre:"unknow");
+			ALOGI("\n======||track copyright:%s\n",minfo->audio_info[0]->audio_tag->copyright!=NULL?minfo->audio_info[0]->audio_tag->copyright:"unknow");  
+			ALOGI("\n======||track track:%d\n",minfo->audio_info[0]->audio_tag->track);  
+		}
 
-        
-        for(i = 0;i<minfo->stream_info.total_audio_num;i++)
-        {
-            ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-            ALOGI("======||%d 'st audio track codec type:%d\n",i,minfo->audio_info[i]->aformat);
-            ALOGI("======||%d 'st audio track audio_channel:%d\n",i,minfo->audio_info[i]->channel);
-            ALOGI("======||%d 'st audio track bit_rate:%d\n",i,minfo->audio_info[i]->bit_rate);
-            ALOGI("======||%d 'st audio track audio_samplerate:%d\n",i,minfo->audio_info[i]->sample_rate);
-            ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-            
-        }
-        
-    }
-    if(minfo->stream_info.has_sub &&minfo->stream_info.total_sub_num>0){
-        for(i = 0;i<minfo->stream_info.total_sub_num;i++)
-        {
-            if(0 == minfo->sub_info[i]->internal_external){
-                ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-                ALOGI("======||%d 'st internal subtitle pid:%d\n",i,minfo->sub_info[i]->id);   
-                ALOGI("======||%d 'st internal subtitle language:%s\n",i,minfo->sub_info[i]->sub_language?minfo->sub_info[i]->sub_language:"unknow"); 
-                ALOGI("======||%d 'st internal subtitle width:%d\n",i,minfo->sub_info[i]->width); 
-                ALOGI("======||%d 'st internal subtitle height:%d\n",i,minfo->sub_info[i]->height); 
-                ALOGI("======||%d 'st internal subtitle resolution:%d\n",i,minfo->sub_info[i]->resolution); 
-                ALOGI("======||%d 'st internal subtitle subtitle size:%lld\n",i,minfo->sub_info[i]->subtitle_size); 
-                ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");       
-            }
-        }
-    }
-    ALOGI("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-    return 0;
+		for(i = 0;i<minfo->stream_info.total_audio_num;i++) {
+			ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+			ALOGI("======||%d 'st audio track codec type:%d\n",i,minfo->audio_info[i]->aformat);
+			ALOGI("======||%d 'st audio track audio_channel:%d\n",i,minfo->audio_info[i]->channel);
+			ALOGI("======||%d 'st audio track bit_rate:%d\n",i,minfo->audio_info[i]->bit_rate);
+			ALOGI("======||%d 'st audio track audio_samplerate:%d\n",i,minfo->audio_info[i]->sample_rate);
+			ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+		}
+	}
+
+	if(minfo->stream_info.has_sub &&minfo->stream_info.total_sub_num>0){
+		for(i = 0;i<minfo->stream_info.total_sub_num;i++) {
+			if(0 == minfo->sub_info[i]->internal_external){
+				ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+				ALOGI("======||%d 'st internal subtitle pid:%d\n",i,minfo->sub_info[i]->id);
+				ALOGI("======||%d 'st internal subtitle language:%s\n",i,minfo->sub_info[i]->sub_language?minfo->sub_info[i]->sub_language:"unknow");
+				ALOGI("======||%d 'st internal subtitle width:%d\n",i,minfo->sub_info[i]->width); 
+				ALOGI("======||%d 'st internal subtitle height:%d\n",i,minfo->sub_info[i]->height); 
+				ALOGI("======||%d 'st internal subtitle resolution:%d\n",i,minfo->sub_info[i]->resolution); 
+				ALOGI("======||%d 'st internal subtitle subtitle size:%lld\n",i,minfo->sub_info[i]->subtitle_size); 
+				ALOGI("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+			}
+		}
+	}
+	ALOGI("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+	return 0;
 }
-//根据音视频参数初始化播放器
+
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thiz, jstring url)
 {
 	VIDEO_PARA_T  videoPara={0};
@@ -217,30 +190,26 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	pCtrl->hassub = 1;  // enable subtitle
 	pCtrl->t_pos = -1;  // start position, if live streaming, need set to -1
 	pCtrl->need_start = 1; // if 0,you can omit player_start_play API.just play video/audio immediately. if 1,need call "player_start_play" API;
-	pid=player_start(pCtrl,0);
-	if(pid<0)
-	{
+	pid = player_start(pCtrl,0);
+	if(pid < 0) {
 	  ALOGI("player start failed!error=%d",pid);
 	  goto fail;
 	}
+
 	signal(SIGSEGV, signal_handler);
-	while(!PLAYER_THREAD_IS_STOPPED(player_get_state(pid))){
-	  if(player_get_state(pid) >= PLAYER_INITOK) {
+	while(!PLAYER_THREAD_IS_STOPPED(player_get_state(pid))) {
+		if(player_get_state(pid) >= PLAYER_INITOK) {
 	    int ret = player_get_media_info(pid,&minfo);
 	    int i;
-	    if(ret==0){
+	    if(ret == 0) {
 	      ALOGI("player_get_media_info success pid=%d ",pid);
 	      _media_info_dump(&minfo); 
-	      if(minfo.stream_info.has_video &&minfo.stream_info.total_video_num>0){
+	      if(minfo.stream_info.has_video &&minfo.stream_info.total_video_num > 0) {
 	        videoPara.pid=minfo.video_info[0]->id;
 	        videoPara.vFmt=minfo.video_info[0]->format;
 	        ALOGI("player_get_media_info get video pid  %d  ",videoPara.pid);
-	        //if(videoPara.vFmt!=VFORMAT_H264){
-	        //ALOGI("player_get_media_info failed vFmt %d !=VFORMAT_H264 ",videoPara.vFmt);
-	        //goto fail;
-	        //}
 	      }
-	      if(minfo.stream_info.has_audio && minfo.stream_info.total_audio_num> 0){
+	      if(minfo.stream_info.has_audio && minfo.stream_info.total_audio_num > 0) {
 	        for(i = 0;i<minfo.stream_info.total_audio_num;i++){
 	          audioPara[i].pid=minfo.audio_info[i]->id; 
 	          audioPara[i].nChannels = minfo.audio_info[i]->channel;
@@ -252,32 +221,31 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	          ALOGI("player_get_media_info get audio aFmt  %d  ",audioPara[i].aFmt);
 	        }
 	      }       
-	      if(minfo.stream_info.has_sub &&minfo.stream_info.total_sub_num>0){
-	      for(i = 0;i<minfo.stream_info.total_sub_num;i++){
-	        if(0 == minfo.sub_info[i]->internal_external){          
-	        sParam[i].pid=minfo.sub_info[i]->id;   
-	        sParam[i].sub_type=minfo.sub_info[i]->sub_type;
-	        ALOGI("player_get_media_info get subtitle  pid  %d  sub_type %d",sParam[i].pid,sParam[i].sub_type); 
-	        }
-	      }
-	    }
-	    break;
-	  }
-	  else{
-	    ALOGI("player_get_media_info failed pid=%d ",pid);
-	    goto fail;
-	  }       
-	}
-	usleep(100*1000);
-	signal(SIGCHLD, SIG_IGN);        
-	signal(SIGTSTP, SIG_IGN);        
-	signal(SIGTTOU, SIG_IGN);        
-	signal(SIGTTIN, SIG_IGN);        
-	signal(SIGHUP, signal_handler);        
-	signal(SIGTERM, signal_handler);        
-	signal(SIGSEGV, signal_handler);        
-	signal(SIGINT, signal_handler);        
-	signal(SIGQUIT, signal_handler);
+	      if(minfo.stream_info.has_sub &&minfo.stream_info.total_sub_num > 0) {
+	      	for(i = 0; i<minfo.stream_info.total_sub_num; i++) {
+	        	if(0 == minfo.sub_info[i]->internal_external) {          
+	       	 		sParam[i].pid = minfo.sub_info[i]->id;   
+	        		sParam[i].sub_type = minfo.sub_info[i]->sub_type;
+	        		ALOGI("player_get_media_info get subtitle  pid  %d  sub_type %d",sParam[i].pid,sParam[i].sub_type); 
+	        	}
+	      	}
+	    	}
+	    	break;
+	  	} else {
+	    	ALOGI("player_get_media_info failed pid=%d ",pid);
+	    	goto fail;
+	  	}       
+		}
+		usleep(100*1000);
+		signal(SIGCHLD, SIG_IGN);        
+		signal(SIGTSTP, SIG_IGN);        
+		signal(SIGTTOU, SIG_IGN);        
+		signal(SIGTTIN, SIG_IGN);        
+		signal(SIGHUP, signal_handler);        
+		signal(SIGTERM, signal_handler);        
+		signal(SIGSEGV, signal_handler);        
+		signal(SIGINT, signal_handler);        
+		signal(SIGQUIT, signal_handler);
 	}
 	player_stop(pid);
 	player_exit(pid);
@@ -326,63 +294,53 @@ fail:
 	return -1;
 }
 
-//开始播放
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStartPlay(JNIEnv* env, jobject thiz)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_StartPlay();
 	return result;
 }
 
-//写入数据播放
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobject thiz, jstring url)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobject thiz, jstring url, jint bufsize)
 {
 	const char* URL = (*env).GetStringUTFChars(url, NULL);
-	
+
 	int rd_result = 0;
 	fp = fopen(URL, "rb+");
-	if (fp == NULL)
-		{
+	if (fp == NULL) {
 		LOGE("open file:error!");
 		return -1;
 	}
-	
-	while(true)
-	{
-	 {
-	 	Mutex::Autolock l(gMutexLock);
-		char* buffer = (char* )malloc(BUFF_SIZE);
-		rd_result = fread(buffer, BUFF_SIZE, 1, fp);
-		if (rd_result <= 0)	
-			{
-				LOGE("read the end of file");
-			//	proxy_mediaProcessor->~Proxy_MediaProcessor();
-				exit(1);
-			}
-		
-		int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) buffer, (unsigned int) BUFF_SIZE);
-		LOGE("the wd_result[%d]", wd_result);
-		
-	 }
-	 
-	 usleep(130*1000);
-	
-	 
+
+	while(true) {
+		Mutex::Autolock l(gMutexLock);
+		bufsize = bufsize*1024;
+		if(bufsize < BUFF_SIZE)
+			bufsize = BUFF_SIZE;
+		char* buffer = (char* )malloc(bufsize);
+		rd_result = fread(buffer, bufsize, 1, fp);
+		if (rd_result <= 0)	 {
+			LOGE("read the end of file");
+			exit(1);
+		}
+
+		while(bufsize > 0) {
+			int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) buffer, (unsigned int) bufsize);
+			LOGE("the wd_result[%d]", wd_result);
+			bufsize = bufsize - wd_result;
+			usleep(60*1000);
+		}
 	}
 	return 0;
-	
 }
 
- 
-//取得播放模式
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetPlayMode(JNIEnv* env, jobject thiz)
 {
 	int result = proxy_mediaProcessor->Proxy_GetPlayMode();
 	LOGE("step:1");
 
-  return (jint)result;
+	return (jint)result;
 }
 
-//设置播放区域的位置和播放区域的宽高
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeSetVideoWindow(JNIEnv* env, jobject thiz ,jint x, jint y, jint width, jint height)
 {
 	int result = proxy_mediaProcessor->Proxy_SetVideoWindow(x, y, width, height);
@@ -390,7 +348,6 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeSetVideoWindow(JNIEnv* env, j
 	return result;
 }
 
-//播放器暂停
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativePause(JNIEnv* env, jobject thiz)
 {
 	LOGE("NEXT:Pause");
@@ -398,7 +355,7 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativePause(JNIEnv* env, jobjec
 	jboolean result = proxy_mediaProcessor->Proxy_Pause();
 	return result;
 }
-//播放器继续播放
+
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeResume(JNIEnv* env, jobject thiz)
 {
 	LOGE("NEXT:Resume");
@@ -407,7 +364,6 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeResume(JNIEnv* env, jobje
 	return result;
 }
 
-//播放器选时
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSeek(JNIEnv* env, jobject thiz)
 {
 	LOGE("nativeSeek---0");
@@ -420,35 +376,30 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSeek(JNIEnv* env, jobject
 	return result;
 }
 
-//显示视频
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeVideoShow(JNIEnv* env, jobject thiz)
 {
 	jint result = proxy_mediaProcessor->Proxy_VideoShow();
 	return result;
 }
 
-//隐藏视频
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeVideoHide(JNIEnv* env, jobject thiz)
 {
 	jint result = proxy_mediaProcessor->Proxy_VideoHide();
 	return result;
 }
 
-//快进快退
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeFast(JNIEnv* env, jobject thiz)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_Fast();
 	return result;
 }
 
-//停止快进快退
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStopFast(JNIEnv* env, jobject thiz)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_StopFast();
 	return result;
 }
 
-//停止播放
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStop(JNIEnv* env, jobject thiz)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_Stop();
@@ -456,7 +407,6 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStop(JNIEnv* env, jobject
 	return result;
 }
 
-//获取音量
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetVolume(JNIEnv* env, jobject thiz)
 {
 	jint result = proxy_mediaProcessor->Proxy_GetVolume();
@@ -464,35 +414,30 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetVolume(JNIEnv* env, jobjec
 	return result;
 }
 
-//设定音量
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetVolume(JNIEnv* env, jobject thiz,jint volume)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_SetVolume(volume);
 	return result;
 }
 
-//设定视频显示比例
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetRatio(JNIEnv* env, jobject thiz,jint nRatio)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_SetRatio(nRatio);
 	return result;
 }
 
-//获取当前声道
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetAudioBalance(JNIEnv* env, jobject thiz)
 {
 	jint result = proxy_mediaProcessor->Proxy_GetAudioBalance();
 	return result;
 }
 
-//设置声道
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetAudioBalance(JNIEnv* env, jobject thiz, jint nAudioBalance)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_SetAudioBalance(nAudioBalance);
 	return result;
 }
 
-//获取视频分辨率
 void Java_com_ctc_MediaProcessorDemoActivity_nativeGetVideoPixels(JNIEnv* env, jobject thiz)
 {
 	int width;
@@ -503,7 +448,6 @@ void Java_com_ctc_MediaProcessorDemoActivity_nativeGetVideoPixels(JNIEnv* env, j
 	return;
 }
 
-//获取是否由软件拉伸，如果由硬件拉伸，返回false
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeIsSoftFit(JNIEnv* env, jobject thiz)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_IsSoftFit();

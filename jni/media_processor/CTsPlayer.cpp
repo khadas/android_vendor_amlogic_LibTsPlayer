@@ -1089,7 +1089,10 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 
     if(ret > 0) {
         if(m_fp != NULL) {
-            fwrite(pBuffer, 1, nSize, m_fp);
+            //fwrite(pBuffer, 1, nSize, m_fp);
+            fwrite(pBuffer, 1, ret, m_fp);
+            LOGI("ret[%d] nSize[%d] %d!\n", ret, nSize);
+
         }
         if(writecount >= MAX_WRITE_COUNT) {
             m_bWrFirstPkg = false;

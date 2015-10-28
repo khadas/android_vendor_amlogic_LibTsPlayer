@@ -326,8 +326,13 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 		while(bufsize > 0) {
 			int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) buffer, (unsigned int) bufsize);
 			LOGE("the wd_result[%d]", wd_result);
-			bufsize = bufsize - wd_result;
-			usleep(60*1000);
+			
+                        if(wd_result < 0)
+                        {
+                            usleep(60*1000);
+                            continue;
+                        }
+                        bufsize = bufsize - wd_result;
 		}
 	}
 	return 0;

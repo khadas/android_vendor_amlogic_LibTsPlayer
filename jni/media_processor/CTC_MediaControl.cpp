@@ -5,11 +5,19 @@
  */
 
 #include "CTC_MediaControl.h"
-
+#include "CTsOmxPlayer.h"
+#include <cutils/properties.h>
 // need single instance?
-CTC_MediaControl* GetMediaControl()
+ITsPlayer* GetMediaControl()
 {
-	return new CTC_MediaControl();
+    char value[PROPERTY_VALUE_MAX] = {0};
+    property_get("iptv.decoder.omx", value, "0");
+    int prop_use_omxdecoder = atoi(value);
+
+    if (prop_use_omxdecoder)
+        return new CTsOmxPlayer();
+    else
+        return new CTsPlayer();
 }
 
 int Get_MediaControlVersion()

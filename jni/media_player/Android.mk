@@ -7,7 +7,11 @@ LOCAL_MODULE    := libCTC_MediaProcessorjni
 LOCAL_SRC_FILES := CTC_MediaProcessor.cpp \
 				   Proxy_MediaProcessor.cpp 
 
+ifneq (,$(wildcard vendor/amlogic/frameworks/av/LibPlayer))
+    LIBPLAYER_PATH:=$(TOP)/vendor/amlogic/frameworks/av/LibPlayer
+else
 LIBPLAYER_PATH := $(TOP)/packages/amlogic/LibPlayer
+endif
 LOCAL_C_INCLUDES += \
 	$(ANDDROID_PLATFORM)/frameworks/native/include \
 	$(LIBPLAYER_PATH)/amplayer/player/include \

@@ -16,7 +16,6 @@
 //#include "Common.h"
 #include "android_runtime/AndroidRuntime.h"
 #include <gui/Surface.h> 
-#include <gui/ISurfaceTexture.h>
 #include "android_runtime/android_view_Surface.h"
 //#include "CTC_MediaProcessor.h"
 using namespace android;
@@ -24,7 +23,7 @@ using namespace android;
 class Proxy_MediaProcessor
 {
 	protected:
-		CTC_MediaControl * ctc_MediaControl;
+		ITsPlayer* ctc_MediaControl;
 	public:
 		Proxy_MediaProcessor();
 		~Proxy_MediaProcessor();

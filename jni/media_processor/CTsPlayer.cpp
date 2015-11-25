@@ -492,8 +492,14 @@ CTsPlayer::CTsPlayer()
     }
 }
 
+CTsPlayer::CTsPlayer(bool omx_player)
+{
+    mIsOmxPlayer = omx_player;
+}
 CTsPlayer::~CTsPlayer()
 {
+    if (mIsOmxPlayer)
+        return;
     m_StopThread = true;
     pthread_join(mThread, NULL);
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);

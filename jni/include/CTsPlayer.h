@@ -122,6 +122,7 @@ public:
 	virtual void InitVideo(PVIDEO_PARA_T pVideoPara)=0;
 	//初始化音频参数
 	virtual void InitAudio(PAUDIO_PARA_T pAudioPara)=0;
+	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
 	//开始播放
 	virtual bool StartPlay()=0;
 	//把ts流写入
@@ -170,6 +171,7 @@ class CTsPlayer : public ITsPlayer
 {
 public:
 	CTsPlayer();
+    CTsPlayer(bool omx_player);
 	virtual ~CTsPlayer();
 public:
 	//取得播放模式
@@ -233,6 +235,8 @@ public:
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
+    /*end add*/
+    bool mIsOmxPlayer;
 	
 protected:
 	int		m_bLeaveChannel;

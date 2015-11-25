@@ -3,7 +3,7 @@
  * @author    	zhouyj
  * @date      	2012/9/12
  * @version   	ver 1.0
- * @brief     	¶¨ÒåCTC_MediaControlÀàÖÐ·½·¨µÄ´úÀí½Ó¿Ú¡£
+ * @brief     	ï¿½ï¿½ï¿½ï¿½CTC_MediaControlï¿½ï¿½ï¿½Ð·ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½Ó¿Ú¡ï¿½
  * @attention
 */
 
@@ -16,7 +16,7 @@ Proxy_MediaProcessor::Proxy_MediaProcessor()
 
 Proxy_MediaProcessor::~Proxy_MediaProcessor()
 {
-		ctc_MediaControl->~CTC_MediaControl();
+	delete ctc_MediaControl;
 }
 
 int Proxy_MediaProcessor::Proxy_GetMediaControlVersion()

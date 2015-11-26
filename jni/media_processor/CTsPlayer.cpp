@@ -1147,7 +1147,7 @@ bool CTsPlayer::Fast()
     m_bFast = true;
 
     // remove di from vfm path
-    remove_di();
+    //remove_di();
 
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
@@ -1210,7 +1210,7 @@ bool CTsPlayer::Stop()
         pcodec->handle = -1;
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
-        add_di();
+        //add_di();
         lp_unlock(&mutex);
     } else {
         LOGI("m_bIsPlay is false");

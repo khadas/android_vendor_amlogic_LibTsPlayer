@@ -89,6 +89,15 @@ typedef struct{
 	
 }SUBTITLE_PARA_T, *PSUBTITLE_PARA_T;
 
+typedef struct ST_LPbuffer{
+    unsigned char *rp;
+    unsigned char *wp;
+    unsigned char *buffer;
+    unsigned char *bufferend;
+    int valid_can_read;
+    bool enlpflag;
+}LPBUFFER_T;
+
 typedef enum
 {
     IPTV_PLAYER_EVT_STREAM_VALID=0,
@@ -100,6 +109,14 @@ typedef enum
 
 typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
 
+typedef struct {
+    int abuf_size;
+    int abuf_data_len;
+    int abuf_free_len;
+    int vbuf_size;
+    int vbuf_data_len;
+    int vbuf_free_len;
+}AVBUF_STATUS, *PAVBUF_STATUS;
 
 int enable_gl_2xscale(const char *);
 
@@ -271,6 +288,9 @@ private:
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
     bool    m_isBlackoutPolicy;
+    bool m_bchangeH264to4k;
+    lock_t mutex_lp;
+    void checkVdecstate();
 };
 
 #endif

@@ -26,6 +26,8 @@ using namespace android;
 
 #define MAX_WRITE_ALEVEL 0.99
 #define MAX_WRITE_VLEVEL 0.99 
+#define READ_SIZE (64 * 1024)
+#define CTC_BUFFER_LOOP_NSIZE 1316
 
 static bool m_StopThread = false;
 
@@ -44,11 +46,11 @@ int prop_videobuftime = 1000;
 int prop_show_first_frame_nosync = 0;
 
 int checkcount = 0;
-
+int buffersize = 0;
 char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
 char old_free_scale[64] = {0};
-
+static LPBUFFER_T lpbuffer_st;
 //unsigned int am_sysinfo_param =0x08;
 
 #define LOGV(...) \
@@ -79,75 +81,87 @@ char old_free_scale[64] = {0};
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
 
 #ifdef TELECOM_VFORMAT_SUPPORT
-/*
-typedef enum {
-    VIDEO_DEC_FORMAT_UNKNOW,
-    VIDEO_DEC_FORMAT_MPEG4_3,
-    VIDEO_DEC_FORMAT_MPEG4_4,
-    VIDEO_DEC_FORMAT_MPEG4_5,
-    VIDEO_DEC_FORMAT_H264,
-    VIDEO_DEC_FORMAT_MJPEG,
-    VIDEO_DEC_FORMAT_MP4,
-    VIDEO_DEC_FORMAT_H263,
-    VIDEO_DEC_FORMAT_REAL_8,
-    VIDEO_DEC_FORMAT_REAL_9,
-    VIDEO_DEC_FORMAT_WMV3,
-    VIDEO_DEC_FORMAT_WVC1,
-    VIDEO_DEC_FORMAT_H265,
-    VIDEO_DEC_FORMAT_SW,
-    VIDEO_DEC_FORMAT_MAX,
-} vdec_type_t;
-*/
-vdec_type_t VdecTypeMap [] = {
-    VIDEO_DEC_FORMAT_UNKNOW,
-    VIDEO_DEC_FORMAT_MPEG4_3,
-    VIDEO_DEC_FORMAT_MPEG4_4,
-    VIDEO_DEC_FORMAT_MPEG4_5,
-    VIDEO_DEC_FORMAT_H264,
-    VIDEO_DEC_FORMAT_MJPEG,
-    VIDEO_DEC_FORMAT_MP4,
-    VIDEO_DEC_FORMAT_H263,
-    VIDEO_DEC_FORMAT_REAL_8,
-    VIDEO_DEC_FORMAT_REAL_9,
-    VIDEO_DEC_FORMAT_WMV3,
-    VIDEO_DEC_FORMAT_WVC1,
-    VIDEO_DEC_FORMAT_HEVC,
-    VIDEO_DEC_FORMAT_SW,
-    VIDEO_DEC_FORMAT_MAX,
-};
-
-/*
+/* 
+//telecom video format define
 typedef enum {
     VFORMAT_UNKNOWN = -1,
     VFORMAT_MPEG12 = 0,
-    VFORMAT_MPEG4,
-    VFORMAT_H264,
-    VFORMAT_MJPEG,
-    VFORMAT_REAL,
-    VFORMAT_JPEG,
-    VFORMAT_VC1,
-    VFORMAT_AVS,
-    VFORMAT_H265,
-    VFORMAT_SW,
+    VFORMAT_MPEG4 = 1,
+    VFORMAT_H264 = 2,
+    VFORMAT_MJPEG = 3,
+    VFORMAT_REAL = 4,
+    VFORMAT_JPEG = 5,
+    VFORMAT_VC1 = 6,
+    VFORMAT_AVS = 7,
+    VFORMAT_H265 = 8,
+    VFORMAT_SW = 9,
     VFORMAT_UNSUPPORT,
-    VFORMAT_MAX,
+    VFORMAT_MAX
 } vformat_t;
 */
-vformat_t VFormatMap[] = {
-    VFORMAT_UNKNOWN,
-    VFORMAT_MPEG12,
-    VFORMAT_MPEG4,
-    VFORMAT_H264,
-    VFORMAT_MJPEG,
-    VFORMAT_REAL,
-    VFORMAT_JPEG,
-    VFORMAT_VC1,
-    VFORMAT_AVS,
-    VFORMAT_HEVC,
-    VFORMAT_SW,
-    VFORMAT_UNSUPPORT,
-    VFORMAT_MAX,
-};
+#define CT_VFORMAT_H265 8
+#define CT_VFORMAT_SW 9
+#define CT_VFORMAT_UNSUPPORT 10
+/*
+//telecom audio format define
+typedef enum {
+    AFORMAT_UNKNOWN2 = -2,
+    AFORMAT_UNKNOWN = -1,
+    AFORMAT_MPEG   = 0,
+    AFORMAT_PCM_S16LE = 1,
+    AFORMAT_AAC   = 2,
+    AFORMAT_AC3   = 3,
+    AFORMAT_ALAW = 4,
+    AFORMAT_MULAW = 5,
+    AFORMAT_DTS = 6,
+    AFORMAT_PCM_S16BE = 7,
+    AFORMAT_FLAC = 8,
+    AFORMAT_COOK = 9,
+    AFORMAT_PCM_U8 = 10,
+    AFORMAT_ADPCM = 11,
+    AFORMAT_AMR  = 12,
+    AFORMAT_RAAC  = 13,
+    AFORMAT_WMA  = 14,
+    AFORMAT_WMAPRO   = 15,
+    AFORMAT_PCM_BLURAY  = 16,
+    AFORMAT_ALAC  = 17,
+    AFORMAT_VORBIS    = 18,
+    AFORMAT_DDPlUS = 19,
+    AFORMAT_UNSUPPORT,
+    AFORMAT_MAX
+} aformat_t;
+*/
+#define CT_AFORMAT_UNKNOWN2 -2
+#define CT_AFORMAT_DDPlUS 19
+#define CT_AFORMAT_UNSUPPORT 20
+
+vformat_t changeVformat(vformat_t index) 
+{
+    LOGI("changeVformat, vfromat: %d\n", index);
+    if(index == CT_VFORMAT_H265)
+        return VFORMAT_HEVC;
+    else if(index == CT_VFORMAT_SW)
+        return VFORMAT_SW;
+
+    if(index >= CT_VFORMAT_UNSUPPORT)
+        return VFORMAT_UNSUPPORT;
+    else
+        return index;
+}
+
+aformat_t changeAformat(aformat_t index) 
+{
+    LOGI("changeAformat, afromat: %d\n", index);
+    if(index == CT_AFORMAT_UNKNOWN2)
+        return AFORMAT_UNKNOWN;
+    else if(index == CT_AFORMAT_DDPlUS)
+        return AFORMAT_EAC3;
+ 
+    if(index >= CT_AFORMAT_UNSUPPORT)
+        return AFORMAT_UNSUPPORT;
+    else
+        return index;
+}
 #endif
 
 typedef enum {
@@ -409,6 +423,11 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.blackout.policy",value,"0");
     prop_blackout_policy = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.buffersize", value, "5000");
+    buffersize = atoi(value);
+
     LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n",
             prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
     LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d\n", prop_audiobuftime, prop_videobuftime);
@@ -461,6 +480,9 @@ CTsPlayer::CTsPlayer()
 
     amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
+
+	//set overflow status when decode h264_4k use format h264 .
+	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 1);
 
     m_bIsPlay = false;
     pfunc_player_evt = NULL;
@@ -631,11 +653,7 @@ void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
 {
     vPara=*pVideoPara;
 #ifdef TELECOM_VFORMAT_SUPPORT
-    int index = vPara.vFmt + 1;
-    int map_size = sizeof(VFormatMap)/sizeof(vformat_t);
-    if(index < map_size) {
-        vPara.vFmt = VFormatMap[index];
-    }
+    vPara.vFmt = changeVformat(vPara.vFmt);
 #endif
     LOGI("InitVideo vPara->pid: %d, vPara->vFmt: %d\n", vPara.pid, vPara.vFmt);
 }
@@ -648,6 +666,9 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
     LOGI("InitAudio\n");
     memset(a_aPara,0,sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
     while((pAP->pid != 0)&&(count<MAX_AUDIO_PARAM_SIZE)) {
+#ifdef TELECOM_VFORMAT_SUPPORT
+        pAP->aFmt = changeAformat(pAP->aFmt);
+#endif
         a_aPara[count]= *pAP;
         LOGI("InitAudio pAP->pid: %d, pAP->aFmt: %d, channel=%d, samplerate=%d\n", pAP->pid, pAP->aFmt, pAP->nChannels, pAP->nSampleRate);
         pAP++;
@@ -913,6 +934,22 @@ bool CTsPlayer::StartPlay()
     pcodec->video_pid = (int)vPara.pid;
     if(pcodec->video_type == VFORMAT_H264) {
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
+        lpbuffer_st.buffer = (unsigned char *)malloc(CTC_BUFFER_LOOP_NSIZE*buffersize);
+        if(lpbuffer_st.buffer == NULL) {
+            LOGI("malloc failed\n");
+            lpbuffer_st.enlpflag = false;
+            lpbuffer_st.rp = NULL;
+            lpbuffer_st.wp = NULL;
+        } else{
+            LOGI("malloc success\n");
+            lp_lock_init(&mutex_lp, NULL);
+            lpbuffer_st.enlpflag = true;
+            lpbuffer_st.rp = lpbuffer_st.buffer;
+            lpbuffer_st.wp = lpbuffer_st.buffer;
+            lpbuffer_st.bufferend = lpbuffer_st.buffer + CTC_BUFFER_LOOP_NSIZE*buffersize;
+            lpbuffer_st.valid_can_read = 0;
+            memset(lpbuffer_st.buffer, 0, CTC_BUFFER_LOOP_NSIZE*buffersize);
+        }
 
 		/*if(m_bFast){
 			pcodec->am_sysinfo.param=(void *)am_sysinfo_param;
@@ -975,10 +1012,10 @@ bool CTsPlayer::StartPlay()
                 amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
         }
         m_bIsPlay = true;
-        if(!m_bFast) {
+        /*if(!m_bFast) {
             LOGI("StartPlay: codec_pause to buffer sometime");
             codec_pause(pcodec);
-        }
+        }*/
     }
     //init tsync_syncthresh
     codec_set_cntl_syncthresh(pcodec, pcodec->has_audio);
@@ -988,12 +1025,13 @@ bool CTsPlayer::StartPlay()
     }
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole","0 0 1280 720 0 8");
     m_bWrFirstPkg = true;
+    m_bchangeH264to4k = false;
     writecount = 0;
     /*if(pcodec->has_video && pcodec->video_type == VFORMAT_HEVC) {
        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     }*/
     m_StartPlayTimePoint = av_gettime();
-    LOGI("StartPlay: m_StartPlayTimePoint = %d\n", m_StartPlayTimePoint);
+    LOGI("StartPlay: m_StartPlayTimePoint = %lld\n", m_StartPlayTimePoint);
     return !ret;
 }
 
@@ -1006,10 +1044,10 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     float audio_buf_level = 0.00f;
     float video_buf_level = 0.00f;
 
-    if(!m_bIsPlay)
+    if(!m_bIsPlay || m_bchangeH264to4k)
         return -1;
 
-    checkBuffstate();
+    //checkBuffstate();
     codec_get_abuf_state(pcodec, &audio_buf);
     codec_get_vbuf_state(pcodec, &video_buf);
     if(audio_buf.size != 0)
@@ -1022,75 +1060,80 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         return -1;
     } 
 
-    if(m_StartPlayTimePoint > 0)
-        LOGI("WriteData: audio_buf.data_len: %d, video_buf.data_len: %d!\n", audio_buf.data_len, video_buf.data_len);
-    /*if(m_bWrFirstPkg == false) {
-        if(pcodec->has_video) {
-            if(pcodec->video_type == VFORMAT_MJPEG) {
-                if(video_buf.data_len < (RES_VIDEO_SIZE >> 2)) {
-                    if(pfunc_player_evt != NULL) {
-                        pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
-                    }
-                }
-            } else {
-                if(video_buf.data_len< RES_VIDEO_SIZE) {
-                    if(pfunc_player_evt != NULL) {
-                        pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
-                    }
-                }
-            }
-        }
-
-        if(pcodec->has_audio) {
-            if(audio_buf.data_len < RES_AUDIO_SIZE) {
-                if(pfunc_player_evt != NULL) {
-                    pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
-                }
-            }
-        }
-    }*/
-
     lp_lock(&mutex);
-    int temp_size = 0;
-    for(int retry_count=0; retry_count<10; retry_count++) {
-        ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
-        if((ret < 0) || (ret > nSize)) {
-            if(ret < 0 && (errno == EAGAIN)) {
-                usleep(10);
-                LOGI("WriteData: codec_write return EAGAIN!\n");
-                continue;
+	
+    if ((pcodec->video_type == VFORMAT_H264) && lpbuffer_st.enlpflag) {
+        int temp_size = 0;
+        lp_lock(&mutex_lp);
+        if (lpbuffer_st.wp + nSize < lpbuffer_st.bufferend) {
+            lpbuffer_st.wp = (unsigned char *)memcpy(lpbuffer_st.wp, pBuffer, nSize);
+            lpbuffer_st.wp += nSize;
+            lpbuffer_st.valid_can_read += nSize;
+        } else {
+            lpbuffer_st.wp = lpbuffer_st.buffer;
+            lpbuffer_st.enlpflag = false;
+            LOGI("Don't use lpbuffer enlpflag:%d\n", lpbuffer_st.enlpflag);
+            free(lpbuffer_st.buffer);
+            lpbuffer_st.buffer = NULL;
+            lpbuffer_st.rp = NULL;
+            lpbuffer_st.wp = NULL;
+            lpbuffer_st.bufferend = NULL;
+            lpbuffer_st.enlpflag = 0;
+            lpbuffer_st.valid_can_read = 0;
+        }
+        lp_unlock(&mutex_lp);
+
+        LOGI("lpbuffer_st.valid_can_read:%d\n", lpbuffer_st.valid_can_read);
+
+        for(int retry_count=0; retry_count<10; retry_count++) {
+            ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
+            if((ret < 0) || (ret > nSize)) {
+                if(ret < 0 && errno == EAGAIN) {
+                    usleep(10);
+                    LOGI("WriteData: codec_write return EAGAIN!\n");
+                    continue;
+                }
             } else {
-                LOGI("WriteData: codec_write return %d!\n", ret);
-                if(pcodec->handle > 0){
-                    ret = codec_close(pcodec);
-                    ret = codec_init(pcodec);
-                    if(m_bFast) {
-                        codec_set_mode(pcodec, TRICKMODE_I);
-                    }
-                    LOGI("WriteData : codec need close and reinit m_bFast=%d\n", m_bFast);
-                } else {
-                    LOGI("WriteData: codec_write return error or stop by called!\n");
+                temp_size += ret;
+                LOGI("WriteData: codec_write h264 nSize is %d! temp_size=%d\n", nSize, temp_size);
+                if(temp_size >= nSize) {
                     break;
                 }
             }
-        } else {
-            temp_size += ret;
-            LOGI("WriteData : codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
-            if(temp_size >= nSize)
-                break;
-			// release 10ms to other thread, for example decoder and drop pcm
-            usleep(10000);
+        }
+    } else {
+        int temp_size = 0;
+        for(int retry_count=0; retry_count<10; retry_count++) {
+            ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
+            if((ret < 0) || (ret > nSize)) {
+                if(ret < 0 && (errno == EAGAIN)) {
+                    usleep(10);
+                    LOGI("WriteData: codec_write return EAGAIN!\n");
+                    continue;
+                } else {
+                    LOGI("WriteData: codec_write return %d!\n", ret);
+                    if(pcodec->handle > 0){
+                        ret = codec_close(pcodec);
+                        ret = codec_init(pcodec);
+                        if(m_bFast) {
+                            codec_set_mode(pcodec, TRICKMODE_I);
+                        }
+                        LOGI("WriteData : codec need close and reinit m_bFast=%d\n", m_bFast);
+                    } else {
+                        LOGI("WriteData: codec_write return error or stop by called!\n");
+                        break;
+                    }
+                }
+            } else {
+                temp_size += ret;
+                LOGI("WriteData: codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
+                if(temp_size >= nSize)
+                    break;
+                // release 10ms to other thread, for example decoder and drop pcm
+                usleep(10000);
+            }
         }
     }
-
-#if 0
-    if(!m_bFast && m_StartPlayTimePoint > 0 && (((av_gettime() - m_StartPlayTimePoint)/1000 >= prop_buffertime) 
-            || (audio_buf_level >= prop_audiobuflevel || video_buf_level >= prop_videobuflevel))) {
-        LOGI("WriteData: resume play now!\n");
-        codec_resume(pcodec);
-        m_StartPlayTimePoint = 0;
-    }
-#endif
     lp_unlock(&mutex);
 
     if(ret > 0) {
@@ -1109,6 +1152,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
             writecount++;
         }
     } else {
+        LOGW("WriteData: codec_write fail(%d)\n", ret);
         return -1;
     }
     return ret;
@@ -1218,6 +1262,15 @@ bool CTsPlayer::Stop()
         m_bWrFirstPkg = true;
         //add_di();
         lp_unlock(&mutex);
+        if (lpbuffer_st.buffer != NULL){
+            free(lpbuffer_st.buffer);
+            lpbuffer_st.buffer = NULL;
+            lpbuffer_st.rp = NULL;
+            lpbuffer_st.wp = NULL;
+            lpbuffer_st.bufferend = NULL;
+            lpbuffer_st.enlpflag = 0;
+            lpbuffer_st.valid_can_read = 0;
+       }
     } else {
         LOGI("m_bIsPlay is false");
     }
@@ -1541,17 +1594,17 @@ void CTsPlayer::checkBuffstate()
         if (video_buf.status & DECODER_ERROR_MASK) {
             LOGI("decoder error vdec.status: %x\n", video_buf.status);
             int is_decoder_fatal_error = video_buf.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW;
-	    if(is_decoder_fatal_error && (pcodec->video_type == VFORMAT_H264)) {
-	        //change format  h264--> h264 4K
+            if(is_decoder_fatal_error && (pcodec->video_type == VFORMAT_H264)) {
+                //change format  h264--> h264 4K
                 Stop();
                 usleep(500*1000);
                 if(property_get("ro.platform.filter.modes",filter_mode,NULL) ==  0){
-                        vPara.vFmt = VFORMAT_H264_4K2K;
-                        StartPlay();
-                        LOGI("start play vh264_4k2k");
+                    vPara.vFmt = VFORMAT_H264_4K2K;
+                    StartPlay();
+                    LOGI("start play vh264_4k2k");
                 }
             }
-       }
+        }
     }	
 }
 
@@ -1599,13 +1652,80 @@ void CTsPlayer::checkAbend()
     }
 }
 
+void CTsPlayer::checkVdecstate()
+{
+    struct vdec_status video_status;
+    int64_t  last_time, now_time;
+    if(m_bIsPlay) {
+        codec_get_vdec_state(pcodec, &video_status);
+        if (video_status.status & DECODER_ERROR_MASK) {
+            LOGI("decoder vdec.status: %x width : %d height: %d\n", video_status.status, video_status.width, video_status.height);
+
+            if((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) &&
+               (pcodec->video_type == VFORMAT_H264) &&
+               (video_status.width > 1920 || video_status.height > 1080)) {
+                now_time = av_gettime();
+                m_bchangeH264to4k = true;
+                //change format  h264--> h264 4K
+                LOGI("change format  h264--> h264 4K: %x width : %d height: %d\n", 
+                       video_status.status, video_status.width, video_status.height);
+
+                LOGI("Begin start!!!! before rp:0x%x  wp:0x%x start:0x%x end:0x%x\n", 
+                      lpbuffer_st.rp, lpbuffer_st.wp, lpbuffer_st.buffer, lpbuffer_st.bufferend);              
+                codec_close(pcodec);
+                vPara.vFmt = VFORMAT_H264_4K2K;
+                pcodec->video_type = VFORMAT_H264_4K2K;
+                pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264_4K2K; 
+                codec_init(pcodec);				
+                while(lpbuffer_st.valid_can_read > 0 && lpbuffer_st.enlpflag) {
+                    int ret, temp_size = 0, can_write = READ_SIZE;
+                    if(lpbuffer_st.valid_can_read < can_write) {
+                        can_write = lpbuffer_st.valid_can_read;
+                    }
+                    for(int retry_count=0; retry_count<10; retry_count++) {
+                        ret = codec_write(pcodec, lpbuffer_st.rp + temp_size, can_write - temp_size);
+                        if((ret < 0) || (ret > can_write)) {
+                            if(ret == EAGAIN) {
+                                usleep(10);
+                                LOGI("WriteData: codec_write return EAGAIN!\n");
+                                continue;
+                            }
+                        } else {
+                            temp_size += ret;
+                            if(temp_size >= can_write) {
+                                lp_lock(&mutex_lp);
+                                lpbuffer_st.valid_can_read -= can_write;
+                                lpbuffer_st.rp += can_write;
+                                if(lpbuffer_st.rp >= lpbuffer_st.bufferend) {
+                                    lpbuffer_st.enlpflag = false;
+                                    lpbuffer_st.rp = lpbuffer_st.buffer;
+                                }
+                                lp_unlock(&mutex_lp);
+                                break;
+                            }
+                        }
+                    }
+                    //LOGI("valid_can_read : %d\n", lpbuffer_st.valid_can_read);
+                }
+				
+                m_bchangeH264to4k = false;
+                lpbuffer_st.enlpflag = false;
+                last_time = av_gettime();
+                LOGI("consume time: %lld us %lld ms\n", (last_time - now_time), (last_time - now_time)/1000);
+            }
+        }
+    }
+}
+
 void *CTsPlayer::threadCheckAbend(void *pthis) {
     LOGV("threadCheckAbend start pthis: %p\n", pthis);
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
     do {
         usleep(50 * 1000);
         //sleep(2);
-        tsplayer->checkBuffLevel();
+        //tsplayer->checkBuffLevel();
+        if (tsplayer->m_bIsPlay)
+            tsplayer->checkVdecstate();
         checkcount++;
         if(checkcount >= 40) {
             tsplayer->checkAbend();

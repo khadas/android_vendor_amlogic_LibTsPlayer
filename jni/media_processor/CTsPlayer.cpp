@@ -44,6 +44,7 @@ float prop_videobuflevel = 0.0;
 int prop_audiobuftime = 1000;
 int prop_videobuftime = 1000;
 int prop_show_first_frame_nosync = 0;
+int keep_vdec_mem = 0;
 
 int checkcount = 0;
 int buffersize = 0;
@@ -985,11 +986,13 @@ bool CTsPlayer::StartPlay()
     pcodec->noblock = 0;
 
     if(prop_dumpfile){
-        if(m_fp == NULL){
-			char tmpfilename[1024]="";
-			static int tmpfileindex=0;
-			sprintf(tmpfilename,"/storage/external_storage/sda1/Live%d.ts",tmpfileindex);
-			tmpfileindex++;
+        if(m_fp == NULL) {
+            char tmpfilename[1024] = "";
+            static int tmpfileindex = 0;
+            memset(vaule, 0, PROPERTY_VALUE_MAX);
+            property_get("iptv.dumppath", vaule, "/storage/external_storage/sda1");
+            sprintf(tmpfilename, "%s/Live%d.ts", vaule, tmpfileindex);
+            tmpfileindex++;
             m_fp = fopen(tmpfilename, "wb+");
         }
     }
@@ -1012,6 +1015,8 @@ bool CTsPlayer::StartPlay()
                 amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
         }
         m_bIsPlay = true;
+        keep_vdec_mem = 0;
+        amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", 1);
         /*if(!m_bFast) {
             LOGI("StartPlay: codec_pause to buffer sometime");
             codec_pause(pcodec);
@@ -1038,6 +1043,7 @@ bool CTsPlayer::StartPlay()
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 {
     int ret = -1;
+    int temp_size = 0;
     static int retry_count = 0;
     buf_status audio_buf;
     buf_status video_buf;
@@ -1063,7 +1069,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     lp_lock(&mutex);
 	
     if ((pcodec->video_type == VFORMAT_H264) && lpbuffer_st.enlpflag) {
-        int temp_size = 0;
+        
         lp_lock(&mutex_lp);
         if (lpbuffer_st.wp + nSize < lpbuffer_st.bufferend) {
             lpbuffer_st.wp = (unsigned char *)memcpy(lpbuffer_st.wp, pBuffer, nSize);
@@ -1097,12 +1103,12 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 temp_size += ret;
                 LOGI("WriteData: codec_write h264 nSize is %d! temp_size=%d\n", nSize, temp_size);
                 if(temp_size >= nSize) {
+                    temp_size = nSize;
                     break;
                 }
             }
         }
     } else {
-        int temp_size = 0;
         for(int retry_count=0; retry_count<10; retry_count++) {
             ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
             if((ret < 0) || (ret > nSize)) {
@@ -1127,8 +1133,10 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
             } else {
                 temp_size += ret;
                 LOGI("WriteData: codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
-                if(temp_size >= nSize)
+                if(temp_size >= nSize) {
+                    temp_size = nSize;
                     break;
+                }
                 // release 10ms to other thread, for example decoder and drop pcm
                 usleep(10000);
             }
@@ -1137,11 +1145,9 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     lp_unlock(&mutex);
 
     if(ret > 0) {
-        if(m_fp != NULL) {
-            //fwrite(pBuffer, 1, nSize, m_fp);
-            fwrite(pBuffer, 1, ret, m_fp);
-            LOGI("ret[%d] nSize[%d] %d!\n", ret, nSize);
-
+        if((m_fp != NULL) && (temp_size > 0)) {
+            fwrite(pBuffer, 1, temp_size, m_fp);
+            LOGI("ret[%d] temp_size[%d] nSize[%d] %d!\n", ret, temp_size, nSize);
         }
         if(writecount >= MAX_WRITE_COUNT) {
             m_bWrFirstPkg = false;
@@ -1193,6 +1199,7 @@ bool CTsPlayer::Fast()
     ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 0);
     if(ret)
         return false;
+    keep_vdec_mem = 1;
     Stop();
     m_bFast = true;
 
@@ -1222,6 +1229,7 @@ bool CTsPlayer::StopFast()
     m_bFast = false;
     ret = codec_set_mode(pcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+    keep_vdec_mem = 1;
     Stop();
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
@@ -1241,7 +1249,9 @@ bool CTsPlayer::StopFast()
 bool CTsPlayer::Stop()
 {    
     int ret;
-
+    
+    LOGI("Stop keep_vdec_mem: %d\n", keep_vdec_mem);
+    amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
     if(m_bIsPlay) {
         LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {
@@ -1596,6 +1606,7 @@ void CTsPlayer::checkBuffstate()
             int is_decoder_fatal_error = video_buf.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW;
             if(is_decoder_fatal_error && (pcodec->video_type == VFORMAT_H264)) {
                 //change format  h264--> h264 4K
+                keep_vdec_mem = 1;
                 Stop();
                 usleep(500*1000);
                 if(property_get("ro.platform.filter.modes",filter_mode,NULL) ==  0){

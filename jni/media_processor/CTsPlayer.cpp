@@ -600,6 +600,8 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         y_b = y + mode_y;
         w_b = width + x_b - 1;
         h_b = height + y_b - 1;
+        if (h_b < 576 && h_b % 2)
+            h_b +=1;
         /*if(m_nEPGWidth !=0 && m_nEPGHeight !=0) {
             amsysfs_set_sysfs_str(path_mode, "1");
         }*/

@@ -501,6 +501,13 @@ CTsPlayer::CTsPlayer()
          screen_mode = 2;
     else if(!strcmp(value,"16_9"))
          screen_mode = 3;
+    else if(!strcmp(value,"4_3 letter box"))
+        screen_mode = 7;
+    else if(!strcmp(value,"16_9 letter box"))
+        screen_mode = 11;
+    else
+        screen_mode = 1;
+
 
     amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);

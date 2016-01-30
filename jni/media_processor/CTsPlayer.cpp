@@ -409,7 +409,7 @@ CTsPlayer::CTsPlayer()
 {
     char value[PROPERTY_VALUE_MAX] = {0};
     
-    property_get("iptv.shouldshowlog", value, "0");//initial the log switch
+    property_get("iptv.shouldshowlog", value, "1");//initial the log switch
     prop_shouldshowlog = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -921,6 +921,7 @@ bool CTsPlayer::StartPlay()
 
     set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
     set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
+    set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 0xff);
 
     memset(pcodec,0,sizeof(*pcodec));
     pcodec->stream_type = STREAM_TYPE_TS;
@@ -1164,7 +1165,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 }
             } else {
                 temp_size += ret;
-                LOGI("WriteData: codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
+                //LOGI("WriteData: codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
                 if(temp_size >= nSize) {
                     temp_size = nSize;
                     break;
@@ -1284,6 +1285,7 @@ bool CTsPlayer::Stop()
     
     LOGI("Stop keep_vdec_mem: %d\n", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
+	amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 2);
     if(m_bIsPlay) {
         LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {

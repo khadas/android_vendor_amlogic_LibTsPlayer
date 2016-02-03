@@ -33,6 +33,7 @@ static bool m_StopThread = false;
 
 //log switch
 static int prop_shouldshowlog = 0;
+static int prop_playerwatchdog_support =0;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
 int hasaudio = 0;
@@ -452,8 +453,13 @@ CTsPlayer::CTsPlayer()
     property_get("iptv.buffersize", value, "5000");
     buffersize = atoi(value);
 
-    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f, video bufferlevel: %f, prop_softfit: %d\n",
-            prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit);
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.playerwatchdog.support", value, "0");
+    prop_playerwatchdog_support = atoi(value);
+
+
+    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d\n",
+		prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support);
     LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d\n", prop_audiobuftime, prop_videobuftime);
 	
     char buf[64] = {0};
@@ -516,6 +522,7 @@ CTsPlayer::CTsPlayer()
 	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 1);
 
     m_bIsPlay = false;
+    m_bIsPause = false;
     pfunc_player_evt = NULL;
     m_nOsdBpp = 16;//SYS_get_osdbpp();
     m_nAudioBalance = 3;
@@ -525,6 +532,7 @@ CTsPlayer::CTsPlayer()
     m_bSetEPGSize = false;
     m_bWrFirstPkg = true;
     m_StartPlayTimePoint = 0;
+    m_PreviousOverflowTime = 0;
     m_isSoftFit = (prop_softfit == 1) ? true : false;
     m_isBlackoutPolicy = (prop_blackout_policy == 1) ? true : false;
     m_StopThread = false;
@@ -1048,6 +1056,7 @@ bool CTsPlayer::StartPlay()
                 amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
         }
         m_bIsPlay = true;
+        m_bIsPause = false;
         keep_vdec_mem = 0;
         amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", 1);
         /*if(!m_bFast) {
@@ -1199,12 +1208,14 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 
 bool CTsPlayer::Pause()
 {
+    m_bIsPause = true;
     codec_pause(pcodec);
     return true;
 }
 
 bool CTsPlayer::Resume()
 {
+    m_bIsPause = false;
     codec_resume(pcodec);
     return true;
 }
@@ -1297,7 +1308,9 @@ bool CTsPlayer::Stop()
         lp_lock(&mutex);
         m_bFast = false;
         m_bIsPlay = false;
+        m_bIsPause = false;
         m_StartPlayTimePoint = 0;
+        m_PreviousOverflowTime = 0;
         ret = codec_set_mode(pcodec, TRICKMODE_NONE);
         LOGI("codec_close start");
         ret = codec_close(pcodec);
@@ -1699,6 +1712,9 @@ void CTsPlayer::checkAbend()
 
 void CTsPlayer::checkVdecstate()
 {
+    float audio_buf_level = 0.00f, video_buf_level = 0.00f;
+    buf_status audio_buf;
+    buf_status video_buf;
     struct vdec_status video_status;
     int64_t  last_time, now_time;
     if(m_bIsPlay) {
@@ -1757,6 +1773,28 @@ void CTsPlayer::checkVdecstate()
                 lpbuffer_st.enlpflag = false;
                 last_time = av_gettime();
                 LOGI("consume time: %lld us %lld ms\n", (last_time - now_time), (last_time - now_time)/1000);
+            }
+        }
+        //monitor buffer staus ,overflow more than 2s reset player,if support 
+        if (prop_playerwatchdog_support && !m_bIsPause){
+            codec_get_abuf_state(pcodec, &audio_buf);
+            codec_get_vbuf_state(pcodec, &video_buf);
+            if (audio_buf.size != 0)
+            audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
+            if (video_buf.size != 0)
+            video_buf_level = (float)video_buf.data_len / video_buf.size;
+            if ((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
+                LOGI("checkVdecstate : audio_buf_level= %.5f, video_buf_level=%.5f\n", audio_buf_level, video_buf_level);
+                if (m_PreviousOverflowTime == 0)
+                    m_PreviousOverflowTime  = av_gettime();
+                if ((av_gettime()-m_PreviousOverflowTime) >= 2000000){
+                    LOGI("buffer  overflow more than 2s ,reset  player\n ");
+                    Stop();
+                    usleep(500*1000);
+                    StartPlay();
+                }
+            }else{
+                m_PreviousOverflowTime = 0;
             }
         }
     }

@@ -291,6 +291,8 @@ private:
     bool m_bchangeH264to4k;
     lock_t mutex_lp;
     void checkVdecstate();
+    bool        m_bIsPause;
+    int64_t m_PreviousOverflowTime;
 };
 
 #endif

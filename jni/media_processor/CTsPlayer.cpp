@@ -921,6 +921,15 @@ bool CTsPlayer::StartPlay()
     int ret;
     int filter_afmt;
     char vaule[PROPERTY_VALUE_MAX] = {0};
+    char vfm_map[4096] = {0};
+    char *s = NULL;
+    char *p = NULL; 
+    int sleep_number = 0; 
+    int video_buf_used = 0;
+    int audio_buf_used = 0;
+    int subtitle_buf_used = 0;
+    int userdata_buf_used = 0;
+
 
     if (m_bIsPlay) {
         LOGE("[%s:%d]Already StartPlay: m_bIsPlay=%s\n", __FUNCTION__, __LINE__, (m_bIsPlay ? "true" : "false"));
@@ -1045,6 +1054,28 @@ bool CTsPlayer::StartPlay()
     /*other setting*/
     lp_lock(&mutex);
 
+    do{
+		get_vfm_map_info(vfm_map);
+		s = strstr(vfm_map,"(1)");
+		p = strstr(vfm_map,"ionvideo}");
+		video_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/videobufused");
+		audio_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/audiobufused");
+		subtitle_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/subtitlebufused");
+		userdata_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/userdatabufused");
+		LOGI("s=%s,p=%s\n",s,p);
+		LOGI("buf used video:%d,audio:%d,subtitle:%d,userdata:%d\n",
+			video_buf_used,audio_buf_used,subtitle_buf_used,userdata_buf_used);
+		if((s == NULL)&&(p == NULL)&&(video_buf_used==0)&&(audio_buf_used==0)&&
+	   		(subtitle_buf_used==0)&&(userdata_buf_used==0))
+    		LOGI("not find valid,begin init\n");
+		else{
+			sleep_number++;
+			usleep(50*1000);
+    		LOGI("find find find,sleep_number=%d\n",sleep_number);
+		}
+    }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
+	(subtitle_buf_used != 0)||(userdata_buf_used != 0));    
+ 
     ret = codec_init(pcodec);
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);

@@ -174,15 +174,8 @@ typedef enum {
     OUTPUT_MODE_720P,
     OUTPUT_MODE_1080I,
     OUTPUT_MODE_1080P,
-    OUTPUT_MODE_4K2K24HZ,
-    OUTPUT_MODE_4K2K25HZ,
-    OUTPUT_MODE_4K2K30HZ,
+    OUTPUT_MODE_4K2K,
     OUTPUT_MODE_4K2KSMPTE,
-    OUTPUT_MODE_4K2KFAKE_5G,
-    OUTPUT_MODE_4K2K60HZ,
-    OUTPUT_MODE_4K2K60HZ_Y420,
-    OUTPUT_MODE_4K2K50HZ,
-    OUTPUT_MODE_4K2K50HZ_Y420,
 }OUTPUT_MODE;
 
 OUTPUT_MODE get_display_mode()
@@ -210,20 +203,11 @@ OUTPUT_MODE get_display_mode()
             return OUTPUT_MODE_1080I;
         } else if(!strncmp(mode, "1080p", 5)) {
             return OUTPUT_MODE_1080P;
-        } else if(!strncmp(mode, "4k2k24hz", 8) ||!strncmp(mode, "2160p24hz", 9)) {
-            return OUTPUT_MODE_4K2K24HZ;
-        } else if(!strncmp(mode, "4k2k25hz", 8) ||!strncmp(mode, "2160p25hz", 9)) {
-            return OUTPUT_MODE_4K2K25HZ;
-        } else if(!strncmp(mode, "4k2k30hz", 8)||!strncmp(mode, "2160p30hz", 9)) {
-            return OUTPUT_MODE_4K2K30HZ;
-        } else if(!strncmp(mode, "4k2ksmpte", 8)) {
+        } else if(!strncmp(mode, "2160p", 5)) {
+            return OUTPUT_MODE_4K2K;
+        } else if(!strncmp(mode, "smpte", 5)) {
             return OUTPUT_MODE_4K2KSMPTE;
-        }else if(!strncmp(mode, "2160p60hz", 9)) {
-            return OUTPUT_MODE_4K2K60HZ;
-        }else if(!strncmp(mode, "2160p50hz", 9)) {
-	    return OUTPUT_MODE_4K2K50HZ;
-	 }   
-
+        }
     } else {
         LOGE("get_display_mode open file %s error\n", path);
     }
@@ -280,23 +264,11 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.1080_w", vaxis_width_str, "1920");
         property_get("ubootenv.var.1080_h", vaxis_height_str, "1080");
         break;
-    case OUTPUT_MODE_4K2K24HZ:
-        property_get("ubootenv.var.4k2k24hz_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.4k2k24hz_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2k24hz_w", vaxis_width_str, "3840");
-        property_get("ubootenv.var.4k2k24hz_h", vaxis_height_str, "2160");
-        break;
-    case OUTPUT_MODE_4K2K25HZ:
-        property_get("ubootenv.var.4k2k25hz_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.4k2k25hz_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2k25hz_w", vaxis_width_str, "3840");
-        property_get("ubootenv.var.4k2k25hz_h", vaxis_height_str, "2160");
-        break;
-    case OUTPUT_MODE_4K2K30HZ:
-        property_get("ubootenv.var.4k2k30hz_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.4k2k30hz_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.4k2k30hz_w", vaxis_width_str, "3840");
-        property_get("ubootenv.var.4k2k30hz_h", vaxis_height_str, "2160");
+    case OUTPUT_MODE_4K2K:
+        property_get("ubootenv.var.4k2k_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.4k2k_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.4k2k_w", vaxis_width_str, "3840");
+        property_get("ubootenv.var.4k2k_h", vaxis_height_str, "2160");
         break;
     case OUTPUT_MODE_4K2KSMPTE:
         property_get("ubootenv.var.4k2ksmpte_x", vaxis_newx_str, "0");
@@ -304,19 +276,6 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.4k2ksmpte_w", vaxis_width_str, "4096");
         property_get("ubootenv.var.4k2ksmpte_h", vaxis_height_str, "2160");
         break;
-	case OUTPUT_MODE_4K2K60HZ:
-	property_get("ubootenv.var.4k2k60hz_x", vaxis_newx_str, "0");
-	property_get("ubootenv.var.4k2k60hz_y", vaxis_newy_str, "0");
-	property_get("ubootenv.var.4k2k60hz_width", vaxis_width_str, "3840");
-	property_get("ubootenv.var.4k2k60hz_height", vaxis_height_str, "2160");
-	break;
-	case OUTPUT_MODE_4K2K50HZ:
-	property_get("ubootenv.var.4k2k50hz_x", vaxis_newx_str, "0");
-	property_get("ubootenv.var.4k2k50hz_y", vaxis_newy_str, "0");
-	property_get("ubootenv.var.4k2k50hz_width", vaxis_width_str, "3840");
-	property_get("ubootenv.var.4k2k50hz_height", vaxis_height_str, "2160");
-	break;
-
     default:
     	  *x = 0;
     	  *y = 0;

@@ -292,6 +292,8 @@ private:
     lock_t mutex_lp;
     void checkVdecstate();
     bool        m_bIsPause;
+    virtual bool  iStartPlay( );
+    virtual bool  iStop( );
     int64_t m_PreviousOverflowTime;
 };
 

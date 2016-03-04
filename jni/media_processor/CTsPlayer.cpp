@@ -874,8 +874,14 @@ int player_startsync_set(int mode)
 
     return 0;
 }
+bool CTsPlayer::StartPlay(){
+        int ret;
+        ret = iStartPlay();
+        codec_set_freerun_mode(pcodec, 0);
+        return ret;
+}
 
-bool CTsPlayer::StartPlay()
+bool CTsPlayer::iStartPlay()
 {
     int ret;
     int filter_afmt;
@@ -1234,7 +1240,7 @@ bool CTsPlayer::Fast()
     if(ret)
         return false;
     keep_vdec_mem = 1;
-    Stop();
+    iStop();
     m_bFast = true;
 
     // remove di from vfm path
@@ -1242,12 +1248,13 @@ bool CTsPlayer::Fast()
 
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
-    ret = StartPlay();
+    ret = iStartPlay();
     if(!ret)
         return false;
 
     LOGI("Fast: codec_set_mode: %d\n", pcodec->handle);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0); 
+    codec_set_freerun_mode(pcodec, 1);
     if(pcodec->video_type == VFORMAT_HEVC) 
         ret = codec_set_mode(pcodec, TRICKMODE_I_HEVC); 
     else 
@@ -1261,14 +1268,20 @@ bool CTsPlayer::StopFast()
 
     LOGI("StopFast");
     m_bFast = false;
+    
+    ret=codec_set_freerun_mode(pcodec, 0);
+    if(ret){
+        LOGI("error stopfast set freerun_mode 0 fail\n");
+    }
+    
     ret = codec_set_mode(pcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     keep_vdec_mem = 1;
-    Stop();
+    iStop();
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
-    ret = StartPlay();
+    ret = iStartPlay();
     if(!ret)
         return false;
     if(m_isBlackoutPolicy) {
@@ -1279,8 +1292,16 @@ bool CTsPlayer::StopFast()
 
     return true;
 }
+bool CTsPlayer::Stop(){
+        int ret;
 
-bool CTsPlayer::Stop()
+        codec_set_freerun_mode(pcodec, 0);
+        ret =  iStop();
+
+        return ret;
+}
+
+bool CTsPlayer::iStop()
 {    
     int ret;
     
@@ -1330,9 +1351,9 @@ bool CTsPlayer::Seek()
     LOGI("Seek");
     if(m_isBlackoutPolicy)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
-    Stop();
+    iStop();
     usleep(500*1000);
-    StartPlay();
+    iStartPlay();
     return true;
 }
 
@@ -1568,14 +1589,26 @@ void CTsPlayer::SetProperty(int nType, int nSub, int nValue)
 long CTsPlayer::GetCurrentPlayTime() 
 {
     long video_pts = 0;
-    video_pts = codec_get_vpts(pcodec);
+    
+    unsigned int tmppts = 0;
+    if (m_bIsPlay){
+    	if ((pcodec->video_type == VFORMAT_HEVC) &&(m_bFast == true)) {
+            tmppts = amsysfs_get_sysfs_int("/sys/module/amvdec_h265/parameters/h265_lookup_vpts");
+            //LOGI("Fast: i only getvpts by h265_lookup_vpts :%d\n",tmppts);
+    	}
+    	else{
+            tmppts = codec_get_vpts(pcodec);
+    	}
+    	
+    }
+    video_pts = tmppts;
     return video_pts;
 }
 
 void CTsPlayer::leaveChannel()
 {
     LOGI("leaveChannel be call\n");
-    Stop();
+    iStop();
 }
 
 void CTsPlayer::SetSurface(Surface* pSurface)
@@ -1644,11 +1677,11 @@ void CTsPlayer::checkBuffstate()
             if(is_decoder_fatal_error && (pcodec->video_type == VFORMAT_H264)) {
                 //change format  h264--> h264 4K
                 keep_vdec_mem = 1;
-                Stop();
+                iStop();
                 usleep(500*1000);
                 if(property_get("ro.platform.filter.modes",filter_mode,NULL) ==  0){
                     vPara.vFmt = VFORMAT_H264_4K2K;
-                    StartPlay();
+                    iStartPlay();
                     LOGI("start play vh264_4k2k");
                 }
             }
@@ -1779,9 +1812,9 @@ void CTsPlayer::checkVdecstate()
                     m_PreviousOverflowTime  = av_gettime();
                 if ((av_gettime()-m_PreviousOverflowTime) >= 2000000){
                     LOGI("buffer  overflow more than 2s ,reset  player\n ");
-                    Stop();
+                    iStop();
                     usleep(500*1000);
-                    StartPlay();
+                    iStartPlay();
                 }
             }else{
                 m_PreviousOverflowTime = 0;

@@ -229,10 +229,10 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.480i_h", vaxis_height_str, "480");
         break;
     case OUTPUT_MODE_480P:
-        property_get("ubootenv.var.480_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.480_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.480_w", vaxis_width_str, "720");
-        property_get("ubootenv.var.480_h", vaxis_height_str, "480");
+        property_get("ubootenv.var.480p_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.480p_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.480p_w", vaxis_width_str, "720");
+        property_get("ubootenv.var.480p_h", vaxis_height_str, "480");
         break;
     case OUTPUT_MODE_576I:
         property_get("ubootenv.var.576i_x", vaxis_newx_str, "0");
@@ -241,16 +241,16 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.576i_h", vaxis_height_str, "576");
         break;
     case OUTPUT_MODE_576P:
-        property_get("ubootenv.var.576_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.576_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.576_w", vaxis_width_str, "720");
-        property_get("ubootenv.var.576_h", vaxis_height_str, "576");
+        property_get("ubootenv.var.576p_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.576p_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.576p_w", vaxis_width_str, "720");
+        property_get("ubootenv.var.576p_h", vaxis_height_str, "576");
         break;
     case OUTPUT_MODE_720P:
-        property_get("ubootenv.var.720_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.720_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.720_w", vaxis_width_str, "1280");
-        property_get("ubootenv.var.720_h", vaxis_height_str, "720");
+        property_get("ubootenv.var.720p_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.720p_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.720p_w", vaxis_width_str, "1280");
+        property_get("ubootenv.var.720p_h", vaxis_height_str, "720");
         break;
     case OUTPUT_MODE_1080I:
         property_get("ubootenv.var.1080i_x", vaxis_newx_str, "0");
@@ -259,10 +259,10 @@ void getPosition(OUTPUT_MODE output_mode, int *x, int *y, int *width, int *heigh
         property_get("ubootenv.var.1080i_h", vaxis_height_str, "1080");
         break;
     case OUTPUT_MODE_1080P:
-        property_get("ubootenv.var.1080_x", vaxis_newx_str, "0");
-        property_get("ubootenv.var.1080_y", vaxis_newy_str, "0");
-        property_get("ubootenv.var.1080_w", vaxis_width_str, "1920");
-        property_get("ubootenv.var.1080_h", vaxis_height_str, "1080");
+        property_get("ubootenv.var.1080p_x", vaxis_newx_str, "0");
+        property_get("ubootenv.var.1080p_y", vaxis_newy_str, "0");
+        property_get("ubootenv.var.1080p_w", vaxis_width_str, "1920");
+        property_get("ubootenv.var.1080p_h", vaxis_height_str, "1080");
         break;
     case OUTPUT_MODE_4K2K:
         property_get("ubootenv.var.4k2k_x", vaxis_newx_str, "0");

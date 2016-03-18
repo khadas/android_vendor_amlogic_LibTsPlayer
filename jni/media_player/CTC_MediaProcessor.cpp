@@ -318,8 +318,8 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 		char* buffer = (char* )malloc(bufsize);
 		rd_result = fread(buffer, bufsize, 1, fp);
 		if (rd_result <= 0)	 {
-			LOGE("read the end of file");
-			exit(1);
+			LOGE("read the end of file,no exit\n");
+			//exit(1);
 		}
 
 		while(bufsize > 0) {

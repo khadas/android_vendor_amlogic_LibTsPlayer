@@ -1868,3 +1868,11 @@ int CTsPlayer::GetVideoFrameRate()
 
     return nVideoFrameRate;
 }
+int CTsPlayer::GetVideoDropNumber()
+{
+	int drop_number = 0;
+	drop_number = amsysfs_get_sysfs_int("/sys/class/video/video_drop_number");
+	LOGI("video drop number = %d\n",drop_number);
+
+	return drop_number;
+}

@@ -181,6 +181,7 @@ public:
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
+    virtual int GetVideoDropNumber() = 0;
 	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
 };
 
@@ -252,6 +253,7 @@ public:
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
+    virtual int GetVideoDropNumber();
     /*end add*/
     bool mIsOmxPlayer;
 	

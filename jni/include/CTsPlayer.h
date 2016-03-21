@@ -182,6 +182,7 @@ public:
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
     virtual int GetVideoDropNumber() = 0;
+	virtual int GetVideoTotalNumber() = 0;
 	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
 };
 
@@ -254,6 +255,7 @@ public:
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
     virtual int GetVideoDropNumber();
+	virtual int GetVideoTotalNumber();
     /*end add*/
     bool mIsOmxPlayer;
 	

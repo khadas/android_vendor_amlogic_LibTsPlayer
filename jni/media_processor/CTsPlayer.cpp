@@ -1927,3 +1927,11 @@ int CTsPlayer::GetVideoDropNumber()
 
 	return drop_number;
 }
+int CTsPlayer::GetVideoTotalNumber()
+{
+	int total_number = 0;
+	total_number = amsysfs_get_sysfs_int("/sys/class/video/total_frame_number");
+	LOGI("video total number = %d\n",total_number);
+
+	return total_number;
+}

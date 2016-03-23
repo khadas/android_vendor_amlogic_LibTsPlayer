@@ -176,7 +176,7 @@ public:
      virtual void SwitchAudioTrack(int pid) = 0;
      virtual void SwitchSubtitle(int pid) = 0;
      virtual void SetProperty(int nType, int nSub, int nValue) = 0;
-     virtual long GetCurrentPlayTime() = 0;
+     virtual int64_t GetCurrentPlayTime() = 0;
      virtual void leaveChannel() = 0;
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
     virtual int GetRealTimeFrameRate() = 0;
@@ -247,7 +247,7 @@ public:
     
     virtual void SetProperty(int nType, int nSub, int nValue) ;
     
-    virtual long GetCurrentPlayTime() ;
+    virtual int64_t GetCurrentPlayTime() ;
     
     virtual void leaveChannel() ;
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);

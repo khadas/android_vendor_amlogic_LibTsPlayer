@@ -364,7 +364,20 @@ int64_t av_gettime(void)
     gettimeofday(&tv, NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
+int sysfs_get_long(char *path, unsigned long  *val)
+{
+    char buf[64];
 
+    if (amsysfs_get_sysfs_str(path, buf, sizeof(buf)) == -1) {
+        LOGI("unable to open file %s,err: %s", path, strerror(errno));
+        return -1; 
+    }   
+    if (sscanf(buf, "0x%lx", val) < 1) {
+        LOGI("unable to get pts from: %s", buf);
+        return -1; 
+    }   
+    return 0;
+}
 CTsPlayer::CTsPlayer()
 {
     char value[PROPERTY_VALUE_MAX] = {0};
@@ -1586,9 +1599,13 @@ void CTsPlayer::SetProperty(int nType, int nSub, int nValue)
 
 }
 
-long CTsPlayer::GetCurrentPlayTime() 
+int64_t CTsPlayer::GetCurrentPlayTime() 
 {
-    long video_pts = 0;
+    int64_t video_pts = 0;
+    unsigned long audiopts = 0;
+    unsigned long videopts = 0;
+    unsigned long pcrscr = 0;
+    unsigned long checkin_vpts = 0;
     
     unsigned int tmppts = 0;
     if (m_bIsPlay){
@@ -1602,6 +1619,15 @@ long CTsPlayer::GetCurrentPlayTime()
     	
     }
     video_pts = tmppts;
+    if(m_bFast && (pcodec->video_type != VFORMAT_HEVC)){
+        sysfs_get_long("/sys/class/tsync/pts_audio",&audiopts);
+        sysfs_get_long("/sys/class/tsync/pts_video",&videopts);
+        sysfs_get_long("/sys/class/tsync/pts_pcrscr",&pcrscr);	
+        LOGI("apts:0x%x,vpts=0x%x,pcrscr=0x%x\n",audiopts,videopts,pcrscr);
+        sysfs_get_long("/sys/class/tsync/checkin_vpts",&checkin_vpts);
+        LOGI("In Fast last checkin_vpts=0x%x\n",checkin_vpts);
+        video_pts = (int64_t)checkin_vpts;
+    }
     return video_pts;
 }
 

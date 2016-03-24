@@ -533,6 +533,7 @@ CTsPlayer::~CTsPlayer()
 {
     if (mIsOmxPlayer)
         return;
+    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
     m_StopThread = true;
     pthread_join(mThread, NULL);
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
@@ -1529,12 +1530,14 @@ void CTsPlayer::SwitchAudioTrack(int pid)
     if(!m_bIsPlay)
         return;
 
+    lp_lock(&mutex);
     codec_audio_automute(pcodec->adec_priv, 1);
     codec_close_audio(pcodec);
     pcodec->audio_pid = 0xffff;
 
     if(codec_set_audio_pid(pcodec)) {
         LOGE("set invalid audio pid failed\n");
+        lp_lock(&mutex);
         return;
     }
 
@@ -1554,15 +1557,18 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 
     if(codec_audio_reinit(pcodec)) {
         LOGE("reset init failed\n");
+        lp_lock(&mutex);
         return;
     }
 
     if(codec_reset_audio(pcodec)) {
         LOGE("reset audio failed\n");
+        lp_lock(&mutex);
         return;
     }
     codec_resume_audio(pcodec, 1);
     codec_audio_automute(pcodec->adec_priv, 0);
+    lp_lock(&mutex);
 }
 
 void CTsPlayer::SwitchSubtitle(int pid) 
@@ -1824,6 +1830,15 @@ void CTsPlayer::checkVdecstate()
                 lpbuffer_st.enlpflag = false;
                 last_time = av_gettime();
                 LOGI("consume time: %lld us %lld ms\n", (last_time - now_time), (last_time - now_time)/1000);
+            }
+        }
+
+        if((video_status.status & DECODER_FATAL_ERROR_UNKNOW) &&
+            (pcodec->video_type == VFORMAT_H264) ) {
+            int app_reset_support  = amsysfs_get_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset");
+            if(app_reset_support){
+                LOGI("fatal_error_reset=1,DECODER_FATAL_ERROR_UNKNOW happened force reset decoder\n ");
+                amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/decoder_force_reset", 1);
             }
         }
         //monitor buffer staus ,overflow more than 2s reset player,if support 

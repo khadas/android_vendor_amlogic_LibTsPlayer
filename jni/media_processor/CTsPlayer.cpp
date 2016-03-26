@@ -541,6 +541,7 @@ CTsPlayer::~CTsPlayer()
 //取得播放模式,保留，暂不用
 int CTsPlayer::GetPlayMode()
 {
+    LOGI("GetPlayMode\n");
     return 1;
 }
 

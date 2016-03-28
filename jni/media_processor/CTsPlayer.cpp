@@ -915,6 +915,7 @@ bool CTsPlayer::iStartPlay()
         return true;
     }
 
+    amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
     set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
     set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
     set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 0xff);

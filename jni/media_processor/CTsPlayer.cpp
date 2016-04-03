@@ -1537,7 +1537,7 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 
     if(codec_set_audio_pid(pcodec)) {
         LOGE("set invalid audio pid failed\n");
-        lp_lock(&mutex);
+        lp_unlock(&mutex);
         return;
     }
 
@@ -1557,18 +1557,18 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 
     if(codec_audio_reinit(pcodec)) {
         LOGE("reset init failed\n");
-        lp_lock(&mutex);
+        lp_unlock(&mutex);
         return;
     }
 
     if(codec_reset_audio(pcodec)) {
         LOGE("reset audio failed\n");
-        lp_lock(&mutex);
+        lp_unlock(&mutex);
         return;
     }
     codec_resume_audio(pcodec, 1);
     codec_audio_automute(pcodec->adec_priv, 0);
-    lp_lock(&mutex);
+    lp_unlock(&mutex);
 }
 
 void CTsPlayer::SwitchSubtitle(int pid) 

@@ -333,12 +333,16 @@ void reinitOsdScale()
 void LunchIptv(bool isSoftFit)
 {
     LOGI("LunchIptv isSoftFit:%d\n", isSoftFit);
+    char value[PROPERTY_VALUE_MAX] = {0};
+    
+    property_get("init.svc.bootvideo", value, "");
     if(!isSoftFit) {
         //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 1280 720 0 8");
         amsysfs_set_sysfs_str("/sys/class/deinterlace/di0/config", "disable");
         amsysfs_set_sysfs_int("/sys/module/di/parameters/buf_mgr_mode", 0);
     }else {
-        amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
+        if(strncmp(value, "running", 7) != 0)
+            amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
     }
 }
 

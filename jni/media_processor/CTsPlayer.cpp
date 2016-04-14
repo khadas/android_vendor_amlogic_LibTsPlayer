@@ -1267,7 +1267,7 @@ bool CTsPlayer::Fast()
     //remove_di();
 
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 1);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
+    //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",0);
 
     ret = iStartPlay();
@@ -1301,7 +1301,7 @@ bool CTsPlayer::StopFast()
     keep_vdec_mem = 1;
     iStop();
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
+    //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
 

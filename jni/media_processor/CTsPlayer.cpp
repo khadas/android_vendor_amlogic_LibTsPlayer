@@ -1303,7 +1303,6 @@ bool CTsPlayer::StopFast()
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 1);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
 
     ret = iStartPlay();
     if(!ret)
@@ -1331,7 +1330,8 @@ bool CTsPlayer::iStop()
     
     LOGI("Stop keep_vdec_mem: %d\n", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
-	amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 2);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 2);
+    amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     if(m_bIsPlay) {
         LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {

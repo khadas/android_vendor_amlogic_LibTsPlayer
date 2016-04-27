@@ -474,7 +474,7 @@ CTsPlayer::CTsPlayer()
     lp_lock_init(&mutex, NULL);
     //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
     int screen_mode = 0;
-    property_get("ubootenv.var.screenmode",value,"full");
+    property_get("ubootenv.var.screenmode",value,"normal");
     if(!strcmp(value,"normal"))
          screen_mode = 0;
     else if(!strcmp(value,"full"))

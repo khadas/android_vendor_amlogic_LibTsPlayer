@@ -9,7 +9,7 @@
 #include "Amsysfsutils.h"
 #include <sys/times.h>
 #include <time.h>
-
+#include <media/AudioSystem.h>
 #include <binder/Parcel.h>
 #include <binder/ProcessState.h>
 #include <binder/IServiceManager.h>
@@ -1380,20 +1380,51 @@ bool CTsPlayer::Seek()
     iStartPlay();
     return true;
 }
+static float last_vol = 1.0;
+static int hasSetVolume = -1;
+static int get_android_stream_volume(float *volume)
+{
+    float vol = last_vol;
+    unsigned int sr = 0;
+
+    AudioSystem::getOutputSamplingRate(&sr,AUDIO_STREAM_MUSIC);
+    if(sr > 0){
+        audio_io_handle_t handle = -1;		
+        handle = AudioSystem::getOutput(AUDIO_STREAM_MUSIC,
+                  48000,
+                  AUDIO_FORMAT_PCM_16_BIT,
+                  AUDIO_CHANNEL_OUT_STEREO,
+                  AUDIO_OUTPUT_FLAG_PRIMARY
+                  );
+                  
+        if(handle > 0){
+            if(AudioSystem::getStreamVolume(AUDIO_STREAM_MUSIC,&vol,handle) == 	NO_ERROR){
+            	*volume = vol;
+                if((last_vol!=vol)||(hasSetVolume==-1)){
+                	last_vol = vol;
+                	hasSetVolume=-1;
+                	return 0;
+                }
+            }
+            else
+                LOGI("get stream volume failed\n");			
+         }
+         else
+            LOGI("get output handle failed\n");
+    }
+    return -1;
+}
 
 int CTsPlayer::GetVolume()
 {
     float volume = 1.0f;
-    int ret;
 
-    LOGI("GetVolume");
-    ret = codec_get_volume(pcodec, &volume);
-    if(ret < 0) {
+    int ret = get_android_stream_volume(&volume);
+    LOGI("GetVolume: volume:%f , ret:%d \n",volume,ret);
+
+    if(ret < 0 || volume<0) {
         return m_nVolume;
     }
-    int nVolume = volume * 100;
-    if(nVolume <= 0)
-        return m_nVolume;
     
     return (int)(volume*100);
 }
@@ -1401,8 +1432,13 @@ int CTsPlayer::GetVolume()
 bool CTsPlayer::SetVolume(int volume)
 {
     LOGI("SetVolume");
+    if(volume<0 || volume>100){
+        LOGI("SetVolume , value is invalid \n");
+        return false;
+    }
     int ret = codec_set_volume(pcodec, (float)volume/100.0);
     m_nVolume = volume;
+    hasSetVolume=1;
     return true;
 }
 

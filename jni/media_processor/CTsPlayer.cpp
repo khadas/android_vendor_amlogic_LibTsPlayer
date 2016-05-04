@@ -474,9 +474,21 @@ CTsPlayer::CTsPlayer()
     lp_lock_init(&mutex, NULL);
     //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
     int screen_mode = 0;
+    int project_type = 0;
+    property_get("sys.proj.type",value,NULL);
+    if(!strcmp(value,"telecom")){
+        property_get("sys.proj.telecom.type",value,NULL);
+        if(!strcmp(value,"jicai")){
+            project_type=1;
+        }
+    }
     property_get("ubootenv.var.screenmode",value,"full");
-    if(!strcmp(value,"normal"))
-         screen_mode = 0;
+    if(!strcmp(value,"normal")){
+        if(project_type==1)
+            screen_mode = 1;
+        else
+            screen_mode = 0;
+    }
     else if(!strcmp(value,"full"))
          screen_mode = 1;
     else if(!strcmp(value,"4_3"))

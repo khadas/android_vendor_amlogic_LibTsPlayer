@@ -994,6 +994,7 @@ bool CTsPlayer::iStartPlay()
         LOGI("pcodec->sub_pid: %d \n", pcodec->sub_pid);
     } else {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_ff);
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",0);
         pcodec->has_audio = 0;
         pcodec->audio_pid = -1;
     }

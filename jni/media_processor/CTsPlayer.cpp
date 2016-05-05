@@ -53,6 +53,9 @@ char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
 char old_free_scale[64] = {0};
 static LPBUFFER_T lpbuffer_st;
+static int H264_error_skip_normal = 0;
+static int H264_error_skip_ff = 0;
+static int H264_error_skip_reserve = 0;
 //unsigned int am_sysinfo_param =0x08;
 
 #define LOGV(...) \
@@ -432,6 +435,18 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.playerwatchdog.support", value, "0");
     prop_playerwatchdog_support = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.h264.error_skip_normal", value, "3");
+    H264_error_skip_normal = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.h264.error_skip_ff", value, "1");
+    H264_error_skip_ff = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.h264.error_skip_reserve", value, "20");
+    H264_error_skip_reserve = atoi(value);
 
 
     LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d\n",
@@ -960,7 +975,10 @@ bool CTsPlayer::iStartPlay()
         LOGI("set audio_info.valid to 1");
     }
 
+        
+    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",H264_error_skip_reserve);
     if(!m_bFast) {
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_normal);
         if((int)a_aPara[0].pid != 0) {
             pcodec->has_audio = 1;
             pcodec->audio_pid = (int)a_aPara[0].pid;
@@ -975,6 +993,7 @@ bool CTsPlayer::iStartPlay()
         }
         LOGI("pcodec->sub_pid: %d \n", pcodec->sub_pid);
     } else {
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_ff);
         pcodec->has_audio = 0;
         pcodec->audio_pid = -1;
     }
@@ -1344,6 +1363,7 @@ bool CTsPlayer::iStop()
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 2);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
+    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
     if(m_bIsPlay) {
         LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {

@@ -977,6 +977,7 @@ bool CTsPlayer::iStartPlay()
 
         
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",H264_error_skip_reserve);
+    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
     if(!m_bFast) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_normal);
         if((int)a_aPara[0].pid != 0) {

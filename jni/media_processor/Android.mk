@@ -59,7 +59,7 @@ LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavut
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
 LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice
 LOCAL_SHARED_LIBRARIES +=libgui
-LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor
+LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor libamFFExtractor
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

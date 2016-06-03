@@ -258,6 +258,7 @@ public:
 	virtual bool SubtitleShowHide(bool bShow);
     virtual int GetVideoDropNumber();
 	virtual int GetVideoTotalNumber();
+	virtual void readExtractor();
     /*end add*/
     bool mIsOmxPlayer;
 	
@@ -271,6 +272,9 @@ private:
 	int player_pid;
 	codec_para_t codec;
 	codec_para_t *pcodec;
+	codec_para_t    *vcodec;
+    codec_para_t    *acodec;
+    codec_para_t    *scodec;
 	bool		m_bIsPlay;
 	int			m_nOsdBpp;
 	int			m_nAudioBalance;
@@ -293,6 +297,7 @@ private:
     virtual void checkBuffLevel();
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
+	static void *threadReadPacket(void *pthis);
     bool    m_isBlackoutPolicy;
     bool m_bchangeH264to4k;
     lock_t mutex_lp;
@@ -301,6 +306,7 @@ private:
     virtual bool  iStartPlay( );
     virtual bool  iStop( );
     int64_t m_PreviousOverflowTime;
+	size_t mInputQueueSize;
 };
 
 #endif

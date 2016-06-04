@@ -18,6 +18,7 @@
 #include <gui/SurfaceComposerClient.h>
 #include <gui/ISurfaceComposer.h>
 #include <ui/DisplayInfo.h>
+#include <PA_Decrypt.h>
 
 using namespace android;
 
@@ -1856,8 +1857,11 @@ void CTsPlayer::readExtractor() {
 	lp_lock(&mutex);
 	memset(packet_buffer, 0, 100*1000);
 	am_ffextractor_read_packet(packet_buffer, &size, &index);
-	if(index == 0)
-	LOGI("size:%d,index:%d\n",size,index);
+	if(index == 0){
+	    LOGI("size:%d,index:%d\n",size,index);
+	    char flag='f';
+	    PA_DecryptContentData(flag,(unsigned char*)packet_buffer,&size);
+	}
 	if(index == 0){
 	LOGI("start to write,packet alloc 100k\n");
 		for(int retry_count=0; retry_count<10; retry_count++) {

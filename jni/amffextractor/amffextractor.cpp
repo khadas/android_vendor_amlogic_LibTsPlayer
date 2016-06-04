@@ -24,6 +24,7 @@ extern "C"
 // #endif
 #include "amffextractor.h"
 #define USE_AVFILTER 0
+#define PTS_FREQ 90000
 #define LOG_LINE() ALOGV("[%s:%d] >", __FUNCTION__, __LINE__);
 
 using namespace android;
@@ -32,9 +33,13 @@ AVIOContext     *avio;
 uint8_t         *buffer = NULL;
 AVFormatContext *pFormatCtx = NULL;
 AVDictionary    *optionsDict = NULL;
+AVStream 		*pStream;
 int stream_changed = 0;
 int inited = 0;
 int videoStream;
+int audioStream;
+float a_time_base_ratio = 0.00;
+float v_time_base_ratio = 0.00;
 
 AVRational time_base = {1, 1000000};
 FILE* am_fp;
@@ -82,7 +87,43 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 		goto fail2;
 	} else
 		ALOGD("avformat_open_input success");
-	
+
+	videoStream = -1;
+	audioStream = -1;
+	unsigned int i;
+	for (i = 0; i < pFormatCtx->nb_streams; i++){
+		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+			videoStream = i;
+			break;
+		}
+	}
+	ALOGD("nb_streams=%u, videoStream=%d", pFormatCtx->nb_streams, videoStream);
+	if(videoStream != -1){
+		pStream = pFormatCtx->streams[videoStream];
+		ALOGV("has video,den:%d\n",pStream->time_base.den);
+		ALOGV("num:%d\n", pStream->time_base.num);
+		if (0 != pStream->time_base.den)
+			v_time_base_ratio = PTS_FREQ * ((float)pStream->time_base.num / pStream->time_base.den);
+			ALOGV("v_time_base_ratio:%f\n",v_time_base_ratio);
+	}
+
+	for (i = 0; i < pFormatCtx->nb_streams; i++){
+		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+			audioStream = i;
+			break;
+		}
+	}
+	ALOGD("nb_streams=%u, audioStream=%d", pFormatCtx->nb_streams, audioStream);
+	if(audioStream != -1){
+		pStream = pFormatCtx->streams[audioStream];
+		ALOGV("has audio,den:%d\n",pStream->time_base.den);
+		ALOGV("num:%d\n", pStream->time_base.num);
+		if (0 != pStream->time_base.den)
+			a_time_base_ratio = PTS_FREQ * ((float)pStream->time_base.num / pStream->time_base.den);
+			ALOGV("a_time_base_ratio:%f\n",a_time_base_ratio);
+	}
+
+
 	/*
 	if(avformat_find_stream_info(pFormatCtx, NULL)<0) {
 		return -1; // Couldn't find stream information
@@ -110,10 +151,11 @@ fail1:
 	return -1;
 }
 
-void am_ffextractor_read_packet(void *buffer, int *size, int *index) 
+void am_ffextractor_read_packet(void *buffer, int *size, int *index, int64_t *pts) 
 {
 	AVPacket  packet;
 	static int write_number = 0;
+
 	if (!inited) {
 		return;
 	}
@@ -121,7 +163,7 @@ void am_ffextractor_read_packet(void *buffer, int *size, int *index)
 		ALOGV("packet buffer is null\n");
 		return;
 	}
-	
+	packet.stream_index = -1;
 	int ret = av_read_frame(pFormatCtx, &packet);
 	ALOGV("demux stream_index=%d,size :%d\n",
 	packet.stream_index,packet.size);
@@ -129,9 +171,10 @@ void am_ffextractor_read_packet(void *buffer, int *size, int *index)
 		ALOGD(">>>>>av_read_frame failed<<<<<");
 		return;
 	}
-	*index = packet.stream_index;
-	ALOGV("index :%d\n",*index);
-	if ((packet.stream_index == 0)) {
+	if (packet.stream_index == videoStream) {
+		*index = 0;
+		/*ALOGV("index :%d,pts:%lld,size:%d\n",
+			*index,packet.pts,packet.size);*/
 		if((am_fp != NULL) && (packet.size > 0)&&(write_number < 100)) {
 			if(amprop_dumpfile){
             	fwrite(packet.data, 1, packet.size, am_fp);
@@ -141,13 +184,20 @@ void am_ffextractor_read_packet(void *buffer, int *size, int *index)
 					fclose(am_fp);	
 			}
 		}
-		if(packet.size > 0){
-			memcpy(buffer,packet.data,packet.size);
-			*size = packet.size;	
-			*index = packet.stream_index;	
-        }
+		*pts = (double)packet.pts * (double)v_time_base_ratio;
+	}else if (packet.stream_index == audioStream){
+		*index = 1;
+		*pts = (double)packet.pts * (double)a_time_base_ratio;
 
+	//ALOGV("audio index :%d,pts:%lld,dts:%lld,size:%d\n",*index,packet.pts,packet.dts,packet.size);
 	}
+
+	if(packet.size > 0){
+		memcpy(buffer,packet.data,packet.size);
+		*size = packet.size;	
+		*index = packet.stream_index;	
+    }
+
 	av_free_packet(&packet);
 }
 

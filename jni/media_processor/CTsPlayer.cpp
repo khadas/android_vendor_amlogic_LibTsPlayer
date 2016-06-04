@@ -421,7 +421,7 @@ CTsPlayer::CTsPlayer()
     prop_dumpfile = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.softdemux", value, "0");
+    property_get("iptv.softdemux", value, "1");
     prop_softdemux = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -576,7 +576,7 @@ CTsPlayer::CTsPlayer()
     	pthread_attr_init(&attr);
     	pthread_create(&mThread, &attr, threadReadPacket, this);
     	pthread_attr_destroy(&attr);
-		packet_buffer = (unsigned char *)malloc(100*1000);
+		packet_buffer = (unsigned char *)malloc(2500*1000);
         if(packet_buffer == NULL){
             LOGI("ERROR alloc packet buffer failed\n");
         }
@@ -1241,6 +1241,21 @@ bool CTsPlayer::iStartPlay()
 			LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d\n",
 				vcodec->video_type, vcodec->video_pid);
 	
+		}
+		if(hasaudio){
+			
+			acodec = (codec_para_t *)malloc(sizeof(codec_para_t));
+			if(acodec == NULL){
+				LOGI("acodec alloc fail\n");
+			}
+			memset(acodec, 0, sizeof(codec_para_t));
+			acodec->has_audio = 1;
+			acodec->audio_type = pcodec->audio_type;
+			acodec->audio_pid  = pcodec->audio_pid;
+			acodec->stream_type = STREAM_TYPE_ES_AUDIO;
+			LOGI("Init the acodec parameters:audio_type:%d,audio_pid:%d\n",
+				acodec->audio_type,acodec->audio_pid);
+		}
 			if (pipe(pipe_fd) == -1) {
             	perror("pipe");
             	exit(1);
@@ -1249,7 +1264,7 @@ bool CTsPlayer::iStartPlay()
             	fcntl(pipe_fd[1], F_SETPIPE_SZ, 1048576);
             	ALOGD("pipe opened!");
         	}
-		}
+
 	}
     /*other setting*/
     lp_lock(&mutex);
@@ -1279,7 +1294,11 @@ bool CTsPlayer::iStartPlay()
 	if(prop_softdemux == 0)
     	ret = codec_init(pcodec);
 	else{
+		if(hasvideo)
 		ret = codec_init(vcodec);
+		if(hasaudio)
+			ret = codec_init(acodec);
+		LOGI("Init audio,hasaudio:%d\n",hasaudio);
 	}
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);
@@ -1357,10 +1376,9 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 	if(prop_softdemux == 1){
         
 		int ret = write(pipe_fd[1], pBuffer, nSize);
-        if (m_fp != NULL) {
+   /*     if (m_fp != NULL) {
             fwrite(pBuffer, 1, nSize, m_fp);
-        }
-
+        }*/
     	return ret;
     }
     lp_lock(&mutex);
@@ -1830,6 +1848,7 @@ void CTsPlayer::readExtractor() {
 	int size = 0;
 	int index = -1;
     int temp_size = 0;
+	int64_t pts = 0;
 	int ret = 0;
 	if (am_ffextractor_inited == false) {
 		MediaInfo mi;
@@ -1855,26 +1874,29 @@ void CTsPlayer::readExtractor() {
 		return;
 	}
 	lp_lock(&mutex);
-	memset(packet_buffer, 0, 100*1000);
-	am_ffextractor_read_packet(packet_buffer, &size, &index);
+	memset(packet_buffer, 0, 2500*1000);
+	am_ffextractor_read_packet(packet_buffer, &size, &index, &pts);
 	if(index == 0){
 	    LOGI("size:%d,index:%d\n",size,index);
 	    char flag='f';
 	    PA_DecryptContentData(flag,(unsigned char*)packet_buffer,&size);
 	}
 	if(index == 0){
-	LOGI("start to write,packet alloc 100k\n");
+		if (codec_checkin_pts(vcodec, pts) != 0) { 
+			ALOGE("ERROR video: check in pts error!\n");
+		}   
+	LOGI("start to write,packet alloc 2500k\n");
 		for(int retry_count=0; retry_count<10; retry_count++) {
             ret = codec_write(vcodec, packet_buffer+temp_size, size-temp_size);
             if((ret < 0) || (ret > size)) {
                 if(ret < 0 && errno == EAGAIN) {
                     usleep(10);
-                    LOGI("WriteData: codec_write return EAGAIN!\n");
+                    LOGI("Read and write: codec_write return EAGAIN!\n");
                     continue;
                 }
             } else {
                 temp_size += ret;
-                LOGI("WriteData: codec_write h264 nSize is %d! temp_size=%d\n", size, temp_size);
+                LOGI("Read and write: codec_write data nSize is %d! temp_size=%d\n", size, temp_size);
                 if(temp_size >= size) {
                     temp_size = size;
                     break;
@@ -1887,7 +1909,29 @@ void CTsPlayer::readExtractor() {
             LOGI("dump ret[%d] temp_size[%d] nSize[%d] %d!\n", ret, temp_size, size);
         }
 
+	}else if(index == 1){
 
+		if (codec_checkin_pts(acodec, pts) != 0) { 
+			ALOGE("ERROR audio: check in pts error!\n");
+		}   
+
+		for(int retry_count=0; retry_count<10; retry_count++) {
+            ret = codec_write(acodec, packet_buffer+temp_size, size-temp_size);
+            if((ret < 0) || (ret > size)) {
+                if(ret < 0 && errno == EAGAIN) {
+                    usleep(10);
+                    LOGI("Audio Read and write: codec_write return EAGAIN!\n");
+                    continue;
+                }
+            } else {
+                temp_size += ret;
+                LOGI("Audio Read and write: codec_write data nSize is %d! temp_size=%d\n", size, temp_size);
+                if(temp_size >= size) {
+                    temp_size = size;
+                    break;
+                }
+            }
+        }
 	}
 	lp_unlock(&mutex);
 	

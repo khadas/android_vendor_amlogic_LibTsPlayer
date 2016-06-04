@@ -39,7 +39,7 @@ typedef struct {
 	uint32_t flags;
 }YUVFrame;
 int am_ffextractor_init(int(*read_cb)(void *opaque, uint8_t *buf, int size), MediaInfo *pMi);
-void am_ffextractor_read_packet(void *buffer, int *size, int *index);
+void am_ffextractor_read_packet(void *buffer, int *size, int *index, int64_t *pts);
 void am_ffextractor_deinit();
 int64_t getCurrentTimeMs();
 int64_t getCurrentTimeUs();

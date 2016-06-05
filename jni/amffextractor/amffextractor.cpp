@@ -195,7 +195,6 @@ void am_ffextractor_read_packet(void *buffer, int *size, int *index, int64_t *pt
 	if(packet.size > 0){
 		memcpy(buffer,packet.data,packet.size);
 		*size = packet.size;	
-		*index = packet.stream_index;	
     }
 
 	av_free_packet(&packet);

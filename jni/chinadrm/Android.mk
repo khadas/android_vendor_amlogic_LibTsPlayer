@@ -18,7 +18,7 @@ include $(BUILD_PREBUILT)
 ifeq ($(TARGET_USE_OPTEEOS),true)
 include $(CLEAR_VARS)
 TA_BINARY=cf0ea040-27cd-11e6-beee0002a5d5c51b
-TA_EXPORT_DIR := out/target/product/$(TARGET_BOOTLOADER_BOARD_NAME)/system/lib/teetz
+TA_EXPORT_DIR :=$(TARGET_OUT)/lib/teetz
 LOCAL_MODULE := $(TA_BINARY)
 LOCAL_SRC_FILES :=TA/cf0ea040-27cd-11e6-beee0002a5d5c51b.ta
 LOCAL_MODULE_TAGS := optional

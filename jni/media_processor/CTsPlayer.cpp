@@ -409,7 +409,13 @@ int sysfs_get_long(char *path, unsigned long  *val)
     }   
     return 0;
 }
+
 CTsPlayer::CTsPlayer()
+{
+    CTsPlayer(false);
+}
+
+CTsPlayer::CTsPlayer(bool DRMMode)
 {
     char value[PROPERTY_VALUE_MAX] = {0};
     
@@ -423,6 +429,8 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.softdemux", value, "1");
     prop_softdemux = atoi(value);
+    if(DRMMode)
+        prop_softdemux = 1;
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.buffer.time", value, "2300");
@@ -572,11 +580,11 @@ CTsPlayer::CTsPlayer()
     pthread_create(&mThread, &attr, threadCheckAbend, this);
     pthread_attr_destroy(&attr);
 
-	if(prop_softdemux == 1){
-    	pthread_attr_init(&attr);
-    	pthread_create(&mThread, &attr, threadReadPacket, this);
-    	pthread_attr_destroy(&attr);
-		packet_buffer = (unsigned char *)malloc(2500*1000);
+    if(prop_softdemux == 1){
+        pthread_attr_init(&attr);
+        pthread_create(&mThread, &attr, threadReadPacket, this);
+        pthread_attr_destroy(&attr);
+        packet_buffer = (unsigned char *)malloc(2500*1000);
         if(packet_buffer == NULL){
             LOGI("ERROR alloc packet buffer failed\n");
         }
@@ -594,7 +602,7 @@ CTsPlayer::CTsPlayer()
     }
 }
 
-CTsPlayer::CTsPlayer(bool omx_player)
+CTsPlayer::CTsPlayer(bool DRMMode, bool omx_player)
 {
     mIsOmxPlayer = omx_player;
 }
@@ -1224,48 +1232,44 @@ bool CTsPlayer::iStartPlay()
     if(hasaudio && hasvideo)
         player_startsync_set(2);
 
-	if(prop_softdemux == 1){
-		if(hasvideo){
-	
-			vcodec = (codec_para_t *)malloc(sizeof(codec_para_t));
-			if(vcodec == NULL){
-				LOGI("vcodec alloc fail\n");
-				return -1;
-			}
-			memset(vcodec, 0, sizeof(codec_para_t));
-			vcodec->has_video  = 1;
-        	vcodec->video_type = pcodec->video_type; 
-        	vcodec->video_pid  = pcodec->video_pid;
-          	vcodec->stream_type         = STREAM_TYPE_ES_VIDEO;
+    if(prop_softdemux == 1){
+        if(hasvideo){
+            vcodec = (codec_para_t *)malloc(sizeof(codec_para_t));
+            if(vcodec == NULL){
+                LOGI("vcodec alloc fail\n");
+                return -1;
+            }
+            memset(vcodec, 0, sizeof(codec_para_t));
+            vcodec->has_video  = 1;
+            vcodec->video_type = pcodec->video_type; 
+            vcodec->video_pid  = pcodec->video_pid;
+            vcodec->stream_type = STREAM_TYPE_ES_VIDEO;
 
-			LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d\n",
-				vcodec->video_type, vcodec->video_pid);
-	
-		}
-		if(hasaudio){
-			
-			acodec = (codec_para_t *)malloc(sizeof(codec_para_t));
-			if(acodec == NULL){
-				LOGI("acodec alloc fail\n");
-			}
-			memset(acodec, 0, sizeof(codec_para_t));
-			acodec->has_audio = 1;
-			acodec->audio_type = pcodec->audio_type;
-			acodec->audio_pid  = pcodec->audio_pid;
-			acodec->stream_type = STREAM_TYPE_ES_AUDIO;
-			LOGI("Init the acodec parameters:audio_type:%d,audio_pid:%d\n",
-				acodec->audio_type,acodec->audio_pid);
-		}
-			if (pipe(pipe_fd) == -1) {
-            	perror("pipe");
-            	exit(1);
-        	} else {
-            	fcntl(pipe_fd[0], F_SETPIPE_SZ, 1048576);
-            	fcntl(pipe_fd[1], F_SETPIPE_SZ, 1048576);
-            	ALOGD("pipe opened!");
-        	}
-
-	}
+            LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d\n",
+            vcodec->video_type, vcodec->video_pid);
+        }
+        if(hasaudio){
+            acodec = (codec_para_t *)malloc(sizeof(codec_para_t));
+            if(acodec == NULL){
+                LOGI("acodec alloc fail\n");
+            }
+            memset(acodec, 0, sizeof(codec_para_t));
+            acodec->has_audio = 1;
+            acodec->audio_type = pcodec->audio_type;
+            acodec->audio_pid  = pcodec->audio_pid;
+            acodec->stream_type = STREAM_TYPE_ES_AUDIO;
+            LOGI("Init the acodec parameters:audio_type:%d,audio_pid:%d\n",
+            acodec->audio_type,acodec->audio_pid);
+        }
+        if (pipe(pipe_fd) == -1) {
+            perror("pipe");
+            exit(1);
+        } else {
+            fcntl(pipe_fd[0], F_SETPIPE_SZ, 1048576);
+            fcntl(pipe_fd[1], F_SETPIPE_SZ, 1048576);
+            ALOGD("pipe opened!");
+        }
+    }
     /*other setting*/
     lp_lock(&mutex);
 
@@ -1289,17 +1293,17 @@ bool CTsPlayer::iStartPlay()
     		LOGI("find find find,sleep_number=%d\n",sleep_number);
 		}
     }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
-	(subtitle_buf_used != 0)||(userdata_buf_used != 0));    
+            (subtitle_buf_used != 0)||(userdata_buf_used != 0));    
  	
-	if(prop_softdemux == 0)
-    	ret = codec_init(pcodec);
-	else{
-		if(hasvideo)
-		ret = codec_init(vcodec);
-		if(hasaudio)
-			ret = codec_init(acodec);
-		LOGI("Init audio,hasaudio:%d\n",hasaudio);
-	}
+    if(prop_softdemux == 0)
+        ret = codec_init(pcodec);
+    else{
+        if(hasvideo)
+            ret = codec_init(vcodec);
+        if(hasaudio)
+            ret = codec_init(acodec);
+        LOGI("Init audio,hasaudio:%d\n",hasaudio);
+    }
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);
     if(ret == 0) {
@@ -1360,8 +1364,8 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         return -1;
 
     //checkBuffstate();
-	if(prop_softdemux == 0)
-    codec_get_abuf_state(pcodec, &audio_buf);
+    if(prop_softdemux == 0)
+        codec_get_abuf_state(pcodec, &audio_buf);
     codec_get_vbuf_state(pcodec, &video_buf);
     if(audio_buf.size != 0)
         audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
@@ -1373,13 +1377,12 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         return -1;
     } 
 
-	if(prop_softdemux == 1){
-        
-		int ret = write(pipe_fd[1], pBuffer, nSize);
-   /*     if (m_fp != NULL) {
-            fwrite(pBuffer, 1, nSize, m_fp);
+    if(prop_softdemux == 1){
+        int ret = write(pipe_fd[1], pBuffer, nSize);
+        /*if (m_fp != NULL) {
+        fwrite(pBuffer, 1, nSize, m_fp);
         }*/
-    	return ret;
+        return ret;
     }
     lp_lock(&mutex);
 	
@@ -1607,11 +1610,11 @@ bool CTsPlayer::iStop()
         m_StartPlayTimePoint = 0;
         m_PreviousOverflowTime = 0;
         ret = codec_set_mode(pcodec, TRICKMODE_NONE);
-		if(prop_softdemux){
+        if(prop_softdemux){
             uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
             if (tmp_buf == NULL) {
-                 ALOGE("malloc tmp_buf failed");
-            return false;
+                ALOGE("malloc tmp_buf failed");
+                return false;
             }
             close(pipe_fd[1]);
             while(read(pipe_fd[0], tmp_buf, 1024*32)>0);
@@ -1620,14 +1623,13 @@ bool CTsPlayer::iStop()
             return true;
         }
         LOGI("codec_close start");
-		if(prop_softdemux == 0){
-        	ret = codec_close(pcodec);
-        	pcodec->handle = -1;
-		}
-		else{
-			ret = codec_close(vcodec);
-			vcodec->handle = -1;
-		}
+        if(prop_softdemux == 0){
+            ret = codec_close(pcodec);
+            pcodec->handle = -1;
+        } else{
+            ret = codec_close(vcodec);
+            vcodec->handle = -1;
+        }
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
         //add_di();

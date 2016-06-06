@@ -191,7 +191,8 @@ class CTsPlayer : public ITsPlayer
 {
 public:
 	CTsPlayer();
-    CTsPlayer(bool omx_player);
+	CTsPlayer(bool DRMMode);
+    CTsPlayer(bool DRMMode, bool omx_player);
 	virtual ~CTsPlayer();
 public:
 	//取得播放模式

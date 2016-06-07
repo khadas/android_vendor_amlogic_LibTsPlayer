@@ -61,7 +61,7 @@ LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice
 LOCAL_SHARED_LIBRARIES +=libgui
 LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor libamFFExtractor
 
-LOCAL_SHARED_LIBRARIES += libchinadrmca
+LOCAL_SHARED_LIBRARIES += libtelecom_iptv
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

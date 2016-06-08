@@ -58,8 +58,9 @@ extern "C" {
 
 Proxy_MediaProcessor* proxy_mediaProcessor = NULL; 
 FILE *fp;
+char* m_pcBuf = NULL;
 int isPause = 0;
-
+#define WRITE_DATA_SIZE (32*1024)
 void Java_com_ctc_MediaProcessorDemoActivity_nativeWriteFile(JNIEnv* env, jobject thiz, jstring Function, jstring Return, jstring Result)
 {
 	FILE *result_fp = GetTestResultLogHandle();
@@ -283,6 +284,9 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	sParam[3].sub_type=CODEC_ID_DVB_SUBTITLE;*/
 	
 	proxy_mediaProcessor->Proxy_InitSubtitle(sParam);
+	if (m_pcBuf == NULL) {
+		m_pcBuf = (char* )malloc(WRITE_DATA_SIZE);
+	}
 	return 0;
 	
 fail:
@@ -312,19 +316,22 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 
 	while(true) {
 		Mutex::Autolock l(gMutexLock);
-		bufsize = bufsize*1024;
+		/*bufsize = bufsize*1024;
 		if(bufsize < BUFF_SIZE)
 			bufsize = BUFF_SIZE;
 		char* buffer = (char* )malloc(bufsize);
-		rd_result = fread(buffer, bufsize, 1, fp);
+		rd_result = fread(buffer, bufsize, 1, fp);*/
+		bufsize = WRITE_DATA_SIZE;
+		rd_result = fread(m_pcBuf, WRITE_DATA_SIZE, 1, fp);
 		if (rd_result <= 0)	 {
-			LOGE("read the end of file,no exit\n");
-			//exit(1);
+			LOGE("read the end of file");
+			exit(1);
 		}
 
 		while(bufsize > 0) {
-			int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) buffer, (unsigned int) bufsize);
-			LOGE("the wd_result[%d]", wd_result);
+			//int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) buffer, (unsigned int) bufsize);
+			int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) m_pcBuf, (unsigned int) bufsize);
+			//LOGE("the wd_result[%d]", wd_result);
 			
                         if(wd_result < 0)
                         {
@@ -407,7 +414,10 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStopFast(JNIEnv* env, job
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStop(JNIEnv* env, jobject thiz)
 {
 	jboolean result = proxy_mediaProcessor->Proxy_Stop();
-	
+	if (m_pcBuf != NULL) {
+		free(m_pcBuf);
+		m_pcBuf = NULL;
+	}
 	return result;
 }
 

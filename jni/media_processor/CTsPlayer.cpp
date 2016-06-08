@@ -14,6 +14,10 @@
 #include <binder/ProcessState.h>
 #include <binder/IServiceManager.h>
 #include <media/IMediaPlayerService.h>
+#include "subtitleservice.h"
+#include <gui/SurfaceComposerClient.h>
+#include <gui/ISurfaceComposer.h>
+#include <ui/DisplayInfo.h>
 
 using namespace android;
 
@@ -52,6 +56,7 @@ int buffersize = 0;
 char old_free_scale_axis[64] = {0};
 char old_window_axis[64] = {0};
 char old_free_scale[64] = {0};
+int s_video_axis[4] = {0};
 static LPBUFFER_T lpbuffer_st;
 static int H264_error_skip_normal = 0;
 static int H264_error_skip_ff = 0;
@@ -602,6 +607,10 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     int mode_w = 0, mode_h = 0;
 
     LOGI("CTsPlayer::SetVideoWindow: %d, %d, %d, %d\n", x, y, width, height);
+	s_video_axis[0] = x;
+	s_video_axis[1] = y;
+	s_video_axis[2] = width;
+	s_video_axis[3] = height;
     OUTPUT_MODE output_mode = get_display_mode();
     if(m_isSoftFit) {
         int x_b=0, y_b=0, w_b=0, h_b=0;
@@ -626,6 +635,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
             amsysfs_set_sysfs_str(path_mode, "1");
         }*/
         sprintf(bcmd, "%d %d %d %d", x_b, y_b, w_b, h_b);
+        subtitleSetSurfaceViewParam(x, y, width, height);	
         ret = amsysfs_set_sysfs_str(path_axis, bcmd);
         LOGI("setvideoaxis: %s\n", bcmd);
         return ret;
@@ -866,6 +876,118 @@ int TsplayerGetAFilterFormat(const char *prop)
     LOGI("[%s:%d]filter_afmt=%x\n", __FUNCTION__, __LINE__, filter_fmt);
     return filter_fmt;
 }
+
+pthread_t mSetSubRatioThread;
+int mSubRatioRetry = 200; //10*0.5s=5s to retry get video width and height
+bool mSubRatioThreadStop = false;
+void *setSubRatioAutoThread(void *pthis)
+{
+    int width = -1;
+    int height = -1;
+    int videoWidth = -1;
+    int videoHeight = -1;
+    int dispWidth = -1;
+    int dispHeight = -1;
+    int frameWidth = -1;
+    int frameHeight = -1;
+
+    int mode_x = 0;
+    int mode_y = 0;
+    int mode_width = 0;
+    int mode_height = 0;
+    vdec_status vdec;
+
+    char pts_video_chr[64] = {0};
+    char pts_video_chr_bac[64] = {0};
+    bool pts_video_stored = false;
+
+    do {
+        amsysfs_get_sysfs_str("/sys/class/tsync/pts_video", pts_video_chr, 64);
+        LOGE("CTsPlayer::setSubRatioAutoThread mSubRatioRetry:%d, pts_video_chr:%s\n",mSubRatioRetry, pts_video_chr);
+        if (strlen(pts_video_chr) > 0)
+        {
+            LOGE("CTsPlayer::setSubRatioAutoThread mSubRatioRetry:%d, pts_video_chr:%s, pts_video_stored:%d\n",mSubRatioRetry, pts_video_chr, pts_video_stored);
+            if (strcmp(pts_video_chr, "0x0") && !pts_video_stored)
+            {
+                pts_video_stored = true;
+                strcpy(pts_video_chr_bac, pts_video_chr);
+                continue;
+            }
+            else if (strlen(pts_video_chr_bac) > 0)
+            {
+                LOGE("CTsPlayer::setSubRatioAutoThread mSubRatioRetry:%d, pts_video_chr:%s, pts_video_chr_bac:%s,pts_video_stored:%d\n",mSubRatioRetry, pts_video_chr, pts_video_chr_bac, pts_video_stored);
+                if (strcmp(pts_video_chr_bac, pts_video_chr))
+                {
+                    break;
+                }
+            }
+        }
+        //videoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
+        //videoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
+        //LOGE("CTsPlayer::setSubRatioAutoThread (videoWidth,videoHeight):(%d,%d), mSubRatioRetry:%d, pts_video:%d, pts_video_chr:%s\n",videoWidth, videoHeight, mSubRatioRetry, pts_video, pts_video_chr);
+
+        mSubRatioRetry--;
+        usleep(50000); // 0.05 s
+    }while(mSubRatioRetry > 0 && !mSubRatioThreadStop);
+
+    if (mSubRatioThreadStop)
+    {
+        return NULL;
+    }
+
+    videoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
+    videoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
+    LOGE("CTsPlayer::setSubRatioAutoThread 00(videoWidth,videoHeight):(%d,%d), mSubRatioRetry:%d, pts_video_chr:%s\n",videoWidth, videoHeight, mSubRatioRetry, pts_video_chr);
+
+    DisplayInfo info;
+    sp<IBinder> display(SurfaceComposerClient::getBuiltInDisplay(
+                ISurfaceComposer::eDisplayIdMain));
+    SurfaceComposerClient::getDisplayInfo(display, &info);
+    frameWidth = info.w;
+    frameHeight = info.h;
+   LOGI("CTsPlayer::StartPlay (frameWidth,frameHeight):(%d,%d)\n",info.w, info.h);
+
+
+    OUTPUT_MODE output_mode = get_display_mode();
+    getPosition(output_mode, &mode_x, &mode_y, &mode_width, &mode_height);
+    dispWidth = mode_width - mode_x;
+    dispHeight = mode_height - mode_y;
+    LOGI("CTsPlayer::StartPlay (dispWidth,dispHeight):(%d,%d)\n",dispWidth, dispHeight);
+
+    // full screen
+    width = dispWidth;
+    height = dispHeight;
+
+    width = width * frameWidth / dispWidth;
+    height = height * frameHeight / dispHeight;
+    float ratioW = 1.000f;
+    float ratioH = 1.000f;
+    float ratioMax = 2.000f;
+    float ratioMin = 1.250f;
+    int maxW = dispWidth;
+    int maxH = dispHeight;
+    if (videoWidth != 0 & videoHeight != 0) {
+        ratioW = ((float)width) / videoWidth;
+        ratioH = ((float)height) / videoHeight;
+        if (ratioW > ratioMax || ratioH > ratioMax) {
+            ratioW = ratioMax;
+            ratioH = ratioMax;
+        }
+        /*else if (ratioW < ratioMin || ratioH < ratioMin) {
+            ratioW = ratioMin;
+            ratioH = ratioMin;
+        }*/
+        LOGE("CTsPlayer::StartPlay (ratioW,ratioH):(%f,%f),(maxW,maxH):(%d,%d)\n", ratioW, ratioH, maxW, maxH);
+        subtitleSetImgRatio(ratioW, ratioH, maxW, maxH);
+    }
+    return NULL;
+}
+
+void setSubRatioAuto()
+{
+    mSubRatioThreadStop = false;
+    pthread_create(&mSetSubRatioThread, NULL, setSubRatioAutoThread, NULL);
+ }
 
 /* 
  * player_startsync_set
@@ -1128,6 +1250,16 @@ bool CTsPlayer::iStartPlay()
     }*/
     m_StartPlayTimePoint = av_gettime();
     LOGI("StartPlay: m_StartPlayTimePoint = %lld\n", m_StartPlayTimePoint);
+    LOGI("subtitleSetSurfaceViewParam 1\n");
+    if (pcodec->has_sub == 1) {
+	LOGI("subtitleSetSurfaceViewParam\n");
+        subtitleSetSurfaceViewParam(s_video_axis[0], s_video_axis[1], s_video_axis[2], s_video_axis[3]);
+        subtitleResetForSeek();
+        subtitleOpen("", this);// "" fit for api param, no matter what the path is for inner subtitle.
+        subtitleShow();
+        setSubRatioAuto();
+    }
+
     return !ret;
 }
 
@@ -1322,6 +1454,8 @@ bool CTsPlayer::StopFast()
     int ret;
 
     LOGI("StopFast");
+    if (pcodec->has_sub == 1)
+        subtitleResetForSeek();
     m_bFast = false;
     
     ret=codec_set_freerun_mode(pcodec, 0);
@@ -1387,6 +1521,8 @@ bool CTsPlayer::iStop()
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
         //add_di();
+        if (pcodec->has_sub == 1)
+            subtitleClose();
         lp_unlock(&mutex);
         if (lpbuffer_st.buffer != NULL){
             free(lpbuffer_st.buffer);
@@ -1400,6 +1536,8 @@ bool CTsPlayer::iStop()
     } else {
         LOGI("m_bIsPlay is false");
     }
+    if (pcodec->has_sub == 1)
+        mSubRatioThreadStop = true;
 
     return true;
 }
@@ -1652,6 +1790,8 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 void CTsPlayer::SwitchSubtitle(int pid) 
 {
     LOGI("SwitchSubtitle be called pid is %d\n", pid);
+    if (pcodec->has_sub == 1)
+        subtitleResetForSeek();
     /* first set an invalid sub id */
     pcodec->sub_pid = 0xffff;
     if(codec_set_sub_id(pcodec)) {
@@ -1678,6 +1818,23 @@ void CTsPlayer::SwitchSubtitle(int pid)
     if(codec_reset_subtile(pcodec)) {
         LOGE("[%s:%d]reset subtile failed\n", __FUNCTION__, __LINE__);
     }
+}
+
+bool CTsPlayer::SubtitleShowHide(bool bShow)
+{
+    LOGV("[%s:%d]\n", __FUNCTION__, __LINE__);
+    if (pcodec->has_sub == 1) {
+        if (bShow) {
+            subtitleDisplay();
+        } else {
+            subtitleHide();	
+        }
+    } else {
+        LOGV("[%s:%d]No subtitle !\n", __FUNCTION__, __LINE__);
+        return false;
+    }
+
+    return true;
 }
 
 void CTsPlayer::SetProperty(int nType, int nSub, int nValue) 

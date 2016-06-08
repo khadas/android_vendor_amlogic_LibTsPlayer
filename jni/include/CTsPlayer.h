@@ -184,6 +184,7 @@ public:
     virtual int GetVideoDropNumber() = 0;
 	virtual int GetVideoTotalNumber() = 0;
 	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
+	virtual bool SubtitleShowHide(bool bShow) = 0;
 };
 
 class CTsPlayer : public ITsPlayer
@@ -254,6 +255,7 @@ public:
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
+	virtual bool SubtitleShowHide(bool bShow);
     virtual int GetVideoDropNumber();
 	virtual int GetVideoTotalNumber();
     /*end add*/

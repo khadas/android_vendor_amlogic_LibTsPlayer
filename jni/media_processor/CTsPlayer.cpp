@@ -427,7 +427,7 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     prop_dumpfile = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.softdemux", value, "1");
+    property_get("iptv.softdemux", value, "0");
     prop_softdemux = atoi(value);
     if(DRMMode)
         prop_softdemux = 1;

@@ -79,6 +79,8 @@ static int pipe_fd[2] = { -1, -1 };
 static bool am_ffextractor_inited = false;
 static int read_cb(void *opaque, uint8_t *buf, int size) {
     int ret = read(pipe_fd[0], buf, size);
+	if(ret == -1)
+		return -11;//return EAGAIN
     return ret; 
 }
 
@@ -582,7 +584,7 @@ CTsPlayer::CTsPlayer(bool DRMMode)
 
     if(prop_softdemux == 1){
         pthread_attr_init(&attr);
-        pthread_create(&mThread, &attr, threadReadPacket, this);
+		pthread_create(&readThread, &attr, threadReadPacket, this);
         pthread_attr_destroy(&attr);
         packet_buffer = (unsigned char *)malloc(2500*1000);
         if(packet_buffer == NULL){
@@ -608,11 +610,17 @@ CTsPlayer::CTsPlayer(bool DRMMode, bool omx_player)
 }
 CTsPlayer::~CTsPlayer()
 {
+	LOGI("~CTsPlayer()\n");
     if (mIsOmxPlayer)
         return;
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
     m_StopThread = true;
     pthread_join(mThread, NULL);
+    pthread_join(readThread, NULL);
+   	if(prop_softdemux == 1){
+       if(packet_buffer != NULL)
+           free(packet_buffer);
+    }
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
 }
 
@@ -1268,6 +1276,9 @@ bool CTsPlayer::iStartPlay()
             fcntl(pipe_fd[0], F_SETPIPE_SZ, 1048576);
             fcntl(pipe_fd[1], F_SETPIPE_SZ, 1048576);
             ALOGD("pipe opened!");
+            int flags = fcntl(pipe_fd[0], F_GETFL);
+            fcntl(pipe_fd[0], F_SETFL, flags | O_NONBLOCK);
+            LOGI("set pipe read nonblock\n");
         }
     }
     /*other setting*/
@@ -1620,16 +1631,35 @@ bool CTsPlayer::iStop()
             while(read(pipe_fd[0], tmp_buf, 1024*32)>0);
                 free(tmp_buf);
             close(pipe_fd[0]);
-            return true;
+            LOGI("pipe closed");
+            am_ffextractor_deinit();
+            am_ffextractor_inited = false;
+            LOGI("ffmpeg denited");
         }
         LOGI("codec_close start");
         if(prop_softdemux == 0){
             ret = codec_close(pcodec);
             pcodec->handle = -1;
         } else{
-            ret = codec_close(vcodec);
-            vcodec->handle = -1;
-        }
+			if(acodec != NULL){
+				ret = codec_close(acodec);
+				if (ret < 0) {
+					LOGI("[es_release]close acodec failed, ret= %x\n", ret); 
+					return ret;
+				}
+				free(acodec);
+				acodec = NULL;
+			}
+			if (vcodec) {
+				ret = codec_close(vcodec);
+				if (ret < 0) {
+					LOGI("[es_release]close vcodec failed, ret= %x\n", ret); 
+					return ret;
+				}
+				free(vcodec);
+				vcodec = NULL;
+			}   
+		}  
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
         //add_di();
@@ -1875,9 +1905,15 @@ void CTsPlayer::readExtractor() {
 	//	mForceStop = true;
 		return;
 	}
-	lp_lock(&mutex);
 	memset(packet_buffer, 0, 2500*1000);
 	am_ffextractor_read_packet(packet_buffer, &size, &index, &pts);
+	
+	lp_lock(&mutex);
+	if(m_bIsPlay == false){
+		LOGI("now in stop state,return\n");
+        lp_unlock(&mutex);
+       	return;
+   	}
 	if(index == 0){
 	    LOGI("size:%d,index:%d\n",size,index);
 	    char flag='f';

@@ -294,6 +294,7 @@ private:
 	FILE*	m_fp;
     lock_t mutex;
     pthread_t mThread;
+	pthread_t readThread;
     virtual void checkAbend();
     virtual void checkBuffLevel();
     virtual void checkBuffstate();

@@ -49,7 +49,6 @@ extern  int PA_HEVC_getNextNALUnit(
 			const uint8_t **nalStart, size_t *nalSize,
 			int startCodeFollows) ;*/
 extern int  PA_DecryptContentData(unsigned char byEncryptFlag, unsigned char* pbyData, int* pnDataLen);
-extern int  PA_DecryptContentInfo(unsigned char* pKeyID, int* pnKeyID, unsigned char* pEXT_X_KEY, int* pnEXT_X_KEY);
 
 
 #ifdef __cplusplus

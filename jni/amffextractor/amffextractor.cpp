@@ -8,7 +8,7 @@
 #include <utils/List.h>
 #include <utils/Timers.h>
 #include <cutils/properties.h>
-
+#define INT64_0     INT64_C(0x8000000000000000)
 // #ifdef __cplusplus
 extern "C"
 {
@@ -23,6 +23,7 @@ extern "C"
 }
 // #endif
 #include "amffextractor.h"
+#include <PA_Decrypt.h>
 #define USE_AVFILTER 0
 #define PTS_FREQ 90000
 #define LOG_LINE() ALOGV("[%s:%d] >", __FUNCTION__, __LINE__);
@@ -38,6 +39,7 @@ int stream_changed = 0;
 int inited = 0;
 int videoStream;
 int audioStream;
+int prop_useDeCrypt = 0;
 float a_time_base_ratio = 0.00;
 float v_time_base_ratio = 0.00;
 
@@ -61,6 +63,11 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 	if(amprop_dumpfile)
 	am_fp = fopen(tmpfilename, "wb+");
 
+	memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.usedecrypt", value, "1");
+    prop_useDeCrypt = atoi(value);
+	ALOGV("prop_useDeCrypt :%d\n",prop_useDeCrypt);
+
 	av_register_all();
 
 	aviobuffer = (unsigned char *) av_malloc(32768);
@@ -81,7 +88,11 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 	}
 
 	pFormatCtx->pb = avio;
-	pFormatCtx->probesize = 128 * 1024;
+	memset(value, 0, PROPERTY_VALUE_MAX);
+	property_get("iptv.softprobesize", value, "2048000");
+	pFormatCtx->probesize = atoi(value);
+	ALOGD("soft demux probesize :%d\n", pFormatCtx->probesize);
+
 	if (avformat_open_input(&pFormatCtx, NULL, NULL, NULL) != 0) {
 		ALOGE("Couldn't open input stream.\n");
 		goto fail2;
@@ -151,51 +162,96 @@ fail1:
 	return -1;
 }
 
-void am_ffextractor_read_packet(void *buffer, int *size, int *index, int64_t *pts) 
+void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 {
 	AVPacket  packet;
-	static int write_number = 0;
+	int temp_size = 0;
+	int64_t pts;
 
 	if (!inited) {
 		return;
 	}
-	if( buffer == NULL){
-		ALOGV("packet buffer is null\n");
-		return;
-	}
 	packet.stream_index = -1;
 	int ret = av_read_frame(pFormatCtx, &packet);
-	ALOGV("demux stream_index=%d,size :%d\n",
-	packet.stream_index,packet.size);
+	/*ALOGV("demux stream_index=%d,size :%d\n",
+			packet.stream_index,packet.size);*/
 	if (ret < 0) {
 		ALOGD(">>>>>av_read_frame failed<<<<<");
 		return;
 	}
+	/*ALOGV("stream_index:%d,pts:%lld,dts:%lld\n",
+			packet.stream_index, packet.pts, packet.dts);*/
 	if (packet.stream_index == videoStream) {
-		*index = 0;
-		/*ALOGV("index :%d,pts:%lld,size:%d\n",
-			*index,packet.pts,packet.size);*/
-		if((am_fp != NULL) && (packet.size > 0)&&(write_number < 100)) {
+		
+		if((am_fp != NULL) && (packet.size > 0)) {
 			if(amprop_dumpfile){
             	fwrite(packet.data, 1, packet.size, am_fp);
-				write_number++;
-            	ALOGV("nSize[%d] write_number:%d\n", packet.size,write_number);
-				if(write_number == 100)
-					fclose(am_fp);	
 			}
 		}
-		*pts = (double)packet.pts * (double)v_time_base_ratio;
+		if((int64_t)INT64_0 != packet.pts) {
+			pts = (double)packet.pts * (double)v_time_base_ratio;
+			if (codec_checkin_pts(vcodec, pts) != 0) 
+				ALOGE("ERROR video: check in pts error!\n");
+		}else if((int64_t)INT64_0 != packet.dts) {
+			pts = (double)packet.dts * (double)v_time_base_ratio;
+			if (codec_checkin_pts(vcodec, pts) != 0)
+				ALOGE("ERROR video: check in dts error!\n");
+		}
+
+       char flag='f';
+
+	   if(prop_useDeCrypt != 0)
+			PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
+
+		for(int retry_count=0; retry_count<20; retry_count++) {
+            ret = codec_write(vcodec, packet.data + temp_size, packet.size - temp_size);
+            if((ret < 0) || (ret > packet.size)) {
+                if(ret < 0 && errno == EAGAIN) {
+                    usleep(10);
+                    ALOGV("Read and write: codec_write return EAGAIN!\n");
+                    continue;
+                }
+            } else {
+                temp_size += ret;
+                ALOGV("Video Read and write: data nSize is %d! temp_size=%d,retry_number:%d\n", 
+						packet.size, temp_size,retry_count);
+                if(temp_size >= packet.size) {
+                    temp_size = packet.size;
+                    break;
+                }
+            }
+		}
+
 	}else if (packet.stream_index == audioStream){
-		*index = 1;
-		*pts = (double)packet.pts * (double)a_time_base_ratio;
+		if((int64_t)INT64_0 != packet.pts) {
+			pts = (double)packet.pts * (double)a_time_base_ratio;
+			if (codec_checkin_pts(acodec, pts) != 0) 
+				ALOGE("ERROR audio: check in pts error!\n");
+		}else if((int64_t)INT64_0 != packet.dts) {
+			pts = (double)packet.dts * (double)a_time_base_ratio;
+			if (codec_checkin_pts(acodec, pts) != 0)
+				ALOGE("ERROR audio: check in dts error!\n");
+		}
+		for(int retry_count=0; retry_count<20; retry_count++) {
+            ret = codec_write(acodec, packet.data + temp_size, packet.size-temp_size);
+            if((ret < 0) || (ret > packet.size)) {
+                if(ret < 0 && errno == EAGAIN) {
+                    usleep(10);
+                    ALOGV("Audio Read and write: codec_write return EAGAIN!\n");
+                    continue;
+                }
+            } else {
+                temp_size += ret;
+                ALOGV("Audio Read and write: data nSize is %d! temp_size=%d,retry_count:%d\n", 
+						packet.size, temp_size,retry_count);
+                if(temp_size >= packet.size) {
+                    temp_size = packet.size;
+                    break;
+                }
+            }
+		}
 
-	//ALOGV("audio index :%d,pts:%lld,dts:%lld,size:%d\n",*index,packet.pts,packet.dts,packet.size);
 	}
-
-	if(packet.size > 0){
-		memcpy(buffer,packet.data,packet.size);
-		*size = packet.size;	
-    }
 
 	av_free_packet(&packet);
 }
@@ -223,6 +279,7 @@ void am_ffextractor_deinit() {
 	inited = 0;
 	ALOGD("################amffextractor de-init successful################");
 }
+
 int64_t getCurrentTimeMs()
 {
 	return systemTime(SYSTEM_TIME_MONOTONIC) / 1000000;

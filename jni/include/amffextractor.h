@@ -1,7 +1,12 @@
 #ifndef FF_EXTRACTOR
 #define FF_EXTRACTOR
 #include <stdio.h>
-
+extern "C" {
+#include <amports/vformat.h>
+#include <amports/aformat.h>
+#include <amports/amstream.h>
+#include <codec.h>
+}
 #define AV_PKT_FLAG_KEY 0x0001
 #define AV_PKT_FLAG_CORRUPT 0x0002
 
@@ -39,7 +44,7 @@ typedef struct {
 	uint32_t flags;
 }YUVFrame;
 int am_ffextractor_init(int(*read_cb)(void *opaque, uint8_t *buf, int size), MediaInfo *pMi);
-void am_ffextractor_read_packet(void *buffer, int *size, int *index, int64_t *pts);
+void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec);
 void am_ffextractor_deinit();
 int64_t getCurrentTimeMs();
 int64_t getCurrentTimeUs();

@@ -18,8 +18,13 @@ LOCAL_SRC_FILES := \
 LIBPLAYER_PATH := $(TOP)/packages/amlogic/LibPlayer
 LOCAL_C_INCLUDES := \
 	$(TOP)/external/ffmpeg \
+	$(LIBPLAYER_PATH)/amcodec/include \
+	$(LIBPLAYER_PATH)/amadec/include \
+	$(LIBPLAYER_PATH)/amavutils/include \
 	$(LOCAL_PATH)/../include
-LOCAL_SHARED_LIBRARIES += libamffmpeg liblog libcutils libutils 
+LOCAL_SHARED_LIBRARIES += libamffmpeg liblog libcutils libutils libamcodec libamadec
+
+LOCAL_SHARED_LIBRARIES += libtelecom_iptv
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

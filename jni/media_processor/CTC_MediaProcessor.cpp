@@ -9,13 +9,15 @@
 
 // need single instance?
 
-CTC_MediaProcessor* GetMediaProcessor()
+ITsPlayer* GetMediaProcessor()
 {
-    return new CTC_MediaProcessor();
-
-	
+    return new CTsPlayer();
 }
 
+ITsPlayer* GetMediaProcessor(bool DRMMode)
+{
+    return new CTsPlayer(DRMMode);
+}
 
 int GetMediaProcessorVersion()
 {

@@ -485,9 +485,8 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     property_get("iptv.h264.error_skip_reserve", value, "20");
     H264_error_skip_reserve = atoi(value);
 
-
-    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d\n",
-		prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support);
+    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d, isDrm: %d\n",
+		        prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support, prop_softdemux);
     LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d\n", prop_audiobuftime, prop_videobuftime);
 	
     char buf[64] = {0};

@@ -9,6 +9,7 @@
 #include "player.h"
 #include "player_type.h"
 #include "vformat.h"
+#include "CTsPlayer.h"
 #include "aformat.h"
 #include "android_runtime/AndroidRuntime.h"
 #include <gui/Surface.h> 
@@ -168,6 +169,27 @@ int _media_info_dump(media_info_t* minfo)
 	ALOGI("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 	return 0;
 }
+void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler,int value)
+{
+    switch (evt) {
+    case 5: ALOGI("evt:VIDEO_BUFFSIZE  value :%d\n",value);break;
+    case 6: ALOGI("evt:VIDEO_BUFF_USED  value :%d\n",value);break;
+    case 7: ALOGI("evt:AUDIO_BUFFSIZE  value :%d\n",value);break;
+    case 8: ALOGI("evt:AUDIO_BUFF_USED  value :%d\n",value);break;
+    case 9: ALOGI("evt:VIDEO_RATIO  value :%d\n",value);break;
+    case 10:ALOGI("evt:VIDEO_W_H  value :%d\n",value);break;
+    case 11:ALOGI("evt:VIDEO_F_F_MODE  value :%d\n",value);break;
+    case 12:ALOGI("evt:AUDIO_SAMPLE_RATE  value :%d\n",value);break;
+    case 13:ALOGI("evt:AUDIO_CUR_BITRATE  value :%d\n",value);break;
+    case 14:ALOGI("evt:VIDEO_PTS_ERROR  value :%d\n",value);break;
+    case 15:ALOGI("evt:AUDIO_PTS_ERROR  value :%d\n",value);break;
+    case 16:ALOGI("evt:VDEC_ERROR  value :%d\n",value);break;
+    case 17:ALOGI("evt:ADEC_ERROR  value :%d\n",value);break;
+    case 18:ALOGI("evt:UNDERFLOW  value :%d\n",value);break;
+    case 19:ALOGI("evt:ADEC_UNDERFLOW  value :%d\n",value);break;
+    default:ALOGI("evt: %d, value :%d\n",evt, value);break;	
+    }    
+}
 
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thiz, jstring url)
 {
@@ -272,6 +294,10 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	
 	proxy_mediaProcessor->Proxy_InitVideo(&videoPara);
 	proxy_mediaProcessor->Proxy_InitAudio(audioPara);
+	IPTV_PLAYER_EVT_CB pfunc;
+
+	pfunc = test_player_evt_func;
+	proxy_mediaProcessor->Proxy_playerback_register_evt_cb(pfunc, NULL);
 	
 /*	
 	sParam[0].pid=0x106;

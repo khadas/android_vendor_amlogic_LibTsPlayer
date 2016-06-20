@@ -2233,12 +2233,16 @@ void CTsPlayer::checkAbend()
         else
             codec_get_vbuf_state(vcodec, &video_buf);
 
+        codec_get_vbuf_state(pcodec, &video_buf);
+        
+        pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFFSIZE, player_evt_hander,video_buf.size);
+        pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFF_USED, player_evt_hander,video_buf.data_len);
         LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
         if(pcodec->has_video) {
             if(pcodec->video_type == VFORMAT_MJPEG) {
                 if(video_buf.data_len < (RES_VIDEO_SIZE >> 2)) {
                     if(pfunc_player_evt != NULL) {
-                        pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
+                        pfunc_player_evt(IPTV_PLAYER_EVT_UNDERFLOW, player_evt_hander,1);
                     }
                     checkAudio = false;
                     LOGW("checkAbend video low level\n");
@@ -2247,18 +2251,20 @@ void CTsPlayer::checkAbend()
             else {
                 if(video_buf.data_len< RES_VIDEO_SIZE) {
                     if(pfunc_player_evt != NULL) {
-                        pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
+                        pfunc_player_evt(IPTV_PLAYER_EVT_UNDERFLOW, player_evt_hander,1);
                     }
                     checkAudio = false;
                     LOGW("checkAbend video low level\n");
                 }
             }
         }
+        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFFSIZE, player_evt_hander,audio_buf.size);
+        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFF_USED, player_evt_hander,audio_buf.data_len);
         LOGI("checkAbend audio_buf.data_len is %d\n", audio_buf.data_len);
         if(pcodec->has_audio && checkAudio) {
             if(audio_buf.data_len < RES_AUDIO_SIZE) {
                 if(pfunc_player_evt != NULL) {
-                    pfunc_player_evt(IPTV_PLAYER_EVT_ABEND, player_evt_hander);
+                    pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_UNDERFLOW, player_evt_hander,1);
                 }
                 LOGW("checkAbend audio low level\n");
             }
@@ -2396,6 +2402,8 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         checkcount++;
         if(checkcount >= 40) {
             tsplayer->checkAbend();
+            tsplayer->Report_video_paramters();
+            tsplayer->Report_Audio_paramters();
             checkcount = 0;
         }
     }
@@ -2416,6 +2424,106 @@ void *CTsPlayer::threadReadPacket(void *pthis) {
     LOGV("threadReadPakcet end\n");
     return NULL;
 }
+void CTsPlayer::Report_Audio_paramters()
+{   
+    struct adec_status audio_status;
+        if (NULL != pcodec)
+         {
+           int m_nAudioSampleRate = 0;
+           int rAudioCurBitrate = 0;
+           int rAudio_pts_error = 0;
+           unsigned int rAudio_error_count = 0;
+		   
+           rAudio_pts_error = codec_get_sync_audio_discont(pcodec);
+           codec_get_adec_state(pcodec, &audio_status);
+           codec_get_audio_cur_bitrate(pcodec, &rAudioCurBitrate);
+           m_nAudioSampleRate = audio_status.sample_rate;
+           rAudio_error_count = audio_status.error_count;
+           
+           pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE, player_evt_hander,m_nAudioSampleRate);
+           pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE, player_evt_hander,rAudioCurBitrate);
+           pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_PTS_ERROR, player_evt_hander,rAudio_pts_error);
+           pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_ERROR, player_evt_hander,rAudio_error_count);
+         } 
+    
+}
+
+void CTsPlayer::Report_video_paramters()
+{
+    int rVideoRatio=0;
+    int rVideo_W_H=0;
+    int rVideo_F_F_MODE=0;
+    int rVideo_pts_error = 0;
+    unsigned int rVideo_error_count = 0;
+	
+    int rVideoHeight=0;
+    int rVideoWidth=0;
+    char tVideoFFMode[64] = {0};
+    double videoWH=0;
+	
+    struct vdec_status video_status;
+    
+        
+	
+    if (NULL != pcodec)
+    {
+      rVideo_pts_error = codec_get_sync_video_discont(pcodec);
+      pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_PTS_ERROR, player_evt_hander,rVideo_pts_error);
+	  
+      codec_get_vdec_state(pcodec, &video_status);
+      rVideo_error_count = video_status.error_count;
+      pfunc_player_evt(IPTV_PLAYER_EVT_VDEC_ERROR, player_evt_hander,rVideo_error_count);
+    }
+	
+    rVideoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
+    rVideoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
+    amsysfs_get_sysfs_str("/sys/class/deinterlace/di0/frame_format",tVideoFFMode,64);
+    LOGI("video_height:%d,video_width:%d,video_ffmode:%s",rVideoHeight,rVideoWidth,tVideoFFMode);
+	
+    videoWH = rVideoWidth / rVideoHeight;
+	
+    if (videoWH < 1.34)
+    {
+      rVideo_W_H = 0;
+    } else if(videoWH > 1.7)
+    {
+      rVideo_W_H = 1;
+    }
+	
+    if ((rVideoWidth==640) && (rVideoHeight==480))
+    {
+      rVideoRatio = 0;
+    } else if ((rVideoWidth==720) && (rVideoHeight==576))
+    {
+      rVideoRatio = 1;
+    } else if ((rVideoWidth==1280) && (rVideoHeight==720))
+    {
+      rVideoRatio = 2;
+    } else if ((rVideoWidth==1920) && (rVideoHeight==1080))
+    {
+      rVideoRatio = 3;
+    } else if ((rVideoWidth==3840) && (rVideoHeight==2160))
+    {
+      rVideoRatio = 4;
+    } else
+    {
+      rVideoRatio = 5;
+    }
+	
+    if(!strcmp(tVideoFFMode, "progressive"))
+    {
+      rVideo_F_F_MODE = 1;
+    } else
+    {
+      rVideo_F_F_MODE = 0;
+    }	
+	
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_RATIO, player_evt_hander,rVideoRatio);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_W_H, player_evt_hander,rVideo_W_H);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_F_F_MODE, player_evt_hander,rVideo_F_F_MODE);
+	
+}
+
 int CTsPlayer::GetRealTimeFrameRate()
 {
     int nRTfps = 0;

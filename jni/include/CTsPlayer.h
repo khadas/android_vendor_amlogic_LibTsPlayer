@@ -105,9 +105,24 @@ typedef enum
     IPTV_PLAYER_EVT_VOD_EOS,    //VOD播放完毕
     IPTV_PLAYER_EVT_ABEND,         //为上报下溢事件而增加的类型
     IPTV_PLAYER_EVT_PLAYBACK_ERROR,	// 播放错误
+    IPTV_PLAYER_EVT_VIDEO_BUFFSIZE,
+    IPTV_PLAYER_EVT_VIDEO_BUFF_USED,
+    IPTV_PLAYER_EVT_AUDIO_BUFFSIZE,
+    IPTV_PLAYER_EVT_AUDIO_BUFF_USED,
+    IPTV_PLAYER_EVT_VIDEO_RATIO,
+    IPTV_PLAYER_EVT_VIDEO_W_H,
+    IPTV_PLAYER_EVT_VIDEO_F_F_MODE,
+    IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE,
+    IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE,
+    IPTV_PLAYER_EVT_VIDEO_PTS_ERROR,
+    IPTV_PLAYER_EVT_AUDIO_PTS_ERROR,
+    IPTV_PLAYER_EVT_VDEC_ERROR,
+    IPTV_PLAYER_EVT_ADEC_ERROR,
+    IPTV_PLAYER_EVT_UNDERFLOW,
+    IPTV_PLAYER_EVT_ADEC_UNDERFLOW,
 }IPTV_PLAYER_EVT_e;
 
-typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
+typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler,int value);
 
 typedef struct {
     int abuf_size;
@@ -262,6 +277,8 @@ public:
     virtual int GetVideoFrameRate();
 	virtual bool SubtitleShowHide(bool bShow);
     virtual int GetVideoDropNumber();
+    virtual void Report_video_paramters();
+    virtual void Report_Audio_paramters();
 	virtual int GetVideoTotalNumber();
 	virtual void readExtractor();
     /*end add*/

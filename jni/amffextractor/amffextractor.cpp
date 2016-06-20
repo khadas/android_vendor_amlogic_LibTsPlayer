@@ -23,7 +23,10 @@ extern "C"
 }
 // #endif
 #include "amffextractor.h"
+#ifdef USE_OPTEEOS
 #include <PA_Decrypt.h>
+#endif
+
 #define USE_AVFILTER 0
 #define PTS_FREQ 90000
 #define LOG_LINE() ALOGV("[%s:%d] >", __FUNCTION__, __LINE__);
@@ -39,7 +42,9 @@ int stream_changed = 0;
 int inited = 0;
 int videoStream;
 int audioStream;
+#ifdef USE_OPTEEOS
 int prop_useDeCrypt = 0;
+#endif
 float a_time_base_ratio = 0.00;
 float v_time_base_ratio = 0.00;
 
@@ -63,10 +68,12 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 	if(amprop_dumpfile)
 	am_fp = fopen(tmpfilename, "wb+");
 
+#ifdef USE_OPTEEOS
 	memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.usedecrypt", value, "1");
     prop_useDeCrypt = atoi(value);
 	ALOGV("prop_useDeCrypt :%d\n",prop_useDeCrypt);
+#endif
 
 	av_register_all();
 
@@ -200,8 +207,10 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 
        char flag='f';
 
+#ifdef USE_OPTEEOS
 	   if(prop_useDeCrypt != 0)
 			PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
+#endif
 
 		for(int retry_count=0; retry_count<20; retry_count++) {
             ret = codec_write(vcodec, packet.data + temp_size, packet.size - temp_size);

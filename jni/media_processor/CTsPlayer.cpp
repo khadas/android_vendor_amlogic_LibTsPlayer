@@ -521,11 +521,11 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     memset(&codec, 0, sizeof(codec));
     player_pid = -1;
     pcodec = &codec;
-	if(prop_softdemux != 0){
-       vcodec = (codec_para_t *)malloc(sizeof(codec_para_t));
-       if(vcodec == NULL){
-           LOGI("vcodec alloc fail\n");
-       }
+    if(prop_softdemux != 0){
+        vcodec = (codec_para_t *)malloc(sizeof(codec_para_t));
+        if(vcodec == NULL){
+            LOGI("vcodec alloc fail\n");
+        }
        memset(vcodec, 0, sizeof(codec_para_t));
 
        acodec = (codec_para_t *)malloc(sizeof(codec_para_t));
@@ -570,8 +570,8 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
 
-	//set overflow status when decode h264_4k use format h264 .
-	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 1);
+    //set overflow status when decode h264_4k use format h264 .
+    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 1);
 
     m_bIsPlay = false;
     m_bIsPause = false;
@@ -595,9 +595,8 @@ CTsPlayer::CTsPlayer(bool DRMMode)
 
     if(prop_softdemux == 1){
         pthread_attr_init(&attr);
-		pthread_create(&readThread, &attr, threadReadPacket, this);
+        pthread_create(&readThread, &attr, threadReadPacket, this);
         pthread_attr_destroy(&attr);
-
     }
 
     m_nMode = M_LIVE;
@@ -610,30 +609,35 @@ CTsPlayer::CTsPlayer(bool DRMMode)
 			  service->stopPlayerIfNeed();
 		  	LOGI("CTsPlayer stopPlayerIfNeed ==end\n");
     }
+    mIsOmxPlayer = false;
 }
 
 CTsPlayer::CTsPlayer(bool DRMMode, bool omx_player)
 {
     mIsOmxPlayer = omx_player;
+    LOGW("CTsPlayer, mIsOmxPlayer: %d\n", mIsOmxPlayer);
 }
+
 CTsPlayer::~CTsPlayer()
 {
-	LOGI("~CTsPlayer()\n");
-    if (mIsOmxPlayer)
+    LOGI("~CTsPlayer()\n");
+    if (mIsOmxPlayer) {
+        LOGI("Is omx player, return!!!");
         return;
+    }
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
     m_StopThread = true;
     pthread_join(mThread, NULL);
     pthread_join(readThread, NULL);
-   	if(prop_softdemux == 1){
-		if(acodec){	
-			free(acodec);
-			acodec = NULL;
-		}
-		if(vcodec){
-			free(vcodec);
-			vcodec = NULL;
-		}
+    if(prop_softdemux == 1){
+        if(acodec){	
+            free(acodec);
+            acodec = NULL;
+        }
+        if(vcodec){
+            free(vcodec);
+            vcodec = NULL;
+        }
     }
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
 }
@@ -1256,7 +1260,6 @@ bool CTsPlayer::iStartPlay()
 
     if(prop_softdemux == 1){
         if(hasvideo){
-     
             vcodec->has_video  = 1;
             vcodec->video_type = pcodec->video_type; 
             vcodec->video_pid  = pcodec->video_pid;
@@ -1266,7 +1269,6 @@ bool CTsPlayer::iStartPlay()
             vcodec->video_type, vcodec->video_pid);
         }
         if(hasaudio){
-   
             acodec->has_audio = 1;
             acodec->audio_type = pcodec->audio_type;
             acodec->audio_pid  = pcodec->audio_pid;
@@ -1319,18 +1321,18 @@ bool CTsPlayer::iStartPlay()
         if(hasaudio)
             ret = codec_init(acodec);
         LOGI("Init audio,hasaudio:%d\n",hasaudio);
-		if ((hasaudio) && (acodec != NULL)){
-			pcodec = acodec;
-			if(vcodec != NULL){
-				pcodec->has_video = 1;
-				pcodec->video_type = vcodec->video_type; 
-        		pcodec->video_pid  = vcodec->video_pid;
-          		pcodec->stream_type = STREAM_TYPE_ES_VIDEO;
-			}
-			LOGI("[%s:%d]init pcodec pointer to acodec!\n", __FUNCTION__, __LINE__);
-		}else if ((hasvideo) && (vcodec != NULL)){
-			pcodec = vcodec;
-		}
+        if ((hasaudio) && (acodec != NULL)){
+            pcodec = acodec;
+            if(vcodec != NULL){
+                pcodec->has_video = 1;
+                pcodec->video_type = vcodec->video_type; 
+                pcodec->video_pid  = vcodec->video_pid;
+                pcodec->stream_type = STREAM_TYPE_ES_VIDEO;
+            }
+            LOGI("[%s:%d]init pcodec pointer to acodec!\n", __FUNCTION__, __LINE__);
+        }else if ((hasvideo) && (vcodec != NULL)){
+            pcodec = vcodec;
+        }
     }
     LOGI("StartPlay codec_init After: %d\n", ret);
     lp_unlock(&mutex);
@@ -1394,33 +1396,32 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     //checkBuffstate();
     if(prop_softdemux == 0){
         codec_get_abuf_state(pcodec, &audio_buf);
-    codec_get_vbuf_state(pcodec, &video_buf);
-	}
+        codec_get_vbuf_state(pcodec, &video_buf);
+    }
     if(audio_buf.size != 0)
         audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
     if(video_buf.size != 0)
         video_buf_level = (float)video_buf.data_len / video_buf.size;
 
-	if(prop_softdemux == 0){
-    if((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
-        LOGI("WriteData : audio_buf_level= %.5f, video_buf_level=%.5f, Don't writedate()\n", audio_buf_level, video_buf_level);
-        return -1;
-    } 
-	}
+    if(prop_softdemux == 0){
+        if((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
+            LOGI("WriteData : audio_buf_level= %.5f, video_buf_level=%.5f, Don't writedate()\n", audio_buf_level, video_buf_level);
+            return -1;
+        } 
+    }
 
     if(prop_softdemux == 1){
         int ret = write(pipe_fd[1], pBuffer, nSize);
         /*if (m_fp != NULL) {
-        fwrite(pBuffer, 1, nSize, m_fp);
+            fwrite(pBuffer, 1, nSize, m_fp);
         }*/
-		if(ret == -1)
-			LOGI("pipe is full,Don't write\n");
+        if(ret == -1)
+            LOGI("pipe is full,Don't write\n");
         return ret;
     }
     lp_lock(&mutex);
 	
     if ((pcodec->video_type == VFORMAT_H264) && lpbuffer_st.enlpflag) {
-        
         lp_lock(&mutex_lp);
         if (lpbuffer_st.wp + nSize < lpbuffer_st.bufferend) {
             lpbuffer_st.wp = (unsigned char *)memcpy(lpbuffer_st.wp, pBuffer, nSize);
@@ -1568,19 +1569,19 @@ bool CTsPlayer::Fast()
         return false;
 
     LOGI("Fast: codec_set_mode: %d\n", pcodec->handle);
-    amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0); 
+    amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0);
     codec_set_freerun_mode(pcodec, 1);
     if(pcodec->video_type == VFORMAT_HEVC){
-		if(prop_softdemux == 0)
-        	ret = codec_set_mode(pcodec, TRICKMODE_I_HEVC);
-		else
-			ret = codec_set_mode(vcodec, TRICKMODE_I_HEVC);
-    }else{
-		if(prop_softdemux == 0)
-        	ret = codec_set_mode(pcodec, TRICKMODE_I);
-		else
-			ret = codec_set_mode(vcodec, TRICKMODE_I);
-	}
+        if(prop_softdemux == 0)
+            ret = codec_set_mode(pcodec, TRICKMODE_I_HEVC);
+        else
+            ret = codec_set_mode(vcodec, TRICKMODE_I_HEVC);
+    } else {
+        if(prop_softdemux == 0)
+            ret = codec_set_mode(pcodec, TRICKMODE_I);
+        else
+            ret = codec_set_mode(vcodec, TRICKMODE_I);
+    }
     return !ret;
 }
 
@@ -1598,10 +1599,10 @@ bool CTsPlayer::StopFast()
         LOGI("error stopfast set freerun_mode 0 fail\n");
     }
     
-	if(prop_softdemux == 0)
-    ret = codec_set_mode(pcodec, TRICKMODE_NONE);
-	else
-		ret = codec_set_mode(vcodec, TRICKMODE_NONE);
+    if(prop_softdemux == 0)
+        ret = codec_set_mode(pcodec, TRICKMODE_NONE);
+    else
+        ret = codec_set_mode(vcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     keep_vdec_mem = 1;
     iStop();
@@ -1652,13 +1653,12 @@ bool CTsPlayer::iStop()
         m_bIsPause = false;
         m_StartPlayTimePoint = 0;
         m_PreviousOverflowTime = 0;
-		if(prop_softdemux == 0){
-        	ret = codec_set_mode(pcodec, TRICKMODE_NONE);
-			ret = codec_close(pcodec);
+        if (prop_softdemux == 0) {
+            ret = codec_set_mode(pcodec, TRICKMODE_NONE);
+            ret = codec_close(pcodec);
             pcodec->handle = -1;
-
-        }else{
-			ret = codec_set_mode(vcodec, TRICKMODE_NONE);
+        } else {
+            ret = codec_set_mode(vcodec, TRICKMODE_NONE);
             uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
             if (tmp_buf == NULL) {
                 ALOGE("malloc tmp_buf failed");
@@ -1672,24 +1672,21 @@ bool CTsPlayer::iStop()
             am_ffextractor_deinit();
             am_ffextractor_inited = false;
             LOGI("ffmpeg denited");
-       
-			if(acodec != NULL){
-				ret = codec_close(acodec);
-				if (ret < 0) {
-					LOGI("[es_release]close acodec failed, ret= %x\n", ret); 
-					return ret;
-				}
-			
-			}
-			if (vcodec) {
-				ret = codec_close(vcodec);
-				if (ret < 0) {
-					LOGI("[es_release]close vcodec failed, ret= %x\n", ret); 
-					return ret;
-				}
-		
-			}   
-		}  
+            if(acodec != NULL){
+                ret = codec_close(acodec);
+                if (ret < 0) {
+                    LOGI("[es_release]close acodec failed, ret= %x\n", ret); 
+                    return ret;
+                }
+            }
+            if (vcodec) {
+                ret = codec_close(vcodec);
+                if (ret < 0) {
+                    LOGI("[es_release]close vcodec failed, ret= %x\n", ret); 
+                    return ret;
+                }
+            }   
+        }  
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
         //add_di();
@@ -1846,11 +1843,11 @@ bool CTsPlayer::SetRatio(int nRatio)
     int mode_width = 0;
     int mode_height = 0;
     vdec_status vdec;
-	if(prop_softdemux == 0){
-    codec_get_vdec_state(pcodec,&vdec);
-	}else{
-		codec_get_vdec_state(vcodec,&vdec);
-	}
+    if (prop_softdemux == 0) {
+        codec_get_vdec_state(pcodec,&vdec);
+    } else {
+        codec_get_vdec_state(vcodec,&vdec);
+    }
     width = vdec.width;
     height = vdec.height;
 
@@ -2157,10 +2154,10 @@ void CTsPlayer::checkBuffstate()
     char filter_mode[PROPERTY_VALUE_MAX] = {0};
     struct vdec_status video_buf;
     if(m_bIsPlay) {
-		if(prop_softdemux == 0)
-        codec_get_vdec_state(pcodec, &video_buf);
-		else
-			codec_get_vdec_state(vcodec, &video_buf);
+        if(prop_softdemux == 0)
+            codec_get_vdec_state(pcodec, &video_buf);
+        else
+            codec_get_vdec_state(vcodec, &video_buf);
         if (video_buf.status & DECODER_ERROR_MASK) {
             LOGI("decoder error vdec.status: %x\n", video_buf.status);
             int is_decoder_fatal_error = video_buf.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW;
@@ -2188,10 +2185,10 @@ void CTsPlayer::checkAbend()
     if(!m_bWrFirstPkg){
         bool checkAudio = true;
         codec_get_abuf_state(pcodec, &audio_buf);
-		if(prop_softdemux == 0)
-        	codec_get_vbuf_state(pcodec, &video_buf);
-		else
-			codec_get_vbuf_state(vcodec, &video_buf);
+        if(prop_softdemux == 0)
+            codec_get_vbuf_state(pcodec, &video_buf);
+        else
+            codec_get_vbuf_state(vcodec, &video_buf);
 
         LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
         if(pcodec->has_video) {
@@ -2234,10 +2231,10 @@ void CTsPlayer::checkVdecstate()
     struct vdec_status video_status;
     int64_t  last_time, now_time;
     if(m_bIsPlay) {
-		if(prop_softdemux == 0)
-        codec_get_vdec_state(pcodec, &video_status);
-		else
-			codec_get_vdec_state(vcodec, &video_status);
+        if(prop_softdemux == 0)
+            codec_get_vdec_state(pcodec, &video_status);
+        else
+            codec_get_vdec_state(vcodec, &video_status);
         if (video_status.status & DECODER_ERROR_MASK) {
             LOGI("decoder vdec.status: %x width : %d height: %d\n", video_status.status, video_status.width, video_status.height);
 
@@ -2306,14 +2303,14 @@ void CTsPlayer::checkVdecstate()
         //monitor buffer staus ,overflow more than 2s reset player,if support 
         if (prop_playerwatchdog_support && !m_bIsPause){
             codec_get_abuf_state(pcodec, &audio_buf);
-			if(prop_softdemux == 0)
-            	codec_get_vbuf_state(pcodec, &video_buf);
-			else
-				codec_get_vbuf_state(vcodec, &video_buf);
+            if(prop_softdemux == 0)
+                codec_get_vbuf_state(pcodec, &video_buf);
+            else
+                codec_get_vbuf_state(vcodec, &video_buf);
             if (audio_buf.size != 0)
-            audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
+                audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
             if (video_buf.size != 0)
-            video_buf_level = (float)video_buf.data_len / video_buf.size;
+                video_buf_level = (float)video_buf.data_len / video_buf.size;
             if ((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
                 LOGI("checkVdecstate : audio_buf_level= %.5f, video_buf_level=%.5f\n", audio_buf_level, video_buf_level);
                 if (m_PreviousOverflowTime == 0)
@@ -2378,15 +2375,19 @@ int CTsPlayer::GetVideoFrameRate()
 {
     int nVideoFrameRate = 0;
     struct vdec_status video_status;
-
-    if (NULL != pcodec)
-    {
-		if(prop_softdemux == 0)
-        	codec_get_vdec_state(pcodec, &video_status);
-		else
-			codec_get_vdec_state(vcodec, &video_status);
-        nVideoFrameRate = video_status.fps;
-        LOGI("video frame rate:%d\n", nVideoFrameRate);
+    
+    if(prop_softdemux == 0) {
+        if (NULL != pcodec) {
+            codec_get_vdec_state(pcodec, &video_status);
+            nVideoFrameRate = video_status.fps;
+            LOGI("video frame rate:%d\n", nVideoFrameRate);
+        }
+    } else {
+        if (NULL != vcodec) {
+            codec_get_vdec_state(vcodec, &video_status);
+            nVideoFrameRate = video_status.fps;
+            LOGI("video frame rate:%d\n", nVideoFrameRate);
+        }
     }
 
     return nVideoFrameRate;

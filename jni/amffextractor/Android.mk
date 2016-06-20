@@ -24,7 +24,10 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/../include
 LOCAL_SHARED_LIBRARIES += libamffmpeg liblog libcutils libutils libamcodec libamadec
 
+ifeq ($(TARGET_USE_OPTEEOS),true)
 LOCAL_SHARED_LIBRARIES += libtelecom_iptv
+LOCAL_CFLAGS += -DUSE_OPTEEOS
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

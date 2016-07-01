@@ -51,28 +51,45 @@ float v_time_base_ratio = 0.00;
 AVRational time_base = {1, 1000000};
 FILE* am_fp;
 static int amprop_dumpfile;
-int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), MediaInfo *pMi) {
+int am_debug = 0;
+#ifdef USE_OPTEEOS
+FILE *de_fp;
+static int deprop_dumpfile;
+#endif
+int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), MediaInfo *pMi) 
+{
 	if (inited)
 		return 0;
 	static int tmpfileindex = 0;
 	char args[512];
 	char tmpfilename[1024] = "";
+	char tmpfilename1[1024] = "";
 	char value[PROPERTY_VALUE_MAX] = {0};
 
 	property_get("iptv.dumppath", value, "/storage/external_storage/sda");
 	sprintf(tmpfilename, "%s/am_Live%d.ts", value, tmpfileindex);
+	sprintf(tmpfilename1, "%s/de_Live%d.ts", value,tmpfileindex);
 	tmpfileindex++;
 	memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("amiptv.dumpfile", value, "0");
     amprop_dumpfile = atoi(value);
 	if(amprop_dumpfile)
 	am_fp = fopen(tmpfilename, "wb+");
-
+	
+	memset(value, 0, PROPERTY_VALUE_MAX);
+	property_get("iptv.shouldshowlog", value, "0");
+	am_debug = atoi(value);
+	ALOGV("am_debug = %d\n", am_debug);
 #ifdef USE_OPTEEOS
 	memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.usedecrypt", value, "1");
     prop_useDeCrypt = atoi(value);
 	ALOGV("prop_useDeCrypt :%d\n",prop_useDeCrypt);
+	memset(value, 0, PROPERTY_VALUE_MAX);
+	property_get("deiptv.dumpfile", value, "0");
+	deprop_dumpfile = atoi(value);
+	if(deprop_dumpfile)
+		de_fp = fopen(tmpfilename1, "wb+");
 #endif
 
 	av_register_all();
@@ -178,7 +195,7 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 	if (!inited) {
 		return;
 	}
-	packet.stream_index = -1;
+	av_init_packet(&packet);
 	int ret = av_read_frame(pFormatCtx, &packet);
 	/*ALOGV("demux stream_index=%d,size :%d\n",
 			packet.stream_index,packet.size);*/
@@ -205,11 +222,17 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 				ALOGE("ERROR video: check in dts error!\n");
 		}
 
-       char flag='f';
+      
 
 #ifdef USE_OPTEEOS
+		char flag='f';
 	   if(prop_useDeCrypt != 0)
 			PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
+	   	if((de_fp != NULL) && (packet.size > 0)) {
+			if(deprop_dumpfile){
+				fwrite(packet.data, 1, packet.size, de_fp);
+			}
+		}
 #endif
 
 		for(int retry_count=0; retry_count<20; retry_count++) {
@@ -222,8 +245,9 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
                 }
             } else {
                 temp_size += ret;
-                ALOGV("Video Read and write: data nSize is %d! temp_size=%d,retry_number:%d\n", 
-						packet.size, temp_size,retry_count);
+				if(am_debug)
+                	ALOGV("Video Read and write: data nSize is %d! temp_size=%d,retry_number:%d\n", 
+							packet.size, temp_size,retry_count);
                 if(temp_size >= packet.size) {
                     temp_size = packet.size;
                     break;
@@ -251,8 +275,9 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
                 }
             } else {
                 temp_size += ret;
-                ALOGV("Audio Read and write: data nSize is %d! temp_size=%d,retry_count:%d\n", 
-						packet.size, temp_size,retry_count);
+				if(am_debug)
+                	ALOGV("Audio Read and write: data nSize is %d! temp_size=%d,retry_count:%d\n", 
+							packet.size, temp_size,retry_count);
                 if(temp_size >= packet.size) {
                     temp_size = packet.size;
                     break;
@@ -277,6 +302,12 @@ void am_ffextractor_deinit() {
         fclose(am_fp);
         am_fp = NULL;
     }
+#ifdef USE_OPTEEOS
+	if(de_fp != NULL) {
+		fclose(de_fp);
+		de_fp = NULL;
+    }
+#endif
 	avformat_close_input(&pFormatCtx);
 	
 	if(avio->buffer != NULL)

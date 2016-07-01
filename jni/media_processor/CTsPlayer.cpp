@@ -41,6 +41,7 @@ static int prop_playerwatchdog_support =0;
 int prop_softdemux = 0;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
+int prop_readffmpeg = 0;
 int hasaudio = 0;
 int hasvideo = 0;
 int prop_softfit = 0;
@@ -62,6 +63,10 @@ static LPBUFFER_T lpbuffer_st;
 static int H264_error_skip_normal = 0;
 static int H264_error_skip_ff = 0;
 static int H264_error_skip_reserve = 0;
+static unsigned int prev_aread = 0;
+static unsigned int prev_vread = 0;
+static int arp_is_changed = 0;
+static int vrp_is_changed = 0;
 //unsigned int am_sysinfo_param =0x08;
 
 /* soft demux related*/
@@ -70,7 +75,7 @@ static int H264_error_skip_reserve = 0;
 #define F_GETPIPE_SZ        (F_LINUX_SPECIFIC_BASE + 8)
 #include <fcntl.h>
 #include "amffextractor.h"
-#define LOG_LINE() ALOGV("[%s:%d] >", __FUNCTION__, __LINE__)
+
 
 
 static int s_nDumpTs = 0; 
@@ -78,8 +83,7 @@ static int pipe_fd[2] = { -1, -1 };
 static bool am_ffextractor_inited = false;
 static int read_cb(void *opaque, uint8_t *buf, int size) {
     int ret = read(pipe_fd[0], buf, size);
-	if(ret == -1)
-		return -11;//return EAGAIN
+
     return ret; 
 }
 
@@ -424,6 +428,10 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     prop_shouldshowlog = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.readffmpeg.time", value, "5");
+    prop_readffmpeg = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.dumpfile", value, "0");
     prop_dumpfile = atoi(value);
 
@@ -533,6 +541,7 @@ CTsPlayer::CTsPlayer(bool DRMMode)
            LOGI("acodec alloc fail\n");
        }
        memset(acodec, 0, sizeof(codec_para_t));
+	   LOGI("prop_readffmpeg = %d\n",prop_readffmpeg);
     }
     codec_audio_basic_init();
     lp_lock_init(&mutex, NULL);
@@ -1282,10 +1291,9 @@ bool CTsPlayer::iStartPlay()
         } else {
             fcntl(pipe_fd[0], F_SETPIPE_SZ, 1048576);
             fcntl(pipe_fd[1], F_SETPIPE_SZ, 1048576);
-            ALOGD("pipe opened!");
-            int flags = fcntl(pipe_fd[0], F_GETFL);
-            fcntl(pipe_fd[0], F_SETFL, flags | O_NONBLOCK);
-            LOGI("set pipe read nonblock\n");
+            LOGD("pipe opened!");
+     
+            LOGI("set pipe read block\n");
         }
     }
     /*other setting*/
@@ -1412,10 +1420,10 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 
     if(prop_softdemux == 1){
         int ret = write(pipe_fd[1], pBuffer, nSize);
-        /*if (m_fp != NULL) {
+        if (m_fp != NULL) {
             fwrite(pBuffer, 1, nSize, m_fp);
-        }*/
-        if(ret == -1)
+        }
+        if(ret <= 0)
             LOGI("pipe is full,Don't write\n");
         return ret;
     }
@@ -1647,6 +1655,18 @@ bool CTsPlayer::iStop()
         }
 
         //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
+		if(prop_softdemux == 1){
+			uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
+            if (tmp_buf == NULL) {
+                LOGE("malloc tmp_buf failed");
+                return false;
+            }
+			close(pipe_fd[1]);
+            while(read(pipe_fd[0], tmp_buf, 1024*32)>0);
+                free(tmp_buf);
+            close(pipe_fd[0]);
+            LOGI("pipe closed first");
+        }
         lp_lock(&mutex);
         m_bFast = false;
         m_bIsPlay = false;
@@ -1659,19 +1679,7 @@ bool CTsPlayer::iStop()
             pcodec->handle = -1;
         } else {
             ret = codec_set_mode(vcodec, TRICKMODE_NONE);
-            uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
-            if (tmp_buf == NULL) {
-                ALOGE("malloc tmp_buf failed");
-                return false;
-            }
-            close(pipe_fd[1]);
-            while(read(pipe_fd[0], tmp_buf, 1024*32)>0);
-                free(tmp_buf);
-            close(pipe_fd[0]);
-            LOGI("pipe closed");
-            am_ffextractor_deinit();
-            am_ffextractor_inited = false;
-            LOGI("ffmpeg denited");
+       
             if(acodec != NULL){
                 ret = codec_close(acodec);
                 if (ret < 0) {
@@ -1686,6 +1694,9 @@ bool CTsPlayer::iStop()
                     return ret;
                 }
             }   
+			am_ffextractor_deinit();
+            am_ffextractor_inited = false;
+            LOGI("ffmpeg denited finally");
         }  
         LOGI("Stop  codec_close After:%d\n", ret);
         m_bWrFirstPkg = true;
@@ -1917,14 +1928,14 @@ void CTsPlayer::readExtractor() {
 		MediaInfo mi;
 		int try_count = 0;
 		while (try_count++ < 3) {
-			ALOGD("try to init ffmepg %d times", try_count);
+			LOGD("try to init ffmepg %d times", try_count);
 			int ret = am_ffextractor_init(read_cb, &mi);
 			if (ret == -1) {
-				ALOGD("ffextractor_init return -1");
+				LOGD("ffextractor_init return -1");
 				continue;
 			}
 			if (mi.width ==0 || mi.height == 0) {
-				ALOGD("invalid dimensions: %d:%d", mi.width, mi.height);
+				LOGD("invalid dimensions: %d:%d", mi.width, mi.height);
 			}
 			am_ffextractor_inited = true;
 			break;
@@ -1932,7 +1943,7 @@ void CTsPlayer::readExtractor() {
 	}
 
 	if (am_ffextractor_inited == false) {
-		ALOGE("3 Attempts to init ffextractor all failed");
+		LOGE("3 Attempts to init ffextractor all failed");
 	//	mForceStop = true;
 		return;
 	}
@@ -2311,8 +2322,21 @@ void CTsPlayer::checkVdecstate()
                 audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
             if (video_buf.size != 0)
                 video_buf_level = (float)video_buf.data_len / video_buf.size;
-            if ((audio_buf_level >= MAX_WRITE_ALEVEL) || (video_buf_level >= MAX_WRITE_VLEVEL)) {
+            if(prev_aread != audio_buf.read_pointer)
+                arp_is_changed = 1;
+            else
+                arp_is_changed = 0;
+            if(prev_vread != video_buf.read_pointer)
+                vrp_is_changed = 1;
+            else
+                vrp_is_changed = 0;
+            prev_aread = audio_buf.read_pointer;
+            prev_vread = video_buf.read_pointer;
+            if (((audio_buf_level >= MAX_WRITE_ALEVEL) && !arp_is_changed) || 
+                    ((video_buf_level >= MAX_WRITE_VLEVEL) && !vrp_is_changed)){
                 LOGI("checkVdecstate : audio_buf_level= %.5f, video_buf_level=%.5f\n", audio_buf_level, video_buf_level);
+                LOGI("prev_aread = %x,prev_vread = %x,  vrp_is_changed =%d, arp_is_changed=%d\n",
+                        prev_aread, prev_vread, vrp_is_changed, arp_is_changed);
                 if (m_PreviousOverflowTime == 0)
                     m_PreviousOverflowTime  = av_gettime();
                 if ((av_gettime()-m_PreviousOverflowTime) >= 2000000){
@@ -2352,7 +2376,7 @@ void *CTsPlayer::threadReadPacket(void *pthis) {
     LOGV("threadReadPacket start pthis: %p\n", pthis);
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
     do {
-        usleep(5*1000);
+        usleep(prop_readffmpeg*1000);
         if (tsplayer->m_bIsPlay)
             tsplayer->readExtractor();
     }

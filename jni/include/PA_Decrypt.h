@@ -19,36 +19,12 @@
 #define PA_Decrypt_H_
 
 
-//#include <utils/Errors.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-/*struct hevc_info{
-	const uint8_t *sps;
-	size_t sps_size;
-	int mwidth;
-	int mheight;
-};*/
-
-
-/*extern  int  PA_HEVC_FindNAL(
-        const uint8_t *data, size_t size, unsigned nalType);
-
-
- int HEVC_decode_SPS(const uint8_t *buf,int size,struct hevc_info*info);
-int HEVC_parse_keyframe(const uint8_t *buf,int size);
-
-int32_t HEVCCastSpecificData(uint8_t * data, int32_t size);
-
-extern  int PA_HEVC_getNextNALUnit(
-			const uint8_t **_data, size_t *_size,
-			const uint8_t **nalStart, size_t *nalSize,
-			int startCodeFollows) ;*/
 extern int  PA_DecryptContentData(unsigned char byEncryptFlag, unsigned char* pbyData, int* pnDataLen);
+extern uint32_t  PA_Getsecmem(unsigned int  type );
 
 
 #ifdef __cplusplus

@@ -47,6 +47,32 @@ int prop_useDeCrypt = 0;
 #endif
 float a_time_base_ratio = 0.00;
 float v_time_base_ratio = 0.00;
+#ifdef USE_OPTEEOS
+int codec_write_mode = 0;
+uint32_t  mTVPaddr=0;
+int prop_tvpdrm = 1;
+
+typedef enum {
+    DRM_LEVEL1     = 1,
+    DRM_LEVEL2     = 2,
+    DRM_LEVEL3     = 3,
+    DRM_NONE       = 4,
+} drm_level_t;
+
+typedef struct drm_info {
+    drm_level_t drm_level;
+    uint32_t drm_flag;
+    uint32_t drm_hasesdata;
+    uint32_t drm_priv;
+    uint32_t drm_pktsize;
+    uint32_t drm_pktpts;
+    uint32_t drm_phy;
+    uint32_t drm_vir;
+    uint32_t drm_remap;
+    uint32_t data_offset;
+    uint32_t extpad[8];
+} drminfo_t;
+#endif
 
 AVRational time_base = {1, 1000000};
 FILE* am_fp;
@@ -55,7 +81,34 @@ int am_debug = 0;
 #ifdef USE_OPTEEOS
 FILE *de_fp;
 static int deprop_dumpfile;
+
+int drm_stronedrminfo(uint8_t *outpktdata, uint8_t *addr,int size,  int isdrminfo)
+{    
+    drminfo_t  chinadrminfo;
+    #define TYPE_DRMINFO   0x80
+
+    chinadrminfo.drm_level = DRM_LEVEL1;
+    chinadrminfo.drm_pktsize = size;
+    int dsize;
+    if(size < sizeof(drminfo_t)){
+        ALOGE("++++packet size %d < sizeof(drminfo_t) %d++++\n", size, sizeof(drminfo_t));
+    }
+    else if (isdrminfo == 1) { //infoonly
+        chinadrminfo.drm_hasesdata = 0;
+        chinadrminfo.drm_phy = (uint32_t)addr;
+        chinadrminfo.drm_flag = TYPE_DRMINFO;
+        memcpy(outpktdata, &chinadrminfo, sizeof(drminfo_t));
+        //ALOGE(" ######## phyaddr = drminfo.drm_phy [0x%x] type[%d]\n",drminfo.drm_phy,type);
+    } else { //info+es;
+        chinadrminfo.drm_hasesdata = 1;
+        chinadrminfo.drm_flag = 0;
+        memcpy(outpktdata, &chinadrminfo, sizeof(drminfo_t));
+        memcpy(outpktdata + sizeof(drminfo_t), addr, chinadrminfo.drm_pktsize);
+    }
+    return 0;
+}
 #endif
+
 int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), MediaInfo *pMi) 
 {
 	if (inited)
@@ -90,6 +143,12 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 	deprop_dumpfile = atoi(value);
 	if(deprop_dumpfile)
 		de_fp = fopen(tmpfilename1, "wb+");
+		
+	memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.tvpdrm", value, "1");
+    prop_tvpdrm = atoi(value);
+	ALOGV("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",prop_tvpdrm);
+
 #endif
 
 	av_register_all();
@@ -168,7 +227,11 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 /*	ALOGI("width:%d, height:%d", pCodecCtx->width, pCodecCtx->height);
 	pMi->width = pCodecCtx->width;
 	pMi->height = pCodecCtx->height;*/
-
+#ifdef USE_OPTEEOS	
+	if(prop_tvpdrm==1){
+	    mTVPaddr=PA_Getsecmem(1);
+	}
+#endif		  
 	inited = 1;
 	av_dump_format(pFormatCtx, 0, "", 0);
 	ALOGD("################ffextractor init successful################");
@@ -191,10 +254,21 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 	AVPacket  packet;
 	int temp_size = 0;
 	int64_t pts;
-
+#ifdef USE_OPTEEOS
+	uint8_t* packetdatacpy=NULL;
+	int packetsizecpy=0;
+	uint8_t * outbuffer=NULL;
+#endif		
 	if (!inited) {
 		return;
 	}
+#ifdef USE_OPTEEOS	
+	if( codec_write_mode==0&&vcodec&&acodec){
+        codec_set_drmmode(vcodec,1);
+        codec_set_drmmode(acodec,1);
+	    codec_write_mode=1;
+	}
+#endif	
 	av_init_packet(&packet);
 	int ret = av_read_frame(pFormatCtx, &packet);
 	/*ALOGV("demux stream_index=%d,size :%d\n",
@@ -225,9 +299,18 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
       
 
 #ifdef USE_OPTEEOS
-		char flag='f';
 	   if(prop_useDeCrypt != 0)
-			PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
+	    if(prop_tvpdrm==1){
+			    char flag='f';
+			    packetdatacpy=packet.data;
+			    packetsizecpy=packet.size;
+			    PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
+                drm_stronedrminfo(packet.data, (uint8_t*)mTVPaddr, packet.size,1);
+			    packet.size=sizeof(drminfo_t);
+			}else {
+			    char flag='d';
+			    PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
+			}
 	   	if((de_fp != NULL) && (packet.size > 0)) {
 			if(deprop_dumpfile){
 				fwrite(packet.data, 1, packet.size, de_fp);
@@ -265,6 +348,18 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 			if (codec_checkin_pts(acodec, pts) != 0)
 				ALOGE("ERROR audio: check in dts error!\n");
 		}
+#ifdef USE_OPTEEOS
+	        if(prop_tvpdrm==1){
+	            outbuffer = (uint8_t *)av_malloc( packet.size+sizeof(drminfo_t));
+                if (!outbuffer)
+                    return ;
+		    drm_stronedrminfo(outbuffer, packet.data, packet.size,0);		   
+		    packetdatacpy=packet.data;
+	        packetsizecpy=packet.size;
+		    packet.data=outbuffer;
+		    packet.size+=sizeof(drminfo_t);
+	       	}
+#endif
 		for(int retry_count=0; retry_count<20; retry_count++) {
             ret = codec_write(acodec, packet.data + temp_size, packet.size-temp_size);
             if((ret < 0) || (ret > packet.size)) {
@@ -286,8 +381,17 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 		}
 
 	}
-
-	av_free_packet(&packet);
+#ifdef USE_OPTEEOS	
+    if(prop_tvpdrm==1){
+	    packet.data=packetdatacpy;
+	    packet.size=packetsizecpy;
+	    if(packet.stream_index == audioStream&&outbuffer){
+	        av_free(outbuffer);
+		    outbuffer=NULL;
+	     }
+	 }else
+         av_free_packet(&packet);
+#endif
 }
 
 void am_ffextractor_deinit() {
@@ -317,6 +421,13 @@ void am_ffextractor_deinit() {
 		av_free(avio);
 	avio = NULL;
 	inited = 0;
+#ifdef USE_OPTEEOS	
+	codec_write_mode=0;
+	mTVPaddr=0;
+	if(prop_tvpdrm==1){
+	    PA_Getsecmem(0);
+	}
+#endif	
 	ALOGD("################amffextractor de-init successful################");
 }
 

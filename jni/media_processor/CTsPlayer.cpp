@@ -18,6 +18,9 @@
 #include <gui/SurfaceComposerClient.h>
 #include <gui/ISurfaceComposer.h>
 #include <ui/DisplayInfo.h>
+#ifdef USE_OPTEEOS
+#include <PA_Decrypt.h>
+#endif
 
 using namespace android;
 
@@ -1355,10 +1358,33 @@ bool CTsPlayer::iStartPlay()
     if(prop_softdemux == 0)
         ret = codec_init(pcodec);
     else{
-        if(hasvideo)
+#ifdef USE_OPTEEOS	
+	memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.tvpdrm", vaule, "1");
+    tvpdrm = atoi(vaule);
+	ALOGV("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
+	if(tvpdrm==1){
+              amsysfs_set_sysfs_str( "/sys/class/vfm/map", "rm default");
+              amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
+	    PA_Getsecmem(1);
+	}
+#endif	
+        if(hasvideo){
             ret = codec_init(vcodec);
-        if(hasaudio)
-            ret = codec_init(acodec);
+#ifdef USE_OPTEEOS	
+	   if(tvpdrm==1){
+           codec_set_drmmode(vcodec,1);  
+	   }
+#endif	   
+        }
+        if(hasaudio){
+            ret = codec_init(acodec);	
+#ifdef USE_OPTEEOS			   
+	  if(tvpdrm==1){
+          codec_set_drmmode(acodec,1);  
+	   }
+#endif	   		         
+       }
         LOGI("Init audio,hasaudio:%d\n",hasaudio);
         if ((hasaudio) && (acodec != NULL)){
             pcodec = acodec;

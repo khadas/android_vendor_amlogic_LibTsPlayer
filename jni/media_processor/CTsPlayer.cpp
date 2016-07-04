@@ -424,7 +424,7 @@ CTsPlayer::CTsPlayer(bool DRMMode)
 {
     char value[PROPERTY_VALUE_MAX] = {0};
     
-    property_get("iptv.shouldshowlog", value, "1");//initial the log switch
+    property_get("iptv.shouldshowlog", value, "0");//initial the log switch
     prop_shouldshowlog = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);

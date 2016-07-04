@@ -61,9 +61,5 @@ LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice
 LOCAL_SHARED_LIBRARIES +=libgui
 LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor libamFFExtractor
 
-ifeq ($(TARGET_USE_OPTEEOS),true)
-LOCAL_SHARED_LIBRARIES += libtelecom_iptv
-endif
-
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

@@ -67,6 +67,7 @@ static unsigned int prev_aread = 0;
 static unsigned int prev_vread = 0;
 static int arp_is_changed = 0;
 static int vrp_is_changed = 0;
+static int prop_start_no_out = 0;
 //unsigned int am_sysinfo_param =0x08;
 
 /* soft demux related*/
@@ -493,9 +494,12 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     property_get("iptv.h264.error_skip_reserve", value, "20");
     H264_error_skip_reserve = atoi(value);
 
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.start.no.out", value, "0");
+    prop_start_no_out = atoi(value);
     LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d, isDrm: %d\n",
 		        prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support, prop_softdemux);
-    LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d\n", prop_audiobuftime, prop_videobuftime);
+    LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d prop_start_no_out:%d\n", prop_audiobuftime, prop_videobuftime,prop_start_no_out);
 	
     char buf[64] = {0};
     memset(old_free_scale_axis, 0, 64);
@@ -1120,6 +1124,12 @@ int player_startsync_set(int mode)
 }
 bool CTsPlayer::StartPlay(){
         int ret;
+        if(prop_start_no_out){// start with no out  mode
+            set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);	//keep last frame instead of show first frame
+            pcodec->start_no_out = 1;
+        }else{
+            pcodec->start_no_out = 0;
+        }
         ret = iStartPlay();
         codec_set_freerun_mode(pcodec, 0);
         return ret;
@@ -1138,7 +1148,7 @@ bool CTsPlayer::iStartPlay()
     int audio_buf_used = 0;
     int subtitle_buf_used = 0;
     int userdata_buf_used = 0;
-
+    int start_no_out = 0;
 
     if (m_bIsPlay) {
         LOGE("[%s:%d]Already StartPlay: m_bIsPlay=%s\n", __FUNCTION__, __LINE__, (m_bIsPlay ? "true" : "false"));
@@ -1147,7 +1157,15 @@ bool CTsPlayer::iStartPlay()
 
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
     set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
-    set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
+
+    // start with no out  mode
+    start_no_out = pcodec->start_no_out;
+    if (start_no_out) {
+        set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);
+    }else{
+          set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
+     }
+
     set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 0xff);
 
     memset(pcodec,0,sizeof(*pcodec));
@@ -1155,7 +1173,8 @@ bool CTsPlayer::iStartPlay()
     pcodec->video_type = vPara.vFmt;
     pcodec->has_video = 1;
     pcodec->audio_type = a_aPara[0].aFmt;
-    
+    pcodec->start_no_out = start_no_out;
+
     property_get("iptv.hasaudio", vaule, "1");
     hasaudio = atoi(vaule);
 

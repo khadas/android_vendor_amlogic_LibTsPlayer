@@ -253,16 +253,14 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 {
 	AVPacket  packet;
 	int temp_size = 0;
-	int64_t pts;
+	int64_t pts;		
+	if (!inited) {
+		return;
+	}
 #ifdef USE_OPTEEOS
 	uint8_t* packetdatacpy=NULL;
 	int packetsizecpy=0;
 	uint8_t * outbuffer=NULL;
-#endif		
-	if (!inited) {
-		return;
-	}
-#ifdef USE_OPTEEOS	
 	if( codec_write_mode==0&&vcodec&&acodec){
         codec_set_drmmode(vcodec,1);
         codec_set_drmmode(acodec,1);
@@ -299,7 +297,7 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
       
 
 #ifdef USE_OPTEEOS
-	   if(prop_useDeCrypt != 0)
+	   if(prop_useDeCrypt != 0){
 	    if(prop_tvpdrm==1){
 			    char flag='f';
 			    packetdatacpy=packet.data;
@@ -316,6 +314,7 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 				fwrite(packet.data, 1, packet.size, de_fp);
 			}
 		}
+      }
 #endif
 
 		for(int retry_count=0; retry_count<20; retry_count++) {
@@ -389,9 +388,9 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 	        av_free(outbuffer);
 		    outbuffer=NULL;
 	     }
-	 }else
-         av_free_packet(&packet);
+	 }
 #endif
+           av_free_packet(&packet);
 }
 
 void am_ffextractor_deinit() {

@@ -1163,6 +1163,9 @@ bool CTsPlayer::iStartPlay()
     int subtitle_buf_used = 0;
     int userdata_buf_used = 0;
     int start_no_out = 0;
+#ifdef USE_OPTEEOS	
+    int  tvpdrm = 1;
+#endif
 
     if (m_bIsPlay) {
         LOGE("[%s:%d]Already StartPlay: m_bIsPlay=%s\n", __FUNCTION__, __LINE__, (m_bIsPlay ? "true" : "false"));
@@ -1362,7 +1365,7 @@ bool CTsPlayer::iStartPlay()
 	memset(vaule, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.tvpdrm", vaule, "1");
     tvpdrm = atoi(vaule);
-	ALOGV("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
+	LOGE("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
 	if(tvpdrm==1){
               amsysfs_set_sysfs_str( "/sys/class/vfm/map", "rm default");
               amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");

@@ -1367,26 +1367,16 @@ bool CTsPlayer::iStartPlay()
     tvpdrm = atoi(vaule);
 	LOGE("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
 	if(tvpdrm==1){
-              amsysfs_set_sysfs_str( "/sys/class/vfm/map", "rm default");
-              amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
-	    PA_Getsecmem(1);
+	    PA_Tvpsecmen();	
+        amsysfs_set_sysfs_str( "/sys/class/vfm/map", "rm default");
+        amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
 	}
 #endif	
         if(hasvideo){
-            ret = codec_init(vcodec);
-#ifdef USE_OPTEEOS	
-	   if(tvpdrm==1){
-           codec_set_drmmode(vcodec,1);  
-	   }
-#endif	   
+            ret = codec_init(vcodec);	
         }
         if(hasaudio){
-            ret = codec_init(acodec);	
-#ifdef USE_OPTEEOS			   
-	  if(tvpdrm==1){
-          codec_set_drmmode(acodec,1);  
-	   }
-#endif	   		         
+            ret = codec_init(acodec);	   		         
        }
         LOGI("Init audio,hasaudio:%d\n",hasaudio);
         if ((hasaudio) && (acodec != NULL)){

@@ -1662,6 +1662,9 @@ bool CTsPlayer::Stop(){
         int ret;
 
         codec_set_freerun_mode(pcodec, 0);
+        if (pcodec->has_sub == 1) {
+            memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
+        }
         ret =  iStop();
 
         return ret;

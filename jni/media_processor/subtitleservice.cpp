@@ -82,16 +82,16 @@ void subtitleShow()
 {
     int err;
     //ALOGE("subtitleShow 0 mTotal:%d, mRetry:%d\n", mTotal, mRetry);
-    do {
+    /*do {
         mTotal = subtitleGetTotal();
         //ALOGE("subtitleShow 1 mTotal:%d, mRetry:%d\n", mTotal, mRetry);
         mRetry--;
         usleep(500000); // 0.5 s
-    }while(mTotal == -1 && mRetry > 0);
+    }while(mTotal == -1 && mRetry > 0);*/
     
-    if (mTotal > 0) {
+    //if (mTotal > 0) {
         pthread_create(&mSubtitleThread, NULL, thrSubtitleShow, NULL);
-    }
+    //}
 }
 
 const sp<ISubTitleService>& getSubtitleService()

@@ -23,7 +23,12 @@ int read_cb(void *opaque, uint8_t *buf, int size) {
 	int ret = read(pipe_fd[0], buf, size);
 	return ret;
 }
+
+#ifdef USE_OPTEEOS
 CTsOmxPlayer::CTsOmxPlayer():CTsPlayer(false, true) {
+#else
+CTsOmxPlayer::CTsOmxPlayer():CTsPlayer(true) {
+#endif
     LOG_LINE();
     mFp = NULL;
     mIsOmxPlayer = true;

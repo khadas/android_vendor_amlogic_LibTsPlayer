@@ -14,10 +14,12 @@ ITsPlayer* GetMediaProcessor()
     return new CTsPlayer();
 }
 
+#ifdef USE_OPTEEOS
 ITsPlayer* GetMediaProcessor(bool DRMMode)
 {
     return new CTsPlayer(DRMMode);
 }
+#endif
 
 int GetMediaProcessorVersion()
 {

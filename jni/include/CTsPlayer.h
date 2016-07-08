@@ -191,8 +191,12 @@ class CTsPlayer : public ITsPlayer
 {
 public:
 	CTsPlayer();
+#ifdef USE_OPTEEOS
 	CTsPlayer(bool DRMMode);
-    CTsPlayer(bool DRMMode, bool omx_player);
+	CTsPlayer(bool DRMMode, bool omx_player);
+#else
+	CTsPlayer(bool omx_player);
+#endif
 	virtual ~CTsPlayer();
 public:
 	//取得播放模式

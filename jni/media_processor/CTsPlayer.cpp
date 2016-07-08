@@ -416,12 +416,16 @@ int sysfs_get_long(char *path, unsigned long  *val)
     return 0;
 }
 
+#ifdef USE_OPTEEOS
 CTsPlayer::CTsPlayer()
 {
     CTsPlayer(false);
 }
 
 CTsPlayer::CTsPlayer(bool DRMMode)
+#else
+CTsPlayer::CTsPlayer()
+#endif
 {
     char value[PROPERTY_VALUE_MAX] = {0};
     
@@ -439,8 +443,10 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.softdemux", value, "0");
     prop_softdemux = atoi(value);
+#ifdef USE_OPTEEOS
     if(DRMMode)
         prop_softdemux = 1;
+#endif
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.buffer.time", value, "2300");
@@ -625,7 +631,11 @@ CTsPlayer::CTsPlayer(bool DRMMode)
     mIsOmxPlayer = false;
 }
 
+#ifdef USE_OPTEEOS
 CTsPlayer::CTsPlayer(bool DRMMode, bool omx_player)
+#else
+CTsPlayer::CTsPlayer(bool omx_player)
+#endif
 {
     mIsOmxPlayer = omx_player;
     LOGW("CTsPlayer, mIsOmxPlayer: %d\n", mIsOmxPlayer);

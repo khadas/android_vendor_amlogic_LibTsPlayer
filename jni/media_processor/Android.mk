@@ -61,5 +61,9 @@ LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice
 LOCAL_SHARED_LIBRARIES +=libgui
 LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor libamFFExtractor
 
+ifeq ($(TARGET_USE_OPTEEOS),true)
+LOCAL_CFLAGS += -DUSE_OPTEEOS
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)

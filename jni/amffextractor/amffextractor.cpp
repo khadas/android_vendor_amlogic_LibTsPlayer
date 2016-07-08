@@ -423,9 +423,6 @@ void am_ffextractor_deinit() {
 #ifdef USE_OPTEEOS	
 	codec_write_mode=0;
 	mTVPaddr=0;
-	if(prop_tvpdrm==1){
-	    PA_Getsecmem(0);
-	}
 #endif	
 	ALOGD("################amffextractor de-init successful################");
 }

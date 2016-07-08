@@ -395,6 +395,17 @@ void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
     } else {
         amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
     }
+#ifdef USE_OPTEEOS
+          char vaule[PROPERTY_VALUE_MAX] = {0};
+          int  tvpdrm = 1;
+	      memset(vaule, 0, PROPERTY_VALUE_MAX);
+          property_get("iptv.tvpdrm", vaule, "1");
+          tvpdrm = atoi(vaule);
+	      LOGI("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
+         if(tvpdrm==1&&prop_softdemux == 1){
+            PA_Getsecmem(0);
+         }
+#endif		 	
     LOGI("QuitIptv\n");
 }
 
@@ -1367,6 +1378,7 @@ bool CTsPlayer::iStartPlay()
     tvpdrm = atoi(vaule);
 	LOGE("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
 	if(tvpdrm==1){
+	    PA_Tvp4K_defaultsize();	
 	    PA_Tvpsecmen();	
         amsysfs_set_sysfs_str( "/sys/class/vfm/map", "rm default");
         amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
@@ -1420,9 +1432,11 @@ bool CTsPlayer::iStartPlay()
     m_bWrFirstPkg = true;
     m_bchangeH264to4k = false;
     writecount = 0;
-    /*if(pcodec->has_video && pcodec->video_type == VFORMAT_HEVC) {
+#ifdef USE_OPTEEOS	
+   if(pcodec->has_video && pcodec->video_type == VFORMAT_HEVC&&tvpdrm==1&&prop_softdemux == 1) {
        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
-    }*/
+    }
+ #endif   
     m_StartPlayTimePoint = av_gettime();
     LOGI("StartPlay: m_StartPlayTimePoint = %lld\n", m_StartPlayTimePoint);
     LOGI("subtitleSetSurfaceViewParam 1\n");

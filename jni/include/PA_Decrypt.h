@@ -26,6 +26,7 @@ extern "C" {
 extern int  PA_DecryptContentData(unsigned char byEncryptFlag, unsigned char* pbyData, int* pnDataLen);
 extern uint32_t  PA_Getsecmem(unsigned int  type );
 extern uint32_t  PA_Tvpsecmen(void);
+extern uint32_t  PA_Tvp4K_defaultsize(void);
 
 
 #ifdef __cplusplus

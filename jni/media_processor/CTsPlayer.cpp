@@ -395,17 +395,7 @@ void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
     } else {
         amsysfs_set_sysfs_int("/sys/class/graphics/fb0/blank", 0);
     }
-#ifdef USE_OPTEEOS
-          char vaule[PROPERTY_VALUE_MAX] = {0};
-          int  tvpdrm = 1;
-	      memset(vaule, 0, PROPERTY_VALUE_MAX);
-          property_get("iptv.tvpdrm", vaule, "1");
-          tvpdrm = atoi(vaule);
-	      LOGI("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
-         if(tvpdrm==1&&prop_softdemux == 1){
-            PA_Getsecmem(0);
-         }
-#endif		 	
+		 	
     LOGI("QuitIptv\n");
 }
 
@@ -1378,7 +1368,8 @@ bool CTsPlayer::iStartPlay()
     tvpdrm = atoi(vaule);
 	LOGE("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
 	if(tvpdrm==1){
-	    PA_Tvp4K_defaultsize();	
+	    amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);	
+	    PA_free_cma_buffer();	
 	    PA_Tvpsecmen();	
         amsysfs_set_sysfs_str( "/sys/class/vfm/map", "rm default");
         amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
@@ -1773,6 +1764,17 @@ bool CTsPlayer::iStop()
             LOGI("ffmpeg denited finally");
         }  
         LOGI("Stop  codec_close After:%d\n", ret);
+#ifdef USE_OPTEEOS
+          char vaule[PROPERTY_VALUE_MAX] = {0};
+          int  tvpdrm = 1;
+	 memset(vaule, 0, PROPERTY_VALUE_MAX);
+          property_get("iptv.tvpdrm", vaule, "1");
+          tvpdrm = atoi(vaule);
+	 LOGI("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",tvpdrm);
+         if(tvpdrm==1&&prop_softdemux == 1){
+            PA_Getsecmem(0);
+         }
+#endif
         m_bWrFirstPkg = true;
         //add_di();
         if (pcodec->has_sub == 1)

@@ -27,6 +27,7 @@ extern int  PA_DecryptContentData(unsigned char byEncryptFlag, unsigned char* pb
 extern uint32_t  PA_Getsecmem(unsigned int  type );
 extern uint32_t  PA_Tvpsecmen(void);
 extern uint32_t  PA_Tvp4K_defaultsize(void);
+extern uint32_t  PA_free_cma_buffer(void);
 
 
 #ifdef __cplusplus

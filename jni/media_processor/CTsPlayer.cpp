@@ -472,7 +472,7 @@ CTsPlayer::CTsPlayer()
     prop_videobuftime = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.show_first_frame_nosync", value, "0");
+    property_get("iptv.show_first_frame_nosync", value, "1");
     prop_show_first_frame_nosync = atoi(value);
 	
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -1302,7 +1302,7 @@ bool CTsPlayer::iStartPlay()
 
     // enable avsync only when av both exists, not including trick
     if(hasaudio && hasvideo)
-        player_startsync_set(2);
+        player_startsync_set(1);
 
     if(prop_softdemux == 1){
         if(hasvideo){

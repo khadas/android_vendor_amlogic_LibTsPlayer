@@ -634,6 +634,51 @@ CTsPlayer::CTsPlayer()
     mIsOmxPlayer = false;
 }
 
+#define AML_VFM_MAP "/sys/class/vfm/map"
+static int add_di()
+{
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr deinterlace amvideo");
+    return 0;
+}
+
+static int remove_di()
+{
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
+    amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr amvideo");
+    return 0;
+}
+
+static int check_add_ppmgr()
+{
+	char vfm_map[4096] = {0};
+    char *s = NULL;
+	get_vfm_map_info(vfm_map);
+	s = strstr(vfm_map,"default { decoder(0) deinterlace(0) amvideo}");
+	if (s != NULL) {
+		amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
+		amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr deinterlace amvideo");
+		LOGI("add ppmgr");
+	}
+
+    return 0;
+}
+
+static int check_remove_ppmgr()
+{
+	char vfm_map[4096] = {0};
+    char *s = NULL;
+	get_vfm_map_info(vfm_map);
+	s = strstr(vfm_map,"default { decoder(0) ppmgr(0) deinterlace(0) amvideo}");
+	if (s != NULL) {
+		amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
+		amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder deinterlace amvideo");
+		LOGI("remove ppmgr");
+	}
+
+    return 0;
+}
+
 #ifdef USE_OPTEEOS
 CTsPlayer::CTsPlayer(bool DRMMode, bool omx_player)
 #else
@@ -1358,6 +1403,7 @@ bool CTsPlayer::iStartPlay()
     }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
             (subtitle_buf_used != 0)||(userdata_buf_used != 0));    
  	
+    check_remove_ppmgr();
     if(prop_softdemux == 0)
         ret = codec_init(pcodec);
     else{
@@ -1592,20 +1638,6 @@ bool CTsPlayer::Resume()
     return true;
 }
 
-#define AML_VFM_MAP "/sys/class/vfm/map"
-static int add_di()
-{
-    amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
-    amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr deinterlace amvideo");
-    return 0;
-}
-
-static int remove_di()
-{
-    amsysfs_set_sysfs_str(AML_VFM_MAP, "rm default");
-    amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr amvideo");
-    return 0;
-}
 static void Check_FirstPictur_Coming(void)
 {
     if(get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")){
@@ -1762,6 +1794,7 @@ bool CTsPlayer::iStop()
             am_ffextractor_inited = false;
             LOGI("ffmpeg denited finally");
         }  
+        check_add_ppmgr();
         LOGI("Stop  codec_close After:%d\n", ret);
 #ifdef USE_OPTEEOS
         char vaule[PROPERTY_VALUE_MAX] = {0};

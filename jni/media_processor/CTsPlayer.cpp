@@ -117,6 +117,10 @@ static int read_cb(void *opaque, uint8_t *buf, int size) {
 //#define LOGI(...) __android_log_print(ANDROID_LOG_INFO  , "TsPlayer", __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN  , "TsPlayer", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
+#define SCALING_MODE  "performance"
+#define DEFAULT_MODE  "hotplug"
+#define CPU_SCALING_MODE_NODE  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+int perform_flag =0;
 
 #ifdef TELECOM_VFORMAT_SUPPORT
 /* 
@@ -720,6 +724,10 @@ CTsPlayer::~CTsPlayer()
     }
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/direct_connection_cnt", 0);
+    if(perform_flag){
+        amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
+        perform_flag =0;
+    }
     m_StopThread = true;
     pthread_join(mThread, NULL);
     pthread_join(readThread, NULL);
@@ -1238,7 +1246,8 @@ bool CTsPlayer::iStartPlay()
         LOGE("[%s:%d]Already StartPlay: m_bIsPlay=%s\n", __FUNCTION__, __LINE__, (m_bIsPlay ? "true" : "false"));
         return true;
     }
-
+    amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,SCALING_MODE);
+    perform_flag =1;
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
     set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
 
@@ -1664,6 +1673,10 @@ static void Check_FirstPictur_Coming(void)
 {
     if(get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")){
        amsysfs_set_sysfs_int( "/sys/module/di/parameters/direct_connection_cnt", 0);
+       if(perform_flag){
+            amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
+            perform_flag =0;
+        }
     }
 }
 
@@ -1765,6 +1778,10 @@ bool CTsPlayer::iStop()
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/direct_connection_cnt", 0);
+    if(perform_flag){
+        amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
+        perform_flag =0;
+    }
     if(m_bIsPlay) {
         LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {

@@ -2557,7 +2557,8 @@ void CTsPlayer::Report_video_paramters()
     amsysfs_get_sysfs_str("/sys/class/deinterlace/di0/frame_format",tVideoFFMode,64);
     LOGI("video_height:%d,video_width:%d,video_ffmode:%s",rVideoHeight,rVideoWidth,tVideoFFMode);
 	
-    videoWH = rVideoWidth / rVideoHeight;
+    if(rVideoWidth > 0 && rVideoHeight > 0)
+         videoWH = rVideoWidth / rVideoHeight;
 	
     if (videoWH < 1.34)
     {

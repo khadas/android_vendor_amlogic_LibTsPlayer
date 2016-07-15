@@ -418,6 +418,28 @@ int sysfs_get_long(char *path, unsigned long  *val)
     }   
     return 0;
 }
+void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler,int value)
+{
+    switch (evt) {
+    case 5: ALOGI("evt:VIDEO_BUFFSIZE  value :%d\n",value);break;
+    case 6: ALOGI("evt:VIDEO_BUFF_USED  value :%d\n",value);break;
+    case 7: ALOGI("evt:AUDIO_BUFFSIZE  value :%d\n",value);break;
+    case 8: ALOGI("evt:AUDIO_BUFF_USED  value :%d\n",value);break;
+    case 9: ALOGI("evt:VIDEO_RATIO  value :%d\n",value);break;
+    case 10:ALOGI("evt:VIDEO_W_H  value :%d\n",value);break;
+    case 11:ALOGI("evt:VIDEO_F_F_MODE  value :%d\n",value);break;
+    case 12:ALOGI("evt:AUDIO_SAMPLE_RATE  value :%d\n",value);break;
+    case 13:ALOGI("evt:AUDIO_CUR_BITRATE  value :%d\n",value);break;
+    case 14:ALOGI("evt:VIDEO_PTS_ERROR  value :%d\n",value);break;
+    case 15:ALOGI("evt:AUDIO_PTS_ERROR  value :%d\n",value);break;
+    case 16:ALOGI("evt:VDEC_ERROR  value :%d\n",value);break;
+    case 17:ALOGI("evt:ADEC_ERROR  value :%d\n",value);break;
+    case 18:ALOGI("evt:UNDERFLOW  value :%d\n",value);break;
+    case 19:ALOGI("evt:ADEC_UNDERFLOW  value :%d\n",value);break;
+    default:ALOGI("evt: %d, value :%d\n",evt, value);break;    
+    }    
+}
+
 
 #ifdef USE_OPTEEOS
 CTsPlayer::CTsPlayer()
@@ -597,7 +619,7 @@ CTsPlayer::CTsPlayer()
 
     m_bIsPlay = false;
     m_bIsPause = false;
-    pfunc_player_evt = NULL;
+    pfunc_player_evt = test_player_evt_func;
     m_nOsdBpp = 16;//SYS_get_osdbpp();
     m_nAudioBalance = 3;
 
@@ -2466,7 +2488,6 @@ void CTsPlayer::checkVdecstate()
         }
     }
 }
-
 void *CTsPlayer::threadCheckAbend(void *pthis) {
     LOGV("threadCheckAbend start pthis: %p\n", pthis);
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);

@@ -105,6 +105,7 @@ static int read_cb(void *opaque, uint8_t *buf, int size) {
         } \
     } while (0)
 
+/*
 #define LOGI(...) \
     do { \
         if (prop_shouldshowlog) { \
@@ -112,9 +113,10 @@ static int read_cb(void *opaque, uint8_t *buf, int size) {
         } \
     } while (0)
 
+*/
 //#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, "TsPlayer", __VA_ARGS__) 
 //#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG , "TsPlayer", __VA_ARGS__)
-//#define LOGI(...) __android_log_print(ANDROID_LOG_INFO  , "TsPlayer", __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO  , "TsPlayer", __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN  , "TsPlayer", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
 #define SCALING_MODE  "performance"
@@ -1569,7 +1571,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         } else {
             lpbuffer_st.wp = lpbuffer_st.buffer;
             lpbuffer_st.enlpflag = false;
-            LOGI("Don't use lpbuffer enlpflag:%d\n", lpbuffer_st.enlpflag);
+            LOGD("Don't use lpbuffer enlpflag:%d\n", lpbuffer_st.enlpflag);
             free(lpbuffer_st.buffer);
             lpbuffer_st.buffer = NULL;
             lpbuffer_st.rp = NULL;
@@ -1580,7 +1582,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         }
         lp_unlock(&mutex_lp);
 
-        LOGI("lpbuffer_st.valid_can_read:%d\n", lpbuffer_st.valid_can_read);
+        LOGD("lpbuffer_st.valid_can_read:%d\n", lpbuffer_st.valid_can_read);
 
         for(int retry_count=0; retry_count<10; retry_count++) {
             ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
@@ -1592,7 +1594,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 }
             } else {
                 temp_size += ret;
-                LOGI("WriteData: codec_write h264 nSize is %d! temp_size=%d\n", nSize, temp_size);
+                LOGD("WriteData: codec_write h264 nSize is %d! temp_size=%d\n", nSize, temp_size);
                 if(temp_size >= nSize) {
                     temp_size = nSize;
                     break;

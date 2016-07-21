@@ -394,8 +394,11 @@ void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
     if(isBlackoutPolicy)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
-    else
-        amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
+    else {
+        if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") != 2)
+            amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
+    }
+     
     if(!isSoftFit) {
         reinitOsdScale();
     } else {

@@ -1694,6 +1694,11 @@ bool CTsPlayer::Fast()
     int ret;
 
     LOGI("Fast");
+
+    if(m_bFast){
+      LOGI("Last is Fast");
+      return true;
+    }
     ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 0);
     if(ret)
         return false;

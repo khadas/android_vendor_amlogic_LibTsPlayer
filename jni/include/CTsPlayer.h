@@ -101,7 +101,7 @@ typedef struct ST_LPbuffer{
 typedef enum
 {
     IPTV_PLAYER_EVT_STREAM_VALID=0,
-    IPTV_PLAYER_EVT_FIRST_PTS,   //解出第一帧
+    IPTV_PLAYER_EVT_FIRST_FRAME,   //解出第一帧
     IPTV_PLAYER_EVT_VOD_EOS,    //VOD播放完毕
     IPTV_PLAYER_EVT_ABEND,         //为上报下溢事件而增加的类型
     IPTV_PLAYER_EVT_PLAYBACK_ERROR,	// 播放错误
@@ -111,15 +111,23 @@ typedef enum
     IPTV_PLAYER_EVT_AUDIO_BUFF_USED,
     IPTV_PLAYER_EVT_VIDEO_RATIO,
     IPTV_PLAYER_EVT_VIDEO_W_H,
-    IPTV_PLAYER_EVT_VIDEO_F_F_MODE,
+    IPTV_PLAYER_EVT_VIDEO_FF_MODE,
+    IPTV_PLAYER_EVT_FRAME_FORMAT,
     IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE,
+    IPTV_PLAYER_EVT_AUDIO_CHANNELS,
     IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE,
     IPTV_PLAYER_EVT_VIDEO_PTS_ERROR,
     IPTV_PLAYER_EVT_AUDIO_PTS_ERROR,
     IPTV_PLAYER_EVT_VDEC_ERROR,
     IPTV_PLAYER_EVT_ADEC_ERROR,
-    IPTV_PLAYER_EVT_UNDERFLOW,
+    IPTV_PLAYER_EVT_VDEC_UNDERFLOW,
     IPTV_PLAYER_EVT_ADEC_UNDERFLOW,
+
+    IPTV_PLAYER_EVT_AV_DIFF,
+    IPTV_PLAYER_EVT_TS_ERROR,
+    IPTV_PLAYER_EVT_TS_SYNC_LOSS,
+    IPTV_PLAYER_EVT_ECM_ERROR,
+    
 }IPTV_PLAYER_EVT_e;
 
 typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler,int value);
@@ -278,9 +286,11 @@ public:
 	virtual bool SubtitleShowHide(bool bShow);
     virtual int GetVideoDropNumber();
     virtual void Report_video_paramters();
-    virtual void Report_Audio_paramters();
-	virtual int GetVideoTotalNumber();
-	virtual void readExtractor();
+    //virtual void Report_Audio_paramters();
+    virtual int GetVideoTotalNumber();
+    virtual void readExtractor();
+    virtual int updateCtsPlayerInfo();
+    virtual int updateCTCInfo();
     /*end add*/
     bool mIsOmxPlayer;
 	

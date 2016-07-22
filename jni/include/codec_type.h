@@ -50,6 +50,7 @@ typedef struct {
     int block_align;         ///< audio block align from ffmpeg
     int extradata_size;      ///< extra data size
     char extradata[AUDIO_EXTRA_DATA_SIZE];;   ///< extra data information for decoder
+    int error_num;
 } audio_info_t;
 
 typedef struct {
@@ -104,6 +105,7 @@ typedef struct {
     int handle;        ///< codec device handler
     int extradata_size;      ///< extra data size
     char extradata[AUDIO_EXTRA_DATA_SIZE];
+    int error_num;
 } arm_audio_info;
 
 //audio decoder type, default arc

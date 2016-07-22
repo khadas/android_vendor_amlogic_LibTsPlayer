@@ -24,6 +24,55 @@
 
 using namespace android;
 
+struct ctsplayer_state {
+
+    int valid;
+
+    // setting
+    int64_t last_update_time;
+
+    // player info
+    int first_picture_comming;
+    int64_t avdiff;
+    int ff_mode;
+    int ts_error;
+    int ts_sync_loss;
+    int ecm_error;
+
+    // video info
+    int64_t vpts;
+    int video_ratio;
+    int video_rWH = 0;
+    int Video_frame_format = 0;
+    int video_width;
+    int video_height;
+    int vbuf_size;
+    int vbuf_used;
+    int vdec_error;
+    int vdec_drop;
+    int vdec_underflow;
+    int vpts_error;
+
+    // audio info
+    int64_t apts;
+    int abuf_size;
+    int abuf_used;
+    int adec_error;
+    int adec_drop;
+    int adec_underflow;
+    int apts_error;
+
+    //audio decode info
+    int samplate;
+    int channel;
+    int bitrate;
+    int audio_bps;
+    int audio_type;
+
+};
+static struct ctsplayer_state mCtsplayerState;
+
+
 #define M_LIVE	1
 #define M_TVOD	2
 #define M_VOD	3
@@ -56,6 +105,12 @@ int prop_audiobuftime = 1000;
 int prop_videobuftime = 1000;
 int prop_show_first_frame_nosync = 0;
 int keep_vdec_mem = 0;
+
+static int vdec_underflow = 0;
+static int adec_underflow = 0;
+static int video_ratio = 0;
+static int video_rWH = 0;
+static int Video_frame_format = 0;
 
 int checkcount = 0;
 int buffersize = 0;
@@ -671,6 +726,7 @@ CTsPlayer::CTsPlayer()
 		  	LOGI("CTsPlayer stopPlayerIfNeed ==end\n");
     }
     mIsOmxPlayer = false;
+    memset(&mCtsplayerState, 0, sizeof(struct ctsplayer_state));
 }
 
 #define AML_VFM_MAP "/sys/class/vfm/map"
@@ -1232,6 +1288,7 @@ bool CTsPlayer::StartPlay(){
         }else{
             pcodec->start_no_out = 0;
         }
+        memset(&mCtsplayerState, 0, sizeof(struct ctsplayer_state));
         ret = iStartPlay();
         codec_set_freerun_mode(pcodec, 0);
         return ret;
@@ -1308,8 +1365,9 @@ bool CTsPlayer::iStartPlay()
             pcodec->has_audio = 1;
             pcodec->audio_pid = (int)a_aPara[0].pid;
         }
+
         LOGI("pcodec->audio_samplerate: %d, pcodec->audio_channels: %d\n",
-                pcodec->audio_samplerate, pcodec->audio_channels);
+            pcodec->audio_samplerate, pcodec->audio_channels);
 
         if((int)sPara[0].pid != 0) {
             pcodec->has_sub = 1;
@@ -1790,6 +1848,12 @@ bool CTsPlayer::Stop(){
         }
 
         ret =  iStop();
+
+        adec_underflow = 0;
+        vdec_underflow = 0;
+        video_ratio = 0;
+        video_rWH = 0;
+        Video_frame_format = 0;
 
         return ret;
 }
@@ -2378,39 +2442,35 @@ void CTsPlayer::checkAbend()
             codec_get_vbuf_state(vcodec, &video_buf);
 
         codec_get_vbuf_state(pcodec, &video_buf);
-        
-        pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFFSIZE, player_evt_hander,video_buf.size);
-        pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFF_USED, player_evt_hander,video_buf.data_len);
+
         LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
         if(pcodec->has_video) {
             if(pcodec->video_type == VFORMAT_MJPEG) {
                 if(video_buf.data_len < (RES_VIDEO_SIZE >> 2)) {
-                    if(pfunc_player_evt != NULL) {
-                        pfunc_player_evt(IPTV_PLAYER_EVT_UNDERFLOW, player_evt_hander,1);
-                    }
+                    vdec_underflow = 1;
                     checkAudio = false;
                     LOGW("checkAbend video low level\n");
+                } else {
+                    vdec_underflow = 0;
                 }
             }
             else {
                 if(video_buf.data_len< RES_VIDEO_SIZE) {
-                    if(pfunc_player_evt != NULL) {
-                        pfunc_player_evt(IPTV_PLAYER_EVT_UNDERFLOW, player_evt_hander,1);
-                    }
+                    vdec_underflow = 1;
                     checkAudio = false;
                     LOGW("checkAbend video low level\n");
+                } else {
+                    vdec_underflow = 0;
                 }
             }
         }
-        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFFSIZE, player_evt_hander,audio_buf.size);
-        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFF_USED, player_evt_hander,audio_buf.data_len);
         LOGI("checkAbend audio_buf.data_len is %d\n", audio_buf.data_len);
         if(pcodec->has_audio && checkAudio) {
             if(audio_buf.data_len < RES_AUDIO_SIZE) {
-                if(pfunc_player_evt != NULL) {
-                    pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_UNDERFLOW, player_evt_hander,1);
-                }
+                adec_underflow = 1;
                 LOGW("checkAbend audio low level\n");
+            } else {
+                adec_underflow = 0;
             }
         }
     }
@@ -2547,9 +2607,10 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         if(checkcount >= 40) {
             tsplayer->checkAbend();
             tsplayer->Report_video_paramters();
-            tsplayer->Report_Audio_paramters();
+            //tsplayer->Report_Audio_paramters();
             checkcount = 0;
         }
+        tsplayer->updateCtsPlayerInfo();
     }
     while(!m_StopThread);
     LOGV("threadCheckAbend end\n");
@@ -2569,52 +2630,17 @@ void *CTsPlayer::threadReadPacket(void *pthis) {
     return NULL;
 }
 
-void CTsPlayer::Report_Audio_paramters()
-{   
-    struct adec_status audio_status;
-    int m_nAudioSampleRate = 0;
-    int rAudioCurBitrate = 0;
-    int rAudio_pts_error = 0;
-    unsigned int rAudio_error_count = 0;
 
-    if (NULL != pcodec) {
-        rAudio_pts_error = codec_get_sync_audio_discont(pcodec);
-        codec_get_adec_state(pcodec, &audio_status);
-        codec_get_audio_cur_bitrate(pcodec, &rAudioCurBitrate);
-        m_nAudioSampleRate = audio_status.sample_rate;
-        rAudio_error_count = audio_status.error_count;
-
-        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE, player_evt_hander,m_nAudioSampleRate);
-        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE, player_evt_hander,rAudioCurBitrate);
-        pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_PTS_ERROR, player_evt_hander,rAudio_pts_error);
-        pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_ERROR, player_evt_hander,rAudio_error_count);
-    }
-}
 
 void CTsPlayer::Report_video_paramters()
 {
     int rVideoRatio = 0;
     int rVideo_W_H = 0;
-    int rVideo_F_F_MODE = 0;
-    int rVideo_pts_error = 0;
-    unsigned int rVideo_error_count = 0;
+    int rVideo_Frame_Format = 0;
     int rVideoHeight = 0;
     int rVideoWidth = 0;
     char tVideoFFMode[64] = {0};
     double videoWH = 0;
-    struct vdec_status video_status;
-
-    if (NULL != pcodec) {
-        rVideo_pts_error = codec_get_sync_video_discont(pcodec);
-        pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_PTS_ERROR, player_evt_hander,rVideo_pts_error);
-
-        if(prop_softdemux == 0)
-            codec_get_vdec_state(pcodec, &video_status);
-        else
-            codec_get_vdec_state(vcodec, &video_status);
-        rVideo_error_count = video_status.error_count;
-        pfunc_player_evt(IPTV_PLAYER_EVT_VDEC_ERROR, player_evt_hander,rVideo_error_count);
-    }
 
     rVideoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
     rVideoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
@@ -2644,14 +2670,14 @@ void CTsPlayer::Report_video_paramters()
     }
 
     if(!strcmp(tVideoFFMode, "progressive")) {
-        rVideo_F_F_MODE = 1;
+        rVideo_Frame_Format = 1;
     } else {
-        rVideo_F_F_MODE = 0;
-    }	
+        rVideo_Frame_Format = 0;
+    }
 
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_RATIO, player_evt_hander,rVideoRatio);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_W_H, player_evt_hander,rVideo_W_H);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_F_F_MODE, player_evt_hander,rVideo_F_F_MODE);
+    video_ratio = rVideoRatio;
+    Video_frame_format = rVideo_Frame_Format;
+    video_rWH = rVideo_W_H;
 }
 
 int CTsPlayer::GetRealTimeFrameRate()
@@ -2702,3 +2728,126 @@ int CTsPlayer::GetVideoTotalNumber()
 
 	return total_number;
 }
+
+int CTsPlayer::updateCTCInfo() 
+{
+    // check first frame comming
+    if (mCtsplayerState.first_picture_comming == 0) {
+        if (get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")) {
+            mCtsplayerState.first_picture_comming = 1;
+        } else {
+            return 0;
+        }
+    }
+
+    buf_status audio_buf;
+    buf_status video_buf;
+    struct vdec_status video_status;
+    int64_t  last_time, now_time;
+
+    if (pcodec->has_audio) {
+        unsigned long audiopts;
+        codec_get_abuf_state(pcodec, &audio_buf);
+        codec_get_audio_basic_info(pcodec);
+        codec_get_audio_cur_bitrate(pcodec, &pcodec->audio_info.bitrate);
+
+        sysfs_get_long("/sys/class/tsync/pts_audio", &audiopts);
+        mCtsplayerState.apts = (int64_t)audiopts;
+        mCtsplayerState.samplate = pcodec->audio_info.sample_rate;
+        mCtsplayerState.channel= pcodec->audio_info.channels;
+        mCtsplayerState.bitrate= pcodec->audio_info.bitrate;
+        mCtsplayerState.abuf_used = audio_buf.data_len;
+        mCtsplayerState.abuf_size = audio_buf.size;
+        mCtsplayerState.adec_error = pcodec->audio_info.error_num;
+        mCtsplayerState.adec_drop = pcodec->audio_info.error_num;
+        mCtsplayerState.adec_underflow = adec_underflow;
+        int apts_err = get_sysfs_int("/sys/class/tsync/apts_error_num");
+        mCtsplayerState.apts_error = apts_err;
+        LOGI("audio: pts:0x%llx,samplate=%d,channel=%d,bitrate=%d\n",mCtsplayerState.apts,
+            mCtsplayerState.samplate,mCtsplayerState.channel,mCtsplayerState.bitrate);
+        LOGI("audio-2: abuf_used=%d,abuf_size=%d,adec_error=%d,adec_underflow=%d,apts_error=%d\n",mCtsplayerState.abuf_used,
+            mCtsplayerState.abuf_size,mCtsplayerState.adec_error,mCtsplayerState.adec_underflow,mCtsplayerState.apts_error);
+    }
+    if (pcodec->has_video) {
+        unsigned long videopts;
+        codec_get_vbuf_state(pcodec, &video_buf);
+        codec_get_vdec_state(pcodec, &video_status);
+
+        sysfs_get_long("/sys/class/tsync/pts_video", &videopts);
+        mCtsplayerState.vpts = (int64_t)videopts;
+        mCtsplayerState.video_width = video_status.width;
+        mCtsplayerState.video_height = video_status.height;
+        mCtsplayerState.video_ratio = video_ratio;
+        mCtsplayerState.video_rWH= video_rWH;
+        mCtsplayerState.Video_frame_format = Video_frame_format;
+        mCtsplayerState.vbuf_used = video_buf.data_len;
+        mCtsplayerState.vbuf_size = video_buf.size;
+        mCtsplayerState.vdec_error = video_status.error_count;
+        mCtsplayerState.vdec_drop = amsysfs_get_sysfs_int("/sys/class/video/video_drop_number");
+        mCtsplayerState.vdec_underflow = vdec_underflow;
+        int vpts_err = get_sysfs_int("/sys/class/tsync/vpts_error_num");
+        mCtsplayerState.vpts_error = vpts_err;
+        LOGI("video: vpts=0x%llx,width=%d,height=%d,ratio=%d,rWh=%d,frame_format=%d\n",mCtsplayerState.vpts,mCtsplayerState.video_width,
+            mCtsplayerState.video_height,mCtsplayerState.video_ratio,mCtsplayerState.video_rWH,mCtsplayerState.Video_frame_format);
+        LOGI("video-2: vbuf_used=%d,vbuf_size=%d,vdec_error=%d,vdec_underflow=%d,vpts_err=%d\n",mCtsplayerState.vbuf_used,mCtsplayerState.vbuf_size,
+            mCtsplayerState.vdec_error,mCtsplayerState.vdec_underflow,mCtsplayerState.vpts_error);
+    }
+
+    mCtsplayerState.avdiff = llabs(mCtsplayerState.apts - mCtsplayerState.vpts);
+    mCtsplayerState.ff_mode = (m_bFast == true);
+    int ts_err = get_sysfs_int("/sys/class/tsdemux/discontinue_counter");
+    mCtsplayerState.ts_error = ts_err;
+    mCtsplayerState.ts_sync_loss = 0; // unkown
+    mCtsplayerState.ecm_error = 0; // unkown
+
+    mCtsplayerState.valid = 1;
+
+    LOGI("player: avdiff=%lld,ff_mode=%d,ts_error=%d\n",mCtsplayerState.avdiff,mCtsplayerState.ff_mode,mCtsplayerState.ts_error);
+
+    
+  
+    return 0;
+
+}
+
+int CTsPlayer::updateCtsPlayerInfo()
+{
+    if (!m_bIsPlay) {
+        return 0;
+    }
+
+    updateCTCInfo();
+
+    pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_FRAME, player_evt_hander,mCtsplayerState.first_picture_comming);
+    
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFFSIZE, player_evt_hander,mCtsplayerState.vbuf_size);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFF_USED, player_evt_hander,mCtsplayerState.vbuf_used);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_RATIO, player_evt_hander,mCtsplayerState.video_ratio);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_W_H, player_evt_hander,mCtsplayerState.video_rWH);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_FF_MODE, player_evt_hander,mCtsplayerState.ff_mode);
+    pfunc_player_evt(IPTV_PLAYER_EVT_FRAME_FORMAT, player_evt_hander,mCtsplayerState.Video_frame_format);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_PTS_ERROR, player_evt_hander,mCtsplayerState.vpts_error);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VDEC_ERROR, player_evt_hander,mCtsplayerState.vdec_error);
+    pfunc_player_evt(IPTV_PLAYER_EVT_VDEC_UNDERFLOW, player_evt_hander,mCtsplayerState.vdec_underflow);
+    
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_PTS_ERROR, player_evt_hander,mCtsplayerState.apts_error);
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE, player_evt_hander,mCtsplayerState.samplate);
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_CHANNELS, player_evt_hander,mCtsplayerState.channel);
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE, player_evt_hander,mCtsplayerState.bitrate);
+    pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_ERROR, player_evt_hander,mCtsplayerState.adec_error);
+    pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_UNDERFLOW, player_evt_hander,mCtsplayerState.adec_underflow);
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_PTS_ERROR, player_evt_hander,mCtsplayerState.apts_error);
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFFSIZE, player_evt_hander,mCtsplayerState.abuf_size);
+    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFF_USED, player_evt_hander,mCtsplayerState.abuf_used);
+
+    pfunc_player_evt(IPTV_PLAYER_EVT_AV_DIFF, player_evt_hander,mCtsplayerState.avdiff);
+    pfunc_player_evt(IPTV_PLAYER_EVT_TS_ERROR, player_evt_hander,mCtsplayerState.ts_error);
+    pfunc_player_evt(IPTV_PLAYER_EVT_TS_SYNC_LOSS, player_evt_hander,mCtsplayerState.ts_sync_loss);
+    pfunc_player_evt(IPTV_PLAYER_EVT_ECM_ERROR, player_evt_hander,mCtsplayerState.ecm_error);
+
+    return 0;
+  
+}
+
+
+

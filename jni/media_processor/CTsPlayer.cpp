@@ -1703,6 +1703,9 @@ bool CTsPlayer::Fast()
     if(ret)
         return false;
     keep_vdec_mem = 1;
+    if(pcodec->video_type == VFORMAT_HEVC) {
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
+    }
     iStop();
     m_bFast = true;
 
@@ -1777,6 +1780,11 @@ bool CTsPlayer::Stop(){
         if (pcodec->has_sub == 1) {
             memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
         }
+
+        if(pcodec->video_type == VFORMAT_HEVC) {
+            amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 8);
+        }
+
         ret =  iStop();
 
         return ret;
@@ -1888,6 +1896,9 @@ bool CTsPlayer::Seek()
     LOGI("Seek");
     if(m_isBlackoutPolicy)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+    if(pcodec->video_type == VFORMAT_HEVC) {
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
+    }
     iStop();
     usleep(500*1000);
     iStartPlay();

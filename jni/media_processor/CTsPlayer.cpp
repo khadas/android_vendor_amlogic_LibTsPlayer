@@ -1521,10 +1521,6 @@ bool CTsPlayer::iStartPlay()
         setSubRatioAuto();
     }
 
-    if (!m_bFast &&
-        (pcodec->video_type == VFORMAT_H264 || pcodec->video_type == VFORMAT_H264_4K2K))
-        codec_set_mode(pcodec, TRICKMODE_EARLY_OUTPUT);
-
     return !ret;
 }
 

@@ -41,6 +41,7 @@ static bool m_StopThread = false;
 //log switch
 static int prop_shouldshowlog = 0;
 static int prop_playerwatchdog_support =0;
+static bool s_h264sameucode = false;
 int prop_softdemux = 0;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
@@ -537,6 +538,13 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.start.no.out", value, "0");
     prop_start_no_out = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
+    LOGI("/sys/class/cputype/cputype:%s\n", value);
+    if (value[0] != '\0' && (!strcasecmp(value, "905L") || !strcasecmp(value, "905M2")))
+        s_h264sameucode = true;
+
     LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d, isDrm: %d\n",
 		        prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support, prop_softdemux);
     LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d prop_start_no_out:%d\n", prop_audiobuftime, prop_videobuftime,prop_start_no_out);
@@ -1317,7 +1325,7 @@ bool CTsPlayer::iStartPlay()
     }
 
     pcodec->video_pid = (int)vPara.pid;
-    if(pcodec->video_type == VFORMAT_H264) {
+    if(pcodec->video_type == VFORMAT_H264 && !s_h264sameucode) {
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
         lpbuffer_st.buffer = (unsigned char *)malloc(CTC_BUFFER_LOOP_NSIZE*buffersize);
         if(lpbuffer_st.buffer == NULL) {
@@ -1534,7 +1542,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     float audio_buf_level = 0.00f;
     float video_buf_level = 0.00f;
 
-    if(!m_bIsPlay || m_bchangeH264to4k)
+    if(!m_bIsPlay || (m_bchangeH264to4k && !s_h264sameucode))
         return -1;
 
     //checkBuffstate();
@@ -1565,7 +1573,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     }
     lp_lock(&mutex);
 	
-    if ((pcodec->video_type == VFORMAT_H264) && lpbuffer_st.enlpflag) {
+    if ((pcodec->video_type == VFORMAT_H264) && !s_h264sameucode && lpbuffer_st.enlpflag) {
         lp_lock(&mutex_lp);
         if (lpbuffer_st.wp + nSize < lpbuffer_st.bufferend) {
             lpbuffer_st.wp = (unsigned char *)memcpy(lpbuffer_st.wp, pBuffer, nSize);
@@ -1869,7 +1877,7 @@ bool CTsPlayer::iStop()
         if (pcodec->has_sub == 1)
             subtitleClose();
         lp_unlock(&mutex);
-        if (lpbuffer_st.buffer != NULL){
+        if (!s_h264sameucode && lpbuffer_st.buffer != NULL){
             free(lpbuffer_st.buffer);
             lpbuffer_st.buffer = NULL;
             lpbuffer_st.rp = NULL;
@@ -2421,7 +2429,7 @@ void CTsPlayer::checkVdecstate()
             codec_get_vdec_state(pcodec, &video_status);
         else
             codec_get_vdec_state(vcodec, &video_status);
-        if (video_status.status & DECODER_ERROR_MASK) {
+        if (!s_h264sameucode && video_status.status & DECODER_ERROR_MASK) {
             LOGI("decoder vdec.status: %x width : %d height: %d\n", video_status.status, video_status.width, video_status.height);
 
             if((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) &&

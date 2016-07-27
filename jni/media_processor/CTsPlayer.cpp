@@ -486,22 +486,34 @@ int sysfs_get_long(char *path, unsigned long  *val)
 void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler,int value)
 {
     switch (evt) {
-    case 5: ALOGI("evt:VIDEO_BUFFSIZE  value :%d\n",value);break;
-    case 6: ALOGI("evt:VIDEO_BUFF_USED  value :%d\n",value);break;
-    case 7: ALOGI("evt:AUDIO_BUFFSIZE  value :%d\n",value);break;
-    case 8: ALOGI("evt:AUDIO_BUFF_USED  value :%d\n",value);break;
-    case 9: ALOGI("evt:VIDEO_RATIO  value :%d\n",value);break;
-    case 10:ALOGI("evt:VIDEO_W_H  value :%d\n",value);break;
-    case 11:ALOGI("evt:VIDEO_F_F_MODE  value :%d\n",value);break;
-    case 12:ALOGI("evt:AUDIO_SAMPLE_RATE  value :%d\n",value);break;
-    case 13:ALOGI("evt:AUDIO_CUR_BITRATE  value :%d\n",value);break;
-    case 14:ALOGI("evt:VIDEO_PTS_ERROR  value :%d\n",value);break;
-    case 15:ALOGI("evt:AUDIO_PTS_ERROR  value :%d\n",value);break;
-    case 16:ALOGI("evt:VDEC_ERROR  value :%d\n",value);break;
-    case 17:ALOGI("evt:ADEC_ERROR  value :%d\n",value);break;
-    case 18:ALOGI("evt:UNDERFLOW  value :%d\n",value);break;
-    case 19:ALOGI("evt:ADEC_UNDERFLOW  value :%d\n",value);break;
-    default:ALOGI("evt: %d, value :%d\n",evt, value);break;    
+    case IPTV_PLAYER_EVT_FIRST_FRAME:
+    case IPTV_PLAYER_EVT_VOD_EOS:
+    case IPTV_PLAYER_EVT_ABEND:      
+    case IPTV_PLAYER_EVT_PLAYBACK_ERROR:
+    case IPTV_PLAYER_EVT_VIDEO_BUFFSIZE:
+    case IPTV_PLAYER_EVT_VIDEO_BUFF_USED:
+    case IPTV_PLAYER_EVT_AUDIO_BUFFSIZE:
+    case IPTV_PLAYER_EVT_AUDIO_BUFF_USED:
+    case IPTV_PLAYER_EVT_VIDEO_RATIO:
+    case IPTV_PLAYER_EVT_VIDEO_W_H:
+    case IPTV_PLAYER_EVT_VIDEO_FF_MODE:
+    case IPTV_PLAYER_EVT_FRAME_FORMAT:
+    case IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE:
+    case IPTV_PLAYER_EVT_AUDIO_CHANNELS:
+    case IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE:
+    case IPTV_PLAYER_EVT_VIDEO_PTS_ERROR:
+    case IPTV_PLAYER_EVT_AUDIO_PTS_ERROR:
+    case IPTV_PLAYER_EVT_VDEC_ERROR:
+    case IPTV_PLAYER_EVT_ADEC_ERROR:
+    case IPTV_PLAYER_EVT_VDEC_UNDERFLOW:
+    case IPTV_PLAYER_EVT_ADEC_UNDERFLOW:
+    case IPTV_PLAYER_EVT_AV_DIFF:
+    case IPTV_PLAYER_EVT_TS_ERROR:
+    case IPTV_PLAYER_EVT_TS_SYNC_LOSS:
+    case IPTV_PLAYER_EVT_ECM_ERROR:
+    default : 
+	    LOGI("evt : %d, value :%d\n",evt, value);
+		break;
     }    
 }
 
@@ -2607,10 +2619,10 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         if(checkcount >= 40) {
             tsplayer->checkAbend();
             tsplayer->Report_video_paramters();
+            tsplayer->updateCtsPlayerInfo();
             //tsplayer->Report_Audio_paramters();
             checkcount = 0;
         }
-        tsplayer->updateCtsPlayerInfo();
     }
     while(!m_StopThread);
     LOGV("threadCheckAbend end\n");
@@ -2645,7 +2657,6 @@ void CTsPlayer::Report_video_paramters()
     rVideoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
     rVideoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
     amsysfs_get_sysfs_str("/sys/class/deinterlace/di0/frame_format",tVideoFFMode,64);
-    LOGI("video_height:%d,video_width:%d,video_ffmode:%s",rVideoHeight,rVideoWidth,tVideoFFMode);	
     if(rVideoWidth > 0 && rVideoHeight > 0)
         videoWH = rVideoWidth / rVideoHeight;
 
@@ -2763,10 +2774,10 @@ int CTsPlayer::updateCTCInfo()
         mCtsplayerState.adec_underflow = adec_underflow;
         int apts_err = get_sysfs_int("/sys/class/tsync/apts_error_num");
         mCtsplayerState.apts_error = apts_err;
-        LOGI("audio: pts:0x%llx,samplate=%d,channel=%d,bitrate=%d\n",mCtsplayerState.apts,
+        LOGV("audio: pts:0x%llx, samplate=%d, channel=%d, bitrate=%d\n",mCtsplayerState.apts,
             mCtsplayerState.samplate,mCtsplayerState.channel,mCtsplayerState.bitrate);
-        LOGI("audio-2: abuf_used=%d,abuf_size=%d,adec_error=%d,adec_underflow=%d,apts_error=%d\n",mCtsplayerState.abuf_used,
-            mCtsplayerState.abuf_size,mCtsplayerState.adec_error,mCtsplayerState.adec_underflow,mCtsplayerState.apts_error);
+        LOGV("audio-2: abuf_used=%d, abuf_size=%dKB, adec_error=%d, adec_underflow=%d, apts_error=%d\n",mCtsplayerState.abuf_used,
+            mCtsplayerState.abuf_size/1024,mCtsplayerState.adec_error,mCtsplayerState.adec_underflow,mCtsplayerState.apts_error);
     }
     if (pcodec->has_video) {
         unsigned long videopts;
@@ -2787,10 +2798,10 @@ int CTsPlayer::updateCTCInfo()
         mCtsplayerState.vdec_underflow = vdec_underflow;
         int vpts_err = get_sysfs_int("/sys/class/tsync/vpts_error_num");
         mCtsplayerState.vpts_error = vpts_err;
-        LOGI("video: vpts=0x%llx,width=%d,height=%d,ratio=%d,rWh=%d,frame_format=%d\n",mCtsplayerState.vpts,mCtsplayerState.video_width,
+	   LOGV("video: vpts=0x%llx, width=%d, height=%d, ratio=%d, rWh=%d, frame_format=%d\n",mCtsplayerState.vpts,mCtsplayerState.video_width,
             mCtsplayerState.video_height,mCtsplayerState.video_ratio,mCtsplayerState.video_rWH,mCtsplayerState.Video_frame_format);
-        LOGI("video-2: vbuf_used=%d,vbuf_size=%d,vdec_error=%d,vdec_underflow=%d,vpts_err=%d\n",mCtsplayerState.vbuf_used,mCtsplayerState.vbuf_size,
-            mCtsplayerState.vdec_error,mCtsplayerState.vdec_underflow,mCtsplayerState.vpts_error);
+        LOGV("video-2:  vbuf_used=%d, vbuf_size=%dKB, vdec_error=%d, vdec_underflow=%d, vpts_err=%d\n",
+		mCtsplayerState.vbuf_used,mCtsplayerState.vbuf_size/1024,mCtsplayerState.vdec_error,mCtsplayerState.vdec_underflow,mCtsplayerState.vpts_error);
     }
 
     mCtsplayerState.avdiff = llabs(mCtsplayerState.apts - mCtsplayerState.vpts);
@@ -2802,7 +2813,7 @@ int CTsPlayer::updateCTCInfo()
 
     mCtsplayerState.valid = 1;
 
-    LOGI("player: avdiff=%lld,ff_mode=%d,ts_error=%d\n",mCtsplayerState.avdiff,mCtsplayerState.ff_mode,mCtsplayerState.ts_error);
+    LOGV("player: avdiff=%lld,ff_mode=%d,ts_error=%d\n",mCtsplayerState.avdiff,mCtsplayerState.ff_mode,mCtsplayerState.ts_error);
 
     
   

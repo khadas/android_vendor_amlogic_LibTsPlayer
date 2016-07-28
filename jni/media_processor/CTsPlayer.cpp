@@ -1341,7 +1341,6 @@ bool CTsPlayer::iStartPlay()
           set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
      }
 
-    set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 0xff);
 
     memset(pcodec,0,sizeof(*pcodec));
     pcodec->stream_type = STREAM_TYPE_TS;
@@ -1886,7 +1885,6 @@ bool CTsPlayer::iStop()
     
     LOGI("Stop keep_vdec_mem: %d\n", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
-    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/horz_scaler_filter", 2);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/direct_connection_cnt", 0);

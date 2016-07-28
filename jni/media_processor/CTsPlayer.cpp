@@ -1815,6 +1815,11 @@ bool CTsPlayer::StopFast()
 {
     int ret;
 
+    if(!m_bFast){
+      LOGI("Last is None fast");
+      return true;
+    }
+
     LOGI("StopFast");
     if (pcodec->has_sub == 1)
         subtitleResetForSeek();
@@ -1849,6 +1854,11 @@ bool CTsPlayer::StopFast()
 }
 bool CTsPlayer::Stop(){
         int ret;
+
+        if(!m_bIsPlay){
+           LOGI("already is Stoped\n");
+           return true;
+        }
 
         codec_set_freerun_mode(pcodec, 0);
         if (pcodec->has_sub == 1) {

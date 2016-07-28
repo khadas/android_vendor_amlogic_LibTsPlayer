@@ -2627,7 +2627,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         if(checkcount >= 40) {
             tsplayer->checkAbend();
             tsplayer->Report_video_paramters();
-            tsplayer->updateCtsPlayerInfo();
+            //tsplayer->updateCtsPlayerInfo();
             //tsplayer->Report_Audio_paramters();
             checkcount = 0;
         }

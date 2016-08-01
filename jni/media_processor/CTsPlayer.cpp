@@ -2621,15 +2621,18 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         usleep(50 * 1000);
         //sleep(2);
         //tsplayer->checkBuffLevel();
-        if (tsplayer->m_bIsPlay)
+        if (tsplayer->m_bIsPlay) {
+            lp_lock(&tsplayer->mutex);
             tsplayer->checkVdecstate();
-        checkcount++;
-        if(checkcount >= 40) {
-            tsplayer->checkAbend();
-            tsplayer->Report_video_paramters();
-            tsplayer->updateCtsPlayerInfo();
-            //tsplayer->Report_Audio_paramters();
-            checkcount = 0;
+            checkcount++;
+            if(checkcount >= 40) {
+                tsplayer->checkAbend();
+                tsplayer->Report_video_paramters();
+                tsplayer->updateCtsPlayerInfo();
+                //tsplayer->Report_Audio_paramters();
+                checkcount = 0;
+            }
+            lp_unlock(&tsplayer->mutex);
         }
     }
     while(!m_StopThread);

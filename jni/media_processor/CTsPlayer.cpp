@@ -512,7 +512,7 @@ void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler,int value)
     case IPTV_PLAYER_EVT_TS_SYNC_LOSS:
     case IPTV_PLAYER_EVT_ECM_ERROR:
     default : 
-	    LOGI("evt : %d, value :%d\n",evt, value);
+	    LOGV("evt : %d, value :%d\n",evt, value);
 		break;
     }    
 }
@@ -2627,7 +2627,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         if(checkcount >= 40) {
             tsplayer->checkAbend();
             tsplayer->Report_video_paramters();
-            //tsplayer->updateCtsPlayerInfo();
+            tsplayer->updateCtsPlayerInfo();
             //tsplayer->Report_Audio_paramters();
             checkcount = 0;
         }

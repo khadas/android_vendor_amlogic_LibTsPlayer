@@ -126,11 +126,9 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 	memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("amiptv.dumpfile", value, "0");
     amprop_dumpfile = atoi(value);
-	if(amprop_dumpfile){
-	    am_fp = fopen(tmpfilename, "wb+");
-	    de_fp=fopen(tmpfilename1, "wb+");
-	    //de_fp=fopen("/storage/external_storage/sdcard1/am_Livedec.ts", "wb+");
-	}
+	if(amprop_dumpfile)
+	am_fp = fopen(tmpfilename, "wb+");
+	
 	memset(value, 0, PROPERTY_VALUE_MAX);
 	property_get("iptv.shouldshowlog", value, "0");
 	am_debug = atoi(value);
@@ -147,7 +145,7 @@ int am_ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Me
 		de_fp = fopen(tmpfilename1, "wb+");
 		
 	memset(value, 0, PROPERTY_VALUE_MAX);
-         property_get("iptv.tvpdrm", value, "0");
+    property_get("iptv.tvpdrm", value, "1");
     prop_tvpdrm = atoi(value);
 	ALOGV("prop_tvpdrm :%d, 1 tvp and 0 is no tvp debug \n",prop_tvpdrm);
 
@@ -284,7 +282,6 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 		if((am_fp != NULL) && (packet.size > 0)) {
 			if(amprop_dumpfile){
             	fwrite(packet.data, 1, packet.size, am_fp);
-		fflush(am_fp);
 			}
 		}
 		if((int64_t)INT64_0 != packet.pts) {
@@ -311,12 +308,13 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 			}else {
 			    char flag='d';
 			    PA_DecryptContentData(flag, (unsigned char*)packet.data, &packet.size);
-			    if(de_fp){
-			        fwrite(packet.data, 1, packet.size, de_fp);
-			        fflush(de_fp);
-			     }
 			}
-	   }
+	   	if((de_fp != NULL) && (packet.size > 0)) {
+			if(deprop_dumpfile){
+				fwrite(packet.data, 1, packet.size, de_fp);
+			}
+		}
+      }
 #endif
 
 		for(int retry_count=0; retry_count<20; retry_count++) {

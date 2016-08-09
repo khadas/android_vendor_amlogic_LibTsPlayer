@@ -78,8 +78,8 @@ AVRational time_base = {1, 1000000};
 FILE* am_fp;
 static int amprop_dumpfile;
 int am_debug = 0;
-#ifdef USE_OPTEEOS
 FILE *de_fp;
+#ifdef USE_OPTEEOS
 static int deprop_dumpfile;
 
 int drm_stronedrminfo(uint8_t *outpktdata, uint8_t *addr,int size,  int isdrminfo)

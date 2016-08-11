@@ -33,6 +33,7 @@ struct ctsplayer_state {
 
     // player info
     int first_picture_comming;
+    int64_t first_frame_pts;
     int64_t avdiff;
     int ff_mode;
     int ts_error;
@@ -483,36 +484,25 @@ int sysfs_get_long(char *path, unsigned long  *val)
     }   
     return 0;
 }
-void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler,int value)
+void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler)
 {
     switch (evt) {
-    case IPTV_PLAYER_EVT_FIRST_FRAME:
-    case IPTV_PLAYER_EVT_VOD_EOS:
-    case IPTV_PLAYER_EVT_ABEND:      
-    case IPTV_PLAYER_EVT_PLAYBACK_ERROR:
-    case IPTV_PLAYER_EVT_VIDEO_BUFFSIZE:
-    case IPTV_PLAYER_EVT_VIDEO_BUFF_USED:
-    case IPTV_PLAYER_EVT_AUDIO_BUFFSIZE:
-    case IPTV_PLAYER_EVT_AUDIO_BUFF_USED:
-    case IPTV_PLAYER_EVT_VIDEO_RATIO:
-    case IPTV_PLAYER_EVT_VIDEO_W_H:
-    case IPTV_PLAYER_EVT_VIDEO_FF_MODE:
-    case IPTV_PLAYER_EVT_FRAME_FORMAT:
-    case IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE:
-    case IPTV_PLAYER_EVT_AUDIO_CHANNELS:
-    case IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE:
-    case IPTV_PLAYER_EVT_VIDEO_PTS_ERROR:
-    case IPTV_PLAYER_EVT_AUDIO_PTS_ERROR:
-    case IPTV_PLAYER_EVT_VDEC_ERROR:
-    case IPTV_PLAYER_EVT_ADEC_ERROR:
-    case IPTV_PLAYER_EVT_VDEC_UNDERFLOW:
-    case IPTV_PLAYER_EVT_ADEC_UNDERFLOW:
-    case IPTV_PLAYER_EVT_AV_DIFF:
-    case IPTV_PLAYER_EVT_TS_ERROR:
-    case IPTV_PLAYER_EVT_TS_SYNC_LOSS:
-    case IPTV_PLAYER_EVT_ECM_ERROR:
+	case IPTV_PLAYER_EVT_STREAM_VALID: 
+	case IPTV_PLAYER_EVT_FIRST_PTS:        
+	case IPTV_PLAYER_EVT_VOD_EOS:           
+	case IPTV_PLAYER_EVT_ABEND:          
+	case IPTV_PLAYER_EVT_PLAYBACK_ERROR:  
+	case IPTV_PLAYER_EVT_VID_FRAME_ERROR:  
+	case IPTV_PLAYER_EVT_VID_DISCARD_FRAME:
+	case IPTV_PLAYER_EVT_VID_DEC_UNDERFLOW: 
+	case IPTV_PLAYER_EVT_VID_PTS_ERROR:    
+	case IPTV_PLAYER_EVT_AUD_FRAME_ERROR:    
+	case IPTV_PLAYER_EVT_AUD_DISCARD_FRAME:  
+	case IPTV_PLAYER_EVT_AUD_DEC_UNDERFLOW:  
+	case IPTV_PLAYER_EVT_AUD_PTS_ERROR:
+	case IPTV_PLAYER_EVT_BUTT:    
     default : 
-	    LOGV("evt : %d, value :%d\n",evt, value);
+	    LOGV("evt : %d\n",evt);
 		break;
     }    
 }
@@ -2631,7 +2621,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
             if(checkcount >= 40) {
                 tsplayer->checkAbend();
                 tsplayer->Report_video_paramters();
-                tsplayer->updateCtsPlayerInfo();
+                tsplayer->updateCTCInfo();
                 //tsplayer->Report_Audio_paramters();
                 checkcount = 0;
             }
@@ -2666,13 +2656,13 @@ void CTsPlayer::Report_video_paramters()
     int rVideoHeight = 0;
     int rVideoWidth = 0;
     char tVideoFFMode[64] = {0};
-    double videoWH = 0;
+    float videoWH = 0;
 
     rVideoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
     rVideoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
     amsysfs_get_sysfs_str("/sys/class/deinterlace/di0/frame_format",tVideoFFMode,64);
     if(rVideoWidth > 0 && rVideoHeight > 0)
-        videoWH = rVideoWidth / rVideoHeight;
+        videoWH =(float)rVideoWidth / (float)rVideoHeight;
 
     if (videoWH < 1.34) {
         rVideo_W_H = 0;
@@ -2760,6 +2750,9 @@ int CTsPlayer::updateCTCInfo()
     if (mCtsplayerState.first_picture_comming == 0) {
         if (get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")) {
             mCtsplayerState.first_picture_comming = 1;
+            mCtsplayerState.first_frame_pts = get_sysfs_int("/sys/class/tsync/firstvpts");
+            pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
+
         } else {
             return 0;
         }
@@ -2777,16 +2770,26 @@ int CTsPlayer::updateCTCInfo()
         codec_get_audio_cur_bitrate(pcodec, &pcodec->audio_info.bitrate);
 
         sysfs_get_long("/sys/class/tsync/pts_audio", &audiopts);
+        int apts_err = get_sysfs_int("/sys/class/tsync/apts_error_num");
         mCtsplayerState.apts = (int64_t)audiopts;
         mCtsplayerState.samplate = pcodec->audio_info.sample_rate;
         mCtsplayerState.channel= pcodec->audio_info.channels;
         mCtsplayerState.bitrate= pcodec->audio_info.bitrate;
         mCtsplayerState.abuf_used = audio_buf.data_len;
         mCtsplayerState.abuf_size = audio_buf.size;
+	if (pcodec->audio_info.error_num != mCtsplayerState.adec_error) {
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_FRAME_ERROR, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_DISCARD_FRAME, player_evt_hander);
+	}
+	if (adec_underflow != mCtsplayerState.adec_underflow) {
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_DEC_UNDERFLOW, player_evt_hander);
+	}
+        if (apts_err != mCtsplayerState.apts_error) {
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_PTS_ERROR, player_evt_hander);
+	}
         mCtsplayerState.adec_error = pcodec->audio_info.error_num;
         mCtsplayerState.adec_drop = pcodec->audio_info.error_num;
         mCtsplayerState.adec_underflow = adec_underflow;
-        int apts_err = get_sysfs_int("/sys/class/tsync/apts_error_num");
         mCtsplayerState.apts_error = apts_err;
         LOGV("audio: pts:0x%llx, samplate=%d, channel=%d, bitrate=%d\n",mCtsplayerState.apts,
             mCtsplayerState.samplate,mCtsplayerState.channel,mCtsplayerState.bitrate);
@@ -2799,6 +2802,8 @@ int CTsPlayer::updateCTCInfo()
         codec_get_vdec_state(pcodec, &video_status);
 
         sysfs_get_long("/sys/class/tsync/pts_video", &videopts);
+	int video_drop_num = amsysfs_get_sysfs_int("/sys/class/video/video_drop_number");
+	int vpts_err = get_sysfs_int("/sys/class/tsync/vpts_error_num");
         mCtsplayerState.vpts = (int64_t)videopts;
         mCtsplayerState.video_width = video_status.width;
         mCtsplayerState.video_height = video_status.height;
@@ -2807,12 +2812,26 @@ int CTsPlayer::updateCTCInfo()
         mCtsplayerState.Video_frame_format = Video_frame_format;
         mCtsplayerState.vbuf_used = video_buf.data_len;
         mCtsplayerState.vbuf_size = video_buf.size;
+	if (mCtsplayerState.vdec_error != video_status.error_count) {
+	    pfunc_player_evt(IPTV_PLAYER_EVT_VID_FRAME_ERROR, player_evt_hander); // use video underflow
+	}
+	if (mCtsplayerState.vdec_drop != video_drop_num) {
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_DISCARD_FRAME, player_evt_hander);
+	}
+
+	if (mCtsplayerState.vdec_underflow != vdec_underflow) {
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_DEC_UNDERFLOW, player_evt_hander);
+	}
+
+	if (mCtsplayerState.vpts_error != vpts_err) {
+	    pfunc_player_evt(IPTV_PLAYER_EVT_VID_PTS_ERROR, player_evt_hander);
+	}
+
         mCtsplayerState.vdec_error = video_status.error_count;
-        mCtsplayerState.vdec_drop = amsysfs_get_sysfs_int("/sys/class/video/video_drop_number");
+        mCtsplayerState.vdec_drop = video_drop_num;
         mCtsplayerState.vdec_underflow = vdec_underflow;
-        int vpts_err = get_sysfs_int("/sys/class/tsync/vpts_error_num");
         mCtsplayerState.vpts_error = vpts_err;
-	   LOGV("video: vpts=0x%llx, width=%d, height=%d, ratio=%d, rWh=%d, frame_format=%d\n",mCtsplayerState.vpts,mCtsplayerState.video_width,
+	LOGV("video: vpts=0x%llx, width=%d, height=%d, ratio=%d, rWh=%d, frame_format=%d\n",mCtsplayerState.vpts,mCtsplayerState.video_width,
             mCtsplayerState.video_height,mCtsplayerState.video_ratio,mCtsplayerState.video_rWH,mCtsplayerState.Video_frame_format);
         LOGV("video-2:  vbuf_used=%d, vbuf_size=%dKB, vdec_error=%d, vdec_underflow=%d, vpts_err=%d\n",
 		mCtsplayerState.vbuf_used,mCtsplayerState.vbuf_size/1024,mCtsplayerState.vdec_error,mCtsplayerState.vdec_underflow,mCtsplayerState.vpts_error);
@@ -2835,44 +2854,46 @@ int CTsPlayer::updateCTCInfo()
 
 }
 
-int CTsPlayer::updateCtsPlayerInfo()
+
+int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
 {
-    if (!m_bIsPlay) {
-        return 0;
-    }
+	switch(enAttrType) {
+	case IPTV_PLAYER_ATTR_VID_ASPECT :
+		*value = mCtsplayerState.video_ratio;
+	    break;
+	case IPTV_PLAYER_ATTR_VID_RATIO :
+		*value = mCtsplayerState.video_rWH;
+		break;
+	case IPTV_PLAYER_ATTR_VID_SAMPLETYPE :
+		*value = mCtsplayerState.Video_frame_format;
+		break;
+	case IPTV_PLAYER_ATTR_VIDAUDDIFF :
+		*value = mCtsplayerState.avdiff;
+		break;
+	case IPTV_PLAYER_ATTR_VID_BUF_SIZE :
+		*value = mCtsplayerState.vbuf_size;
+		break;
+	case IPTV_PLAYER_ATTR_VID_USED_SIZE :
+		*value = mCtsplayerState.vbuf_used;
+		break;
+	case IPTV_PLAYER_ATTR_AUD_BUF_SIZE :
+		*value = mCtsplayerState.abuf_size;
+		break;
+	case IPTV_PLAYER_ATTR_AUD_USED_SIZE :
+		*value = mCtsplayerState.abuf_used;
+		break;
+	case IPTV_PLAYER_ATTR_BUTT :
+		LOGV("--IPTV_PLAYER_ATTR_BUTT\n");
+		break;
+	default:
+		LOGV("unknow type");
+		break;
 
-    updateCTCInfo();
+	}
+	LOGI("---playerback_getStatusInfo, enAttrType=%d,value=%d\n",enAttrType,*value);
 
-    pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_FRAME, player_evt_hander,mCtsplayerState.first_picture_comming);
-    
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFFSIZE, player_evt_hander,mCtsplayerState.vbuf_size);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_BUFF_USED, player_evt_hander,mCtsplayerState.vbuf_used);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_RATIO, player_evt_hander,mCtsplayerState.video_ratio);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_W_H, player_evt_hander,mCtsplayerState.video_rWH);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_FF_MODE, player_evt_hander,mCtsplayerState.ff_mode);
-    pfunc_player_evt(IPTV_PLAYER_EVT_FRAME_FORMAT, player_evt_hander,mCtsplayerState.Video_frame_format);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VIDEO_PTS_ERROR, player_evt_hander,mCtsplayerState.vpts_error);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VDEC_ERROR, player_evt_hander,mCtsplayerState.vdec_error);
-    pfunc_player_evt(IPTV_PLAYER_EVT_VDEC_UNDERFLOW, player_evt_hander,mCtsplayerState.vdec_underflow);
-    
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_PTS_ERROR, player_evt_hander,mCtsplayerState.apts_error);
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_SAMPLE_RATE, player_evt_hander,mCtsplayerState.samplate);
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_CHANNELS, player_evt_hander,mCtsplayerState.channel);
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_CUR_BITRATE, player_evt_hander,mCtsplayerState.bitrate);
-    pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_ERROR, player_evt_hander,mCtsplayerState.adec_error);
-    pfunc_player_evt(IPTV_PLAYER_EVT_ADEC_UNDERFLOW, player_evt_hander,mCtsplayerState.adec_underflow);
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_PTS_ERROR, player_evt_hander,mCtsplayerState.apts_error);
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFFSIZE, player_evt_hander,mCtsplayerState.abuf_size);
-    pfunc_player_evt(IPTV_PLAYER_EVT_AUDIO_BUFF_USED, player_evt_hander,mCtsplayerState.abuf_used);
+	return 0;
 
-    pfunc_player_evt(IPTV_PLAYER_EVT_AV_DIFF, player_evt_hander,mCtsplayerState.avdiff);
-    pfunc_player_evt(IPTV_PLAYER_EVT_TS_ERROR, player_evt_hander,mCtsplayerState.ts_error);
-    pfunc_player_evt(IPTV_PLAYER_EVT_TS_SYNC_LOSS, player_evt_hander,mCtsplayerState.ts_sync_loss);
-    pfunc_player_evt(IPTV_PLAYER_EVT_ECM_ERROR, player_evt_hander,mCtsplayerState.ecm_error);
-
-    return 0;
-  
 }
-
 
 

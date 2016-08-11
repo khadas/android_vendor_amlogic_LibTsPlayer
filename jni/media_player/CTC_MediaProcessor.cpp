@@ -169,25 +169,25 @@ int _media_info_dump(media_info_t* minfo)
 	ALOGI("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 	return 0;
 }
-void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler,int value)
+void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler)
 {
     switch (evt) {
-    case 5: ALOGI("evt:VIDEO_BUFFSIZE  value :%d\n",value);break;
-    case 6: ALOGI("evt:VIDEO_BUFF_USED  value :%d\n",value);break;
-    case 7: ALOGI("evt:AUDIO_BUFFSIZE  value :%d\n",value);break;
-    case 8: ALOGI("evt:AUDIO_BUFF_USED  value :%d\n",value);break;
-    case 9: ALOGI("evt:VIDEO_RATIO  value :%d\n",value);break;
-    case 10:ALOGI("evt:VIDEO_W_H  value :%d\n",value);break;
-    case 11:ALOGI("evt:VIDEO_F_F_MODE  value :%d\n",value);break;
-    case 12:ALOGI("evt:AUDIO_SAMPLE_RATE  value :%d\n",value);break;
-    case 13:ALOGI("evt:AUDIO_CUR_BITRATE  value :%d\n",value);break;
-    case 14:ALOGI("evt:VIDEO_PTS_ERROR  value :%d\n",value);break;
-    case 15:ALOGI("evt:AUDIO_PTS_ERROR  value :%d\n",value);break;
-    case 16:ALOGI("evt:VDEC_ERROR  value :%d\n",value);break;
-    case 17:ALOGI("evt:ADEC_ERROR  value :%d\n",value);break;
-    case 18:ALOGI("evt:UNDERFLOW  value :%d\n",value);break;
-    case 19:ALOGI("evt:ADEC_UNDERFLOW  value :%d\n",value);break;
-    default:ALOGI("evt: %d, value :%d\n",evt, value);break;	
+    case 5: ALOGI("evt:VIDEO_BUFFSIZE\n");break;
+    case 6: ALOGI("evt:VIDEO_BUFF_USED\n");break;
+    case 7: ALOGI("evt:AUDIO_BUFFSIZE\n");break;
+    case 8: ALOGI("evt:AUDIO_BUFF_USED \n");break;
+    case 9: ALOGI("evt:VIDEO_RATIO\n");break;
+    case 10:ALOGI("evt:VIDEO_W_H\n");break;
+    case 11:ALOGI("evt:VIDEO_F_F_MODE\n");break;
+    case 12:ALOGI("evt:AUDIO_SAMPLE_RATE\n");break;
+    case 13:ALOGI("evt:AUDIO_CUR_BITRATE\n");break;
+    case 14:ALOGI("evt:VIDEO_PTS_ERROR\n");break;
+    case 15:ALOGI("evt:AUDIO_PTS_ERROR\n");break;
+    case 16:ALOGI("evt:VDEC_ERROR\n");break;
+    case 17:ALOGI("evt:ADEC_ERROR\n");break;
+    case 18:ALOGI("evt:UNDERFLOW\n");break;
+    case 19:ALOGI("evt:ADEC_UNDERFLOW\n");break;
+    default:ALOGI("evt: %d\n",evt);break;	
     }    
 }
 

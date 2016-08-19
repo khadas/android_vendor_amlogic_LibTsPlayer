@@ -1453,7 +1453,7 @@ bool CTsPlayer::iStartPlay()
         player_startsync_set(1);
 
     if(prop_softdemux == 1){
-        if(hasvideo){
+        if(pcodec->has_video){
             vcodec->has_video  = 1;
             vcodec->video_type = pcodec->video_type; 
             vcodec->video_pid  = pcodec->video_pid;
@@ -1462,7 +1462,7 @@ bool CTsPlayer::iStartPlay()
             LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d\n",
             vcodec->video_type, vcodec->video_pid);
         }
-        if(hasaudio){
+        if(pcodec->has_audio){
             acodec->has_audio = 1;
             acodec->audio_type = pcodec->audio_type;
             acodec->audio_pid  = pcodec->audio_pid;
@@ -1523,14 +1523,14 @@ bool CTsPlayer::iStartPlay()
             amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
         }
 #endif	
-        if (hasvideo) {
+        if (pcodec->has_video) {
             ret = codec_init(vcodec);	
         }
-        if (hasaudio) {
+        if (pcodec->has_audio) {
             ret = codec_init(acodec);	   		         
         }
-        LOGI("Init audio,hasaudio:%d\n",hasaudio);
-        if ((hasaudio) && (acodec != NULL)){
+        LOGI("Init audio,hasaudio:%d\n",pcodec->has_audio);
+        if ((pcodec->has_audio) && (acodec != NULL)){
             pcodec = acodec;
             if(vcodec != NULL){
                 pcodec->has_video = 1;
@@ -1539,7 +1539,7 @@ bool CTsPlayer::iStartPlay()
                 pcodec->stream_type = STREAM_TYPE_ES_VIDEO;
             }
             LOGI("[%s:%d]init pcodec pointer to acodec!\n", __FUNCTION__, __LINE__);
-        }else if ((hasvideo) && (vcodec != NULL)){
+        }else if ((pcodec->has_video) && (vcodec != NULL)){
             pcodec = vcodec;
         }
     }

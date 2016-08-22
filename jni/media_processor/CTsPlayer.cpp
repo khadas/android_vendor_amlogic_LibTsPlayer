@@ -1671,6 +1671,8 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 }
             }
         }
+        if (ret >= 0 && temp_size > ret)
+            ret = temp_size; // avoid write size large than 64k size
     } else {
         for(int retry_count=0; retry_count<10; retry_count++) {
             ret = codec_write(pcodec, pBuffer+temp_size, nSize-temp_size);
@@ -1701,9 +1703,11 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                     break;
                 }
                 // release 10ms to other thread, for example decoder and drop pcm
-                usleep(10000);
+                usleep(2000);
             }
         }
+        if (ret >= 0 && temp_size > ret)
+            ret = temp_size; // avoid write size large than 64k size
     }
     lp_unlock(&mutex);
 

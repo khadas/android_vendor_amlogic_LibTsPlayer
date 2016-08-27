@@ -1886,7 +1886,6 @@ bool CTsPlayer::iStop()
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;
     }
-    lp_lock(&mutex);
     if(m_bIsPlay) {
         LOGI("m_bIsPlay is true");
         if(m_fp != NULL) {
@@ -1898,7 +1897,6 @@ bool CTsPlayer::iStop()
 		if(prop_softdemux == 1){
 			uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
             if (tmp_buf == NULL) {
-                lp_unlock(&mutex);
                 LOGE("malloc tmp_buf failed");
                 return false;
             }
@@ -1908,6 +1906,11 @@ bool CTsPlayer::iStop()
             close(pipe_fd[0]);
             LOGI("pipe closed first");
         }
+        lp_lock(&mutex);
+        if(m_bIsPlay == false){
+            LOGI("Already stop return\n");
+            return true;//avoid twice stop
+        }   
         m_bFast = false;
         m_bIsPlay = false;
         m_bIsPause = false;

@@ -2864,6 +2864,10 @@ int CTsPlayer::updateCTCInfo()
 
 int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
 {
+    if (value == NULL) {
+        LOGI("[%s],point of value is NULL\n",__func__);
+        return 0;
+    }
 	switch(enAttrType) {
 	case IPTV_PLAYER_ATTR_VID_ASPECT :
 		*value = mCtsplayerState.video_ratio;

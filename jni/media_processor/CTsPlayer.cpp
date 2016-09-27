@@ -794,7 +794,6 @@ CTsPlayer::~CTsPlayer()
         return;
     }
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/direct_connection_cnt", 0);
     if(perform_flag){
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;
@@ -1359,7 +1358,6 @@ bool CTsPlayer::iStartPlay()
         
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",H264_error_skip_reserve);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/direct_connection_cnt", 1);
     if(!m_bFast) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_normal);
         if((int)a_aPara[0].pid != 0) {
@@ -1748,7 +1746,6 @@ bool CTsPlayer::Resume()
 static void Check_FirstPictur_Coming(void)
 {
     if(get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")){
-       amsysfs_set_sysfs_int( "/sys/module/di/parameters/direct_connection_cnt", 0);
        if(perform_flag){
             amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
             perform_flag =0;
@@ -1881,7 +1878,6 @@ bool CTsPlayer::iStop()
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
-    amsysfs_set_sysfs_int("/sys/module/di/parameters/direct_connection_cnt", 0);
     if(perform_flag){
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;

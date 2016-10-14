@@ -659,7 +659,7 @@ CTsPlayer::CTsPlayer()
     int project_type = 0;
     property_get("sys.proj.type",value,NULL);
     if(!strcmp(value,"telecom")){
-        property_get("sys.proj.telecom.type",value,NULL);
+        property_get("sys.proj.tender.type",value,NULL);
         if(!strcmp(value,"jicai")){
             project_type=1;
         }

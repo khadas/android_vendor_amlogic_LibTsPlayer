@@ -1331,6 +1331,7 @@ bool CTsPlayer::iStartPlay()
      }
 
 
+    pcodec = &codec;
     memset(pcodec,0,sizeof(*pcodec));
     pcodec->stream_type = STREAM_TYPE_TS;
     pcodec->video_type = vPara.vFmt;

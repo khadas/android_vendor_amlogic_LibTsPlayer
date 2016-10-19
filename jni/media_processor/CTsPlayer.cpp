@@ -2110,6 +2110,9 @@ bool CTsPlayer::SetRatio(int nRatio)
     int mode_width = 0;
     int mode_height = 0;
     vdec_status vdec;
+    if(!m_bIsPlay){
+        return false;
+    }
     if (prop_softdemux == 0) {
         codec_get_vdec_state(pcodec,&vdec);
     } else {

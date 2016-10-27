@@ -1505,7 +1505,7 @@ bool CTsPlayer::iStartPlay()
     }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
             (subtitle_buf_used != 0)||(userdata_buf_used != 0));    
  	
-    check_remove_ppmgr();
+    //check_remove_ppmgr();
     if(prop_softdemux == 0)
         ret = codec_init(pcodec);
     else{
@@ -1940,7 +1940,7 @@ bool CTsPlayer::iStop()
             am_ffextractor_inited = false;
             LOGI("ffmpeg denited finally");
         }  
-        check_add_ppmgr();
+        //check_add_ppmgr();
         LOGI("Stop  codec_close After:%d\n", ret);
 #ifdef USE_OPTEEOS
         char vaule[PROPERTY_VALUE_MAX] = {0};

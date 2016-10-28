@@ -794,6 +794,7 @@ CTsPlayer::~CTsPlayer()
         return;
     }
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
     if(perform_flag){
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;
@@ -846,6 +847,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     int mode_w = 0, mode_h = 0;
 
     LOGI("CTsPlayer::SetVideoWindow: %d, %d, %d, %d\n", x, y, width, height);
+	amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
 	s_video_axis[0] = x;
 	s_video_axis[1] = y;
 	s_video_axis[2] = width;
@@ -1850,6 +1852,7 @@ bool CTsPlayer::Stop(){
            LOGI("already is Stoped\n");
            return true;
         }
+        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
 
         codec_set_freerun_mode(pcodec, 0);
         if (pcodec->has_sub == 1) {

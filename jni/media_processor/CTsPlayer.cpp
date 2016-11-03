@@ -581,7 +581,7 @@ CTsPlayer::CTsPlayer()
     prop_playerwatchdog_support = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.h264.error_skip_normal", value, "3");
+    property_get("iptv.h264.error_skip_normal", value, "0");
     H264_error_skip_normal = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -1360,9 +1360,10 @@ bool CTsPlayer::iStartPlay()
 
         
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",H264_error_skip_reserve);
-    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
+	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",0);
+
     if(!m_bFast) {
-        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_normal);
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
         if((int)a_aPara[0].pid != 0) {
             pcodec->has_audio = 1;
             pcodec->audio_pid = (int)a_aPara[0].pid;
@@ -1378,7 +1379,7 @@ bool CTsPlayer::iStartPlay()
         }
         LOGI("pcodec->sub_pid: %d \n", pcodec->sub_pid);
     } else {
-        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",H264_error_skip_ff);
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 2);
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",0);
         pcodec->has_audio = 0;
         pcodec->audio_pid = -1;

@@ -1847,12 +1847,12 @@ bool CTsPlayer::StopFast()
 }
 bool CTsPlayer::Stop(){
         int ret;
-
+        
+        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
         if(!m_bIsPlay){
            LOGI("already is Stoped\n");
            return true;
         }
-        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
 
         codec_set_freerun_mode(pcodec, 0);
         if (pcodec->has_sub == 1) {

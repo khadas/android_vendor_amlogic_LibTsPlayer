@@ -106,6 +106,7 @@ int prop_audiobuftime = 1000;
 int prop_videobuftime = 1000;
 int prop_show_first_frame_nosync = 0;
 int keep_vdec_mem = 0;
+int prop_write_log = 0;
 
 static int vdec_underflow = 0;
 static int adec_underflow = 0;
@@ -597,13 +598,17 @@ CTsPlayer::CTsPlayer()
     prop_start_no_out = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.write.log", value, "0");
+    prop_write_log = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
     amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
     LOGI("/sys/class/cputype/cputype:%s\n", value);
     if (value[0] != '\0' && (!strcasecmp(value, "905L") || !strcasecmp(value, "905M2")))
         s_h264sameucode = true;
 
-    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d, isDrm: %d\n",
-		        prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support, prop_softdemux);
+    LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d, isDrm: %d prop_write_log:%d\n",
+		        prop_shouldshowlog, prop_buffertime, prop_dumpfile, prop_audiobuflevel, prop_videobuflevel, prop_softfit,prop_playerwatchdog_support, prop_softdemux, prop_write_log);
     LOGI("iptv.audio.buffertime = %d, iptv.video.buffertime = %d prop_start_no_out:%d\n", prop_audiobuftime, prop_videobuftime,prop_start_no_out);
 	
     char buf[64] = {0};
@@ -1699,7 +1704,10 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
                 }
             } else {
                 temp_size += ret;
-                //LOGI("WriteData: codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
+
+                if(prop_write_log == 1)
+                    LOGI("WriteData: codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
+
                 if(temp_size >= nSize) {
                     temp_size = nSize;
                     break;

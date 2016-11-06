@@ -1997,7 +1997,7 @@ bool CTsPlayer::Seek()
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
     }
     iStop();
-    usleep(500*1000);
+    //usleep(500*1000);
     iStartPlay();
     return true;
 }

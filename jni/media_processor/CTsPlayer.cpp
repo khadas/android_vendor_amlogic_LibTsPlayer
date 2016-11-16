@@ -2905,6 +2905,15 @@ int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
 	case IPTV_PLAYER_ATTR_AUD_USED_SIZE :
 		*value = mCtsplayerState.abuf_used;
 		break;
+	case IPTV_PLAYER_ATTR_AUD_SAMPLERATE:
+		*value = mCtsplayerState.samplate;
+		break;
+	case IPTV_PLAYER_ATTR_AUD_BITRATE:
+		*value = mCtsplayerState.bitrate;
+		break;
+	case IPTV_PLAYER_ATTR_AUD_CHANNEL_NUM:
+		*value = mCtsplayerState.channel;
+		break;
 	case IPTV_PLAYER_ATTR_BUTT :
 		LOGV("--IPTV_PLAYER_ATTR_BUTT\n");
 		break;

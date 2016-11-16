@@ -126,6 +126,9 @@ typedef enum{
 	IPTV_PLAYER_ATTR_VID_USED_SIZE,     //视频缓冲区使用大小    
 	IPTV_PLAYER_ATTR_AUD_BUF_SIZE,     //音频缓冲区大小    
 	IPTV_PLAYER_ATTR_AUD_USED_SIZE,     //音频缓冲区已使用大小    
+	IPTV_PLAYER_ATTR_AUD_SAMPLERATE,     //音频缓冲区已使用大小    
+	IPTV_PLAYER_ATTR_AUD_BITRATE,     //音频缓冲区已使用大小    
+	IPTV_PLAYER_ATTR_AUD_CHANNEL_NUM,     //音频缓冲区已使用大小    
 	IPTV_PLAYER_ATTR_BUTT}
 IPTV_ATTR_TYPE_e;
 

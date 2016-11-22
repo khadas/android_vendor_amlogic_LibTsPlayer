@@ -2473,8 +2473,6 @@ void CTsPlayer::checkAbend()
         else
             codec_get_vbuf_state(vcodec, &video_buf);
 
-        codec_get_vbuf_state(pcodec, &video_buf);
-
         LOGI("checkAbend pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
         if(pcodec->has_video) {
             if(pcodec->video_type == VFORMAT_MJPEG) {
@@ -2817,8 +2815,13 @@ int CTsPlayer::updateCTCInfo()
     }
     if (pcodec->has_video) {
         unsigned long videopts;
-        codec_get_vbuf_state(pcodec, &video_buf);
-        codec_get_vdec_state(pcodec, &video_status);
+        if(prop_softdemux == 0) {
+            codec_get_vbuf_state(pcodec, &video_buf);
+            codec_get_vdec_state(pcodec, &video_status);
+        }else{
+            codec_get_vbuf_state(vcodec, &video_buf);
+            codec_get_vdec_state(vcodec, &video_status);
+        }
 
         sysfs_get_long("/sys/class/tsync/pts_video", &videopts);
 	int video_drop_num = amsysfs_get_sysfs_int("/sys/class/video/video_drop_number");

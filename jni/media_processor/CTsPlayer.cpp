@@ -1274,7 +1274,7 @@ int player_startsync_set(int mode)
     
     if(mode == 1) // slow sync repeat mode
     {
-        set_sysfs_int(slowsync_path,0); 
+        set_sysfs_int(slowsync_path,1); 
         //property_set(droppcm_prop, "0");
         set_sysfs_int(slowsync_repeate_path,1); 
     }
@@ -1457,7 +1457,7 @@ bool CTsPlayer::iStartPlay()
 
     // enable avsync only when av both exists, not including trick
     if(hasaudio && hasvideo)
-        player_startsync_set(1);
+        player_startsync_set(2);
 
     if(prop_softdemux == 1){
         if(pcodec->has_video){

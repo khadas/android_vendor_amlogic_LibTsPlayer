@@ -1724,7 +1724,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     if(ret > 0) {
         if((m_fp != NULL) && (temp_size > 0)) {
             fwrite(pBuffer, 1, temp_size, m_fp);
-            LOGI("ret[%d] temp_size[%d] nSize[%d] %d!\n", ret, temp_size, nSize);
+            LOGI("ret[%d] temp_size[%d] nSize[%d]\n", ret, temp_size, nSize);
         }
         if(writecount >= MAX_WRITE_COUNT) {
             m_bWrFirstPkg = false;
@@ -1735,7 +1735,12 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
             writecount++;
         }
     } else {
-        LOGW("WriteData: codec_write fail(%d)\n", ret);
+        LOGW("WriteData: codec_write fail(%d),temp_size[%d] nSize[%d]\n", ret, temp_size, nSize);
+		if(temp_size > 0) {
+			if(m_fp != NULL) 
+				fwrite(pBuffer, 1, temp_size, m_fp);
+			return temp_size;
+		}
         return -1;
     }
     return ret;

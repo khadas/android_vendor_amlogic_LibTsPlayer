@@ -1996,10 +1996,15 @@ bool CTsPlayer::iStop()
 bool CTsPlayer::Seek()
 {
     LOGI("Seek");
+    int ret = 0;
     if(m_isBlackoutPolicy)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     if(pcodec->video_type == VFORMAT_HEVC) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
+    }
+    ret=codec_set_freerun_mode(pcodec, 0);
+    if(ret){
+        LOGI("error seek set freerun_mode 0 fail\n");
     }
     iStop();
     //usleep(500*1000);

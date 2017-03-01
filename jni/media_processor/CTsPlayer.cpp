@@ -1443,6 +1443,11 @@ bool CTsPlayer::iStartPlay()
             pcodec->video_pid, pcodec->audio_pid);
     pcodec->noblock = 0;
 
+    char value[PROPERTY_VALUE_MAX] = {0};
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.dumpfile", value, "0");
+    prop_dumpfile = atoi(value);
+
     if(prop_dumpfile){
         if(m_fp == NULL) {
             char tmpfilename[1024] = "";
@@ -1976,6 +1981,7 @@ bool CTsPlayer::iStop()
             subtitleClose();
         lp_unlock(&mutex);
         if (!s_h264sameucode && lpbuffer_st.buffer != NULL){
+            lp_lock(&mutex_lp);
             free(lpbuffer_st.buffer);
             lpbuffer_st.buffer = NULL;
             lpbuffer_st.rp = NULL;
@@ -1983,6 +1989,7 @@ bool CTsPlayer::iStop()
             lpbuffer_st.bufferend = NULL;
             lpbuffer_st.enlpflag = 0;
             lpbuffer_st.valid_can_read = 0;
+            lp_unlock(&mutex_lp);
        }
     } else {
         LOGI("m_bIsPlay is false");

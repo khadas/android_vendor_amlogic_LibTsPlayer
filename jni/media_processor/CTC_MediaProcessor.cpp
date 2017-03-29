@@ -23,5 +23,9 @@ ITsPlayer* GetMediaProcessor(bool DRMMode)
 
 int GetMediaProcessorVersion()
 {
-	return 2;
+#ifdef TELECOM_QOS_SUPPORT
+    return 3;
+#else
+    return 2;
+#endif
 }

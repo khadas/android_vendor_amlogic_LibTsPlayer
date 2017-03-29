@@ -135,6 +135,40 @@ IPTV_ATTR_TYPE_e;
 
 typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
 
+#ifdef TELECOM_QOS_SUPPORT
+typedef enum {
+    VID_FRAME_TYPE_UNKNOWN = 0,
+    VID_FRAME_TYPE_I,
+    VID_FRAME_TYPE_P,
+    VID_FRAME_TYPE_B,
+    VID_FRAME_TYPE_IDR,
+    VID_FRAME_TYPE_BUTT,
+}VID_FRAME_TYPE_e;
+
+typedef struct {
+    VID_FRAME_TYPE_e enVidFrmType;
+    int  nVidFrmSize;
+    int  nVidFrmPTS;
+    int  nMaxQP;
+    int  nMinQP;
+    int  nAvgQP;
+    int  nMaxMV;
+    int  nMinMV;
+    int  nAvgMV;
+    int  nMaxSkip;
+    int  nMinSkip;
+    int  nAvgSkip;
+    int  nUnderflow;
+}VIDEO_FRM_STATUS_INFO_T;
+
+typedef enum {
+    IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT = 0,
+    IPTV_PLAYER_PARAM_EVT_BUTT
+}IPTV_PLAYER_PARAM_Evt_e;
+
+typedef void (*IPTV_PLAYER_PARAM_EVENT_CB)( void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, void *pParam);
+#endif
+
 typedef struct {
     int abuf_size;
     int abuf_data_len;
@@ -205,6 +239,9 @@ public:
      virtual int64_t GetCurrentPlayTime() = 0;
      virtual void leaveChannel() = 0;
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
+#ifdef TELECOM_QOS_SUPPORT
+    virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
+#endif
 	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
@@ -285,6 +322,9 @@ public:
     
     virtual void leaveChannel() ;
 	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
+#ifdef TELECOM_QOS_SUPPORT
+    virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
+#endif
 	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
@@ -320,21 +360,44 @@ private:
 	bool	m_bFast;
 	bool 	m_bSetEPGSize;
     bool    m_bWrFirstPkg;
-	int	m_nMode;
+    int	    m_nMode;
+
+#ifdef TELECOM_QOS_SUPPORT
+    int     mLastVdecInfoNum;
+#endif
+
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
-	unsigned int writecount ;
-	int64_t  m_StartPlayTimePoint;
-	bool    m_isSoftFit;
-	FILE*	m_fp;
-    lock_t mutex;
+
+#ifdef TELECOM_QOS_SUPPORT
+    IPTV_PLAYER_PARAM_EVENT_CB  pfunc_player_param_evt;
+    void *player_evt_param_handler;
+#endif
+
+    unsigned int writecount ;
+    int64_t m_StartPlayTimePoint;
+    bool    m_isSoftFit;
+    FILE*	  m_fp;
+    lock_t  mutex;
     pthread_t mThread;
-	pthread_t readThread;
+
+#ifdef TELECOM_QOS_SUPPORT
+    pthread_t mVdecThread;
+#endif
+
+    pthread_t readThread;
     virtual void checkAbend();
     virtual void checkBuffLevel();
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
-	static void *threadReadPacket(void *pthis);
+    static void *threadReadPacket(void *pthis);
+
+#ifdef TELECOM_QOS_SUPPORT
+    static void *threadGetVideoInfo(void *pthis);
+    int ParseVideoFrameInfo(void *pthis,char *vdec_frame_info, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo);
+    int GetVideoFrameInfo(void *pthis, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo);
+#endif
+
     bool    m_isBlackoutPolicy;
     bool m_bchangeH264to4k;
     lock_t mutex_lp;

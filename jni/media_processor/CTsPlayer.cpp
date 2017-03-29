@@ -716,6 +716,12 @@ CTsPlayer::CTsPlayer()
     pthread_create(&mThread, &attr, threadCheckAbend, this);
     pthread_attr_destroy(&attr);
 
+#ifdef TELECOM_QOS_SUPPORT
+    pthread_attr_init(&attr);
+    pthread_create(&mVdecThread, &attr, threadGetVideoInfo, this);
+    pthread_attr_destroy(&attr);
+#endif
+
     if(prop_softdemux == 1){
         pthread_attr_init(&attr);
         pthread_create(&readThread, &attr, threadReadPacket, this);
@@ -806,6 +812,9 @@ CTsPlayer::~CTsPlayer()
     }
     m_StopThread = true;
     pthread_join(mThread, NULL);
+#ifdef TELECOM_QOS_SUPPORT
+    pthread_join(mVdecThread, NULL);
+#endif
     pthread_join(readThread, NULL);
     if(prop_softdemux == 1){
         if(acodec){	
@@ -1296,6 +1305,9 @@ bool CTsPlayer::StartPlay(){
         }else{
             pcodec->start_no_out = 0;
         }
+#ifdef TELECOM_QOS_SUPPORTs
+        mLastVdecInfoNum = 0;
+#endif
         memset(&mCtsplayerState, 0, sizeof(struct ctsplayer_state));
         ret = iStartPlay();
         codec_set_freerun_mode(pcodec, 0);
@@ -2418,6 +2430,16 @@ void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hande
     player_evt_hander = hander;
 }
 
+#ifdef TELECOM_QOS_SUPPORT
+void CTsPlayer::RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc)
+{
+    pfunc_player_param_evt = pfunc;
+    LOGI("RegisterParamEvtCb pfunc: %p\n", pfunc);
+    player_evt_param_handler = hander;
+
+}
+#endif
+
 void CTsPlayer::checkBuffLevel()
 {
 	int audio_delay=0, video_delay=0;
@@ -2666,6 +2688,165 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     LOGV("threadCheckAbend end\n");
     return NULL;
 }
+
+#ifdef TELECOM_QOS_SUPPORT
+int CTsPlayer::ParseVideoFrameInfo(void *pthis,char *vdec_frame_info, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo)
+{
+    CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
+    int str_len = 0;
+    int curVdecInfoNum = 0;
+    int ret = 0;
+
+    while (1) {
+        char* pd = strstr(vdec_frame_info, ";");
+        if (pd == NULL)
+            break;
+        char mid_buf[64]={0};
+        strncpy(mid_buf, vdec_frame_info, pd - vdec_frame_info);
+        //LOGD("--//###vdec_frame_info=%s####\n",vdec_frame_info);
+        //LOGD("--mLastVdecInfoNum=%d,mid_buf=%s####\n",tsplayer->mLastVdecInfoNum, mid_buf);
+        if (strncmp(mid_buf, "frame_count", strlen("frame_count")) == 0) {
+            str_len = strlen("frame_count = ");
+            curVdecInfoNum = atoi(mid_buf + str_len);
+            if (tsplayer->mLastVdecInfoNum == curVdecInfoNum) {
+                ret = 1;
+                break;
+            }
+        } else if (strncmp(mid_buf, "frame_type", strlen("frame_type")) == 0) {
+            str_len = strlen("frame_type = ");
+            videoFrmInfo->enVidFrmType = (VID_FRAME_TYPE_e)atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_size", strlen("frame_size")) == 0) {
+            str_len = strlen("frame_size = ");
+            videoFrmInfo->nVidFrmSize = atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_pts", strlen("frame_pts")) == 0) {
+            str_len = strlen("frame_pts = ");
+            videoFrmInfo->nVidFrmPTS = atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_max_qp", strlen("frame_max_qp")) == 0) {
+            str_len = strlen("frame_max_qp = ");
+            videoFrmInfo->nMaxQP = atoi(mid_buf + str_len);
+
+        }else if (strncmp(mid_buf, "frame_min_qp", strlen("frame_min_qp")) == 0) {
+            str_len = strlen("frame_min_qp = ");
+            videoFrmInfo->nMinQP = atoi(mid_buf + str_len);
+
+        }else if (strncmp(mid_buf, "frame_avg_qp", strlen("frame_avg_qp")) == 0) {
+            str_len = strlen("frame_avg_qp = ");
+            videoFrmInfo->nAvgQP = atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_max_mv", strlen("frame_max_mv")) == 0) {
+            str_len = strlen("frame_max_mv = ");
+            videoFrmInfo->nMaxMV = atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_min_mv", strlen("frame_min_mv")) == 0) {
+            str_len = strlen("frame_min_mv = ");
+            videoFrmInfo->nMinMV = atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_avg_mv", strlen("frame_avg_mv")) == 0) {
+            str_len = strlen("frame_avg_mv = ");
+            videoFrmInfo->nAvgMV = atoi(mid_buf + str_len);
+
+        } else if (strncmp(mid_buf, "frame_max_skip", strlen("frame_max_skip")) == 0) {
+            str_len = strlen("frame_max_skip = ");
+            videoFrmInfo->nMaxSkip = atoi(mid_buf + str_len);
+        }else if (strncmp(mid_buf, "frame_min_skip", strlen("frame_min_skip")) == 0) {
+            str_len = strlen("frame_min_skip = ");
+            videoFrmInfo->nMinSkip = atoi(mid_buf + str_len);
+        }else if (strncmp(mid_buf, "frame_avg_skip", strlen("frame_avg_skip")) == 0) {
+            str_len = strlen("frame_avg_skip = ");
+            videoFrmInfo->nAvgSkip = atoi(mid_buf + str_len);
+        }
+        videoFrmInfo->nUnderflow = mCtsplayerState.vdec_underflow;
+        vdec_frame_info = pd + 1; 
+
+    }
+
+    if (curVdecInfoNum > tsplayer->mLastVdecInfoNum + 1) {
+        LOGD("##Vdec Info, mLastVdecInfoNum=%d,curNum =%d,frmtype %d frmsize %d MinQP %d MaxQP %d AvgQP %d MinMV %d MaxMV %d AvgMV %d MinSkip %d MaxSkip %d AvgSkip %d Underflow %d\n\n",
+                                        tsplayer->mLastVdecInfoNum, curVdecInfoNum,
+                                        videoFrmInfo->enVidFrmType,
+                                        videoFrmInfo->nVidFrmSize,
+                                        videoFrmInfo->nMinQP,
+                                        videoFrmInfo->nMaxQP,
+                                        videoFrmInfo->nAvgQP,
+                                        videoFrmInfo->nMinMV,
+                                        videoFrmInfo->nMaxMV,
+                                        videoFrmInfo->nAvgMV,
+                                        videoFrmInfo->nMinSkip,
+                                        videoFrmInfo->nMaxSkip,
+                                        videoFrmInfo->nAvgSkip,
+                                        videoFrmInfo->nUnderflow);
+
+    }
+
+    tsplayer->mLastVdecInfoNum = curVdecInfoNum;
+
+    return ret;
+
+}
+
+int CTsPlayer::GetVideoFrameInfo(void *pthis, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo)
+{
+    CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
+    char vdec_frame_info[768];
+    int ret = 0;
+
+    if(prop_softdemux == 0) {
+        if (NULL != tsplayer->pcodec) {
+            if (tsplayer->pcodec->video_type == VFORMAT_H264) {
+                amsysfs_get_sysfs_str("/sys/module/amvdec_h264/parameters/frame_info_buf_p",vdec_frame_info,768);
+            } else if (tsplayer->pcodec->video_type == VFORMAT_HEVC){
+                amsysfs_get_sysfs_str("/sys/module/amvdec_h265/parameters/frame_info_buf_p",vdec_frame_info,768);
+            }
+        } else {
+            LOGW("Error: pcodec is null!\n");
+            tsplayer->mLastVdecInfoNum = 1;
+        }
+    } else {
+        if (NULL != tsplayer->vcodec) {
+            if (tsplayer->vcodec->video_type == VFORMAT_H264) {
+                amsysfs_get_sysfs_str("/sys/module/amvdec_h264/parameters/frame_info_buf_p",vdec_frame_info,768);
+            } else if (tsplayer->vcodec->video_type == VFORMAT_HEVC){
+                amsysfs_get_sysfs_str("/sys/module/amvdec_h265/parameters/frame_info_buf_p",vdec_frame_info,768);
+            }
+        } else {
+            LOGW("Error: vcodec is null!\n");
+            tsplayer->mLastVdecInfoNum = 1;
+        }
+    }
+
+    ret = tsplayer->ParseVideoFrameInfo(pthis, vdec_frame_info, videoFrmInfo);
+    return ret;
+}
+
+void *CTsPlayer::threadGetVideoInfo(void *pthis) {
+    LOGI("threadGetVideoInfo start pthis: %p\n", pthis);
+    CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
+    VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
+    int ret = 0;
+    do {
+        usleep(15 * 1000);
+        if (tsplayer->m_bIsPlay) {
+            lp_lock(&tsplayer->mutex);
+            ret = tsplayer->GetVideoFrameInfo(pthis,&videoFrmInfo);
+            if (tsplayer->pfunc_player_param_evt != NULL && ret == 0) {
+                tsplayer->pfunc_player_param_evt(tsplayer->player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT,  &videoFrmInfo);
+                LOGD("-1-##Vdec Info, mLastVdecInfoNum=%d,enVidFrmType:%d, nVidFrmPTS:%d\n",
+                                        tsplayer->mLastVdecInfoNum,
+                                        videoFrmInfo.enVidFrmType,
+                                        videoFrmInfo.nVidFrmPTS);
+            }
+
+            lp_unlock(&tsplayer->mutex);
+        }
+    }
+    while(!m_StopThread);
+    LOGI("threadGetVideoInfo end\n");
+    return NULL;
+}
+#endif
 
 void *CTsPlayer::threadReadPacket(void *pthis) {
     LOGV("threadReadPacket start pthis: %p\n", pthis);

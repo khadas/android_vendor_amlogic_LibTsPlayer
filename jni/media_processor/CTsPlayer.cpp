@@ -303,9 +303,9 @@ OUTPUT_MODE get_display_mode()
             return OUTPUT_MODE_1080I;
         } else if(!strncmp(mode, "1080p", 5)) {
             return OUTPUT_MODE_1080P;
-        } else if(!strncmp(mode, "2160p", 5)) {
+        } else if(strstr(mode, "2160p")) {
             return OUTPUT_MODE_4K2K;
-        } else if(!strncmp(mode, "smpte", 5)) {
+        } else if(strstr(mode, "smpte")) {
             return OUTPUT_MODE_4K2KSMPTE;
         }
     } else {

@@ -1331,9 +1331,10 @@ bool CTsPlayer::iStartPlay()
 #ifdef USE_OPTEEOS	
     int tvpdrm = 1;
 #endif
-
+    lp_lock(&mutex);
     if (m_bIsPlay) {
         LOGE("[%s:%d]Already StartPlay: m_bIsPlay=%s\n", __FUNCTION__, __LINE__, (m_bIsPlay ? "true" : "false"));
+        lp_unlock(&mutex);
         return true;
     }
     amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,SCALING_MODE);
@@ -1414,12 +1415,14 @@ bool CTsPlayer::iStartPlay()
         } else{
             LOGI("malloc success\n");
             lp_lock_init(&mutex_lp, NULL);
+            lp_lock(&mutex_lp);
             lpbuffer_st.enlpflag = true;
             lpbuffer_st.rp = lpbuffer_st.buffer;
             lpbuffer_st.wp = lpbuffer_st.buffer;
             lpbuffer_st.bufferend = lpbuffer_st.buffer + CTC_BUFFER_LOOP_NSIZE*buffersize;
             lpbuffer_st.valid_can_read = 0;
             memset(lpbuffer_st.buffer, 0, CTC_BUFFER_LOOP_NSIZE*buffersize);
+            lp_unlock(&mutex_lp);
         }
 
 		/*if(m_bFast){
@@ -1505,8 +1508,6 @@ bool CTsPlayer::iStartPlay()
             LOGI("set pipe read block\n");
         }
     }
-    /*other setting*/
-    lp_lock(&mutex);
 
     do{
 		get_vfm_map_info(vfm_map);
@@ -1568,7 +1569,6 @@ bool CTsPlayer::iStartPlay()
         }
     }
     LOGI("StartPlay codec_init After: %d\n", ret);
-    lp_unlock(&mutex);
     if(ret == 0) {
         if (m_nMode == M_LIVE) {
             if(m_isBlackoutPolicy)
@@ -1611,7 +1611,7 @@ bool CTsPlayer::iStartPlay()
         subtitleShow();
         setSubRatioAuto();
     }
-
+    lp_unlock(&mutex);
     return !ret;
 }
 
@@ -1940,6 +1940,7 @@ bool CTsPlayer::iStop()
         lp_lock(&mutex);
         if(m_bIsPlay == false){
             LOGI("Already stop return\n");
+            lp_unlock(&mutex);
             return true;//avoid twice stop
         }   
         m_bFast = false;
@@ -1991,7 +1992,6 @@ bool CTsPlayer::iStop()
         //add_di();
         if (pcodec->has_sub == 1)
             subtitleClose();
-        lp_unlock(&mutex);
         if (!s_h264sameucode && lpbuffer_st.buffer != NULL){
             lp_lock(&mutex_lp);
             free(lpbuffer_st.buffer);
@@ -2003,6 +2003,7 @@ bool CTsPlayer::iStop()
             lpbuffer_st.valid_can_read = 0;
             lp_unlock(&mutex_lp);
        }
+       lp_unlock(&mutex);
     } else {
         LOGI("m_bIsPlay is false");
     }

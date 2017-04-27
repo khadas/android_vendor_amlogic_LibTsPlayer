@@ -178,7 +178,7 @@ static int read_cb(void *opaque, uint8_t *buf, int size) {
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN  , "TsPlayer", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
 #define SCALING_MODE  "performance"
-#define DEFAULT_MODE  "hotplug"
+#define DEFAULT_MODE  "interactive"
 #define CPU_SCALING_MODE_NODE  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
 int perform_flag =0;
 

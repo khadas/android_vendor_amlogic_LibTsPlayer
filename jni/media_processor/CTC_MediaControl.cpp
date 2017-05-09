@@ -9,9 +9,8 @@
 #include <cutils/properties.h>
 
 // need single instance?
-sp<ITsPlayer> GetMediaControl(int use_omx_decoder)
+ITsPlayer* GetMediaControl(int use_omx_decoder)
 {
-	//return new CTC_MediaControl();
     char value[PROPERTY_VALUE_MAX] = {0};
     property_get("iptv.decoder.omx", value, "0");
     int prop_use_omxdecoder = atoi(value);
@@ -21,12 +20,17 @@ sp<ITsPlayer> GetMediaControl(int use_omx_decoder)
     else
         return new CTsPlayer();
 }
-CTC_MediaControl* GetMediaControlImpl()
+
+ITsPlayer* GetMediaControl()
 {
-    //if (NULL == mCTC_MediaControl)
-        //mCTC_MediaControl = new CTC_MediaControl();
-    //return mCTC_MediaControl;
-	return NULL;
+    char value[PROPERTY_VALUE_MAX] = {0};
+    property_get("iptv.decoder.omx", value, "0");
+    int prop_use_omxdecoder = atoi(value);
+
+    if (prop_use_omxdecoder)
+        return new CTsOmxPlayer();
+    else
+        return new CTsPlayer();
 }
 
 int Get_MediaControlVersion()

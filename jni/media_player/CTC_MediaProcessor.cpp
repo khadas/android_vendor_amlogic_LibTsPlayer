@@ -310,7 +310,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	sParam[3].sub_type=CODEC_ID_DVB_SUBTITLE;*/
 	
 	proxy_mediaProcessor[use_omx_decoder]->Proxy_InitSubtitle(sParam);
-ALOGI("Proxy_InitSubtitle");
+	ALOGI("Proxy_InitSubtitle");
 	if (m_pcBuf[0] == NULL) {
 		m_pcBuf[0] = (char* )malloc(WRITE_DATA_SIZE);
 	}
@@ -339,14 +339,12 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 	const char* URL = (*env).GetStringUTFChars(url, NULL);
 
 	int rd_result = 0;
-		LOGI("Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData : ur:%s\n",URL);
+	LOGI("Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData : ur:%s\n",URL);
 	fp[use_omx_decoder] = fopen(URL, "rb+");
-	if (fp[use_omx_decoder] == NULL)
-		{
+	if (fp[use_omx_decoder] == NULL) {
 		LOGE("open file:error!");
 		return -1;
 	}
-
 
 	while(true) {
 		Mutex::Autolock l(gMutexLock);

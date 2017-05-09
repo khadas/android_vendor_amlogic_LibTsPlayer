@@ -9,14 +9,14 @@
 
 #include "Proxy_MediaProcessor.h"
  
-Proxy_MediaProcessor::Proxy_MediaProcessor()
+Proxy_MediaProcessor::Proxy_MediaProcessor(int use_omx_decoder)
 {
- 	ctc_MediaControl = GetMediaControl(); 		
+    ctc_MediaControl = GetMediaControl(use_omx_decoder);
 }
 
 Proxy_MediaProcessor::~Proxy_MediaProcessor()
 {
-	delete ctc_MediaControl;
+		//ctc_MediaControl->~CTC_MediaControl();
 }
 
 int Proxy_MediaProcessor::Proxy_GetMediaControlVersion()

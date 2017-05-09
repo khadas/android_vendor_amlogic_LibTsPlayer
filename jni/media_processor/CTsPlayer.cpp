@@ -9,6 +9,7 @@
 #include "Amsysfsutils.h"
 #include <sys/times.h>
 #include <time.h>
+#include <sys/ioctl.h>
 #include <media/AudioSystem.h>
 #include <binder/Parcel.h>
 #include <binder/ProcessState.h>
@@ -2313,6 +2314,74 @@ void CTsPlayer::SwitchAudioTrack(int pid)
     codec_resume_audio(pcodec, 1);
     codec_audio_automute(pcodec->adec_priv, 0);
     lp_unlock(&mutex);
+}
+
+void CTsPlayer::ClearLastFrame()
+{
+    int ret = -1;
+    LOGI( "Begin CTsPlayer::ClearLastFrame().\n");
+    amsysfs_set_sysfs_int( "/sys/class/video/disable_video", 1);
+    int fd_fb0 = open("/dev/amvideo", O_RDWR);
+    if (fd_fb0 >= 0)
+    {
+        ret = ioctl(fd_fb0, AMSTREAM_IOC_CLEAR_VBUF, NULL);
+        ret = ioctl(fd_fb0, AMSTREAM_IOC_CLEAR_VIDEO, NULL);
+        close(fd_fb0);
+    }
+    amsysfs_set_sysfs_int( "/sys/class/video/disable_video", 0);
+
+    LOGI( "End  CTsPlayer::ClearLastFrame().\n");
+    return;
+}
+
+void CTsPlayer::BlackOut(int EarseLastFrame)
+{
+    LOGI( "Begin CTsPlayer::BlackOut().EarseLastFrame=%d.\n", EarseLastFrame);
+    amsysfs_set_sysfs_int( "/sys/class/video/blackout_policy", EarseLastFrame);
+    LOGI( "End   CTsPlayer::BlackOut().\n");
+    return;
+}
+
+bool CTsPlayer::SetErrorRecovery(int mode)
+{
+    LOGI( "This is CTsPlayer::SetErrorRecovery(). mode=%d.\n", mode);
+
+    if((mode >= 0)&&(mode <= 3))
+    {
+        amsysfs_set_sysfs_int( "/sys/module/amvdec_h264/parameters/error_recovery_mode", mode);
+        amsysfs_set_sysfs_int( "/sys/module/amvdec_mpeg12/parameters/error_frame_skip_level", mode);//modifier by chengman for mpeg errorrecovery 3-15
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
+{
+	buf_status audio_buf;
+	buf_status video_buf;
+
+	//LOGI( "This is CTsPlayer::GetAvbufStatus(). pstatus=%d.\n", pstatus);
+
+	if(pstatus == NULL)
+	{
+		return;
+	}
+
+	codec_get_abuf_state(pcodec,&audio_buf);
+	codec_get_vbuf_state(pcodec,&video_buf);
+
+	pstatus->abuf_size = audio_buf.size;
+	pstatus->abuf_data_len = audio_buf.data_len;
+	pstatus->abuf_free_len = audio_buf.free_len;
+	pstatus->vbuf_size = video_buf.size;
+	pstatus->vbuf_data_len = video_buf.data_len;
+	pstatus->vbuf_free_len = video_buf.free_len;
+
+	return;
 }
 
 void CTsPlayer::SwitchSubtitle(int pid) 

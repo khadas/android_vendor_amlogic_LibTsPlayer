@@ -19,10 +19,16 @@ using namespace android;
 static int s_nDumpTs = 0;
 static int pipe_fd[2] = { -1, -1 };
 static bool ffextractor_inited = false;
+static int first_pic_comming = 0;
+static int s_writebytes = 0;
+static sp<SurfaceComposerClient> Ctc_SoftComposerClient = NULL;
+static sp<SurfaceControl> Ctc_SoftControl = NULL;
+static sp<Surface> Ctc_SoftSurface = NULL;
 int read_cb(void *opaque, uint8_t *buf, int size) {
 	int ret = read(pipe_fd[0], buf, size);
 	return ret;
 }
+uint64_t last_time;
 
 #ifdef USE_OPTEEOS
 CTsOmxPlayer::CTsOmxPlayer():CTsPlayer(false, true) {
@@ -53,15 +59,48 @@ CTsOmxPlayer::CTsOmxPlayer():CTsPlayer(true) {
 	mLastRenderPTS = 0;
 	mInputQueueSize = 0;
 	mFormatMsg = new AMessage;
+    mOpenLog = false;
+    mYuvNo = 0;
+    mKeepLastFrame = false;
 
-	ALOGI("CTsOmxPlayer::creat end\n");
+    char value[PROPERTY_VALUE_MAX];
+    int open_log = 0;
+    if(property_get("iptv.soft.log", value, NULL)>0)
+        sscanf(value, "%d", &open_log);
+
+    if (open_log)
+        mOpenLog = true;
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    int keep_last_frame = 0;
+    if(property_get("iptv.soft.keep", value, NULL)>0)
+        sscanf(value, "%d", &keep_last_frame);
+
+    if (keep_last_frame) {
+        mKeepLastFrame = true;
+        mSoftComposerClient = Ctc_SoftComposerClient;
+        mSoftControl = Ctc_SoftControl;
+        mSoftSurface = Ctc_SoftSurface;
+        ALOGI("CTsOmxPlayer: use last surface");
+    }
+	ALOGI("CTsOmxPlayer::creat end mOpenLog=%d\n", mOpenLog);
+
     return;
 }
 
 CTsOmxPlayer::~CTsOmxPlayer() {
     LOG_LINE();
     ALOGD("disposing surface");
+    if (!mKeepLastFrame) {
     mSoftComposerClient->dispose();
+        Ctc_SoftSurface = NULL;
+        Ctc_SoftControl = NULL;
+        Ctc_SoftComposerClient = NULL;
+    } else {
+        Ctc_SoftSurface = mSoftSurface;
+        Ctc_SoftControl = mSoftControl;
+        Ctc_SoftComposerClient = mSoftComposerClient;
+    }
     return;
 }
 
@@ -110,6 +149,8 @@ bool CTsOmxPlayer::StartPlay() {
     if (!createOmxDecoder())
         return false;
 		
+	first_pic_comming = 0;
+	s_writebytes = 0;
     return true;
 }
 
@@ -219,6 +260,10 @@ int CTsOmxPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize) {
     if (mFp != NULL) {
         fwrite(pBuffer, 1, nSize, mFp);
     }
+	if (mOpenLog/*first_pic_comming == 0*/) {
+		s_writebytes += nSize;
+		ALOGI("writedata ret: %d, total:%d\n", nSize, s_writebytes);
+	}
 
     return ret;
 }
@@ -309,13 +354,21 @@ void CTsOmxPlayer::readExtractor() {
 		return;
 	}
 	ffextractor_read_packet(&mInputQueueSize);
+    ALOGD_IF(mOpenLog, "readExtractor: mInputQueueSize=%d", mInputQueueSize);
 }
 
 void CTsOmxPlayer::readDecoder() {
 	if (ffextractor_inited == false) {
 		return;
 	}
-	
+    int yuv_count = 0;
+    {
+		AutoMutex l(mYUVFrameQueueLock);
+		yuv_count = mYUVFrameQueue.size();
+    }
+    ALOGD_IF(mOpenLog, "readDecoder: yuv_count =%d", yuv_count);
+    if (yuv_count > 10)
+        return;
 	{
 		YUVFrame *frame = ff_decode_frame();
 		if (frame == NULL || frame->data == NULL) {
@@ -325,6 +378,7 @@ void CTsOmxPlayer::readDecoder() {
 		{
 			AutoMutex l(mYUVFrameQueueLock);
 			mYUVFrameQueue.push_back(frame);
+            ALOGD_IF(mOpenLog, "readDecoder: push_back a frame");
 		}
 	}
 }
@@ -391,7 +445,11 @@ void CTsOmxPlayer::renderFrame() {
 			sscanf(levels_value, "%d", &soft_sync_mode);
 
 		if (soft_sync_mode == 0) {//sync by pts
-			if (mFirstDisplayTime == -1 || (abs(frame->pts - mLastRenderPTS) >= 5000000)) {
+            int64_t pts_diff = frame->pts - mLastRenderPTS;
+            if (pts_diff < 0)
+                pts_diff = 0 - pts_diff;
+            ALOGD_IF(mOpenLog, "renderFrame: pts mode: frame->pts =%lld, mLastRenderPTS =%lld, pts_diff=%lld, mYuvNo=%d", frame->pts, mLastRenderPTS, pts_diff, mYuvNo++);
+			if (mFirstDisplayTime == -1 || pts_diff > 5000000) {
 				mFirstDisplayTime = getCurrentTimeUs();
 				mFirst_Pts = frame->pts;
 			}
@@ -409,9 +467,14 @@ void CTsOmxPlayer::renderFrame() {
 				free(frame);
 				mLastRenderPTS = frame->pts;
 				mYUVFrameQueue.erase(mYUVFrameQueue.begin());
+                ALOGD_IF(mOpenLog, "renderFrame: pts mode: render a frame");
 			}
 		} else { //sync by duration
 			uint64_t start = getCurrentTimeUs();
+			if (first_pic_comming == 0) {
+				first_pic_comming = 1;
+				ALOGE("render first pic pts:0x%llx", frame->pts);
+			}
 #ifdef ANDROID4
 			mSoftRenderer->render(frame->data, frame->size, NULL);
 #endif
@@ -421,6 +484,7 @@ void CTsOmxPlayer::renderFrame() {
 #endif
 			free(frame->data);
 			free(frame);
+            ALOGD_IF(mOpenLog, "renderFrame: duration mode: frame->pts =%lld, mFrameDuration=%lld, mPTSDrift=%d, mYuvNo=%d", frame->pts, mFrameDuration, mPTSDrift, mYuvNo++);
 			while((getCurrentTimeUs() - start) / 1000 <= mFrameDuration + mPTSDrift)
 			{
 				usleep(2 * 1000);
@@ -428,6 +492,15 @@ void CTsOmxPlayer::renderFrame() {
 			mYUVFrameQueue.erase(mYUVFrameQueue.begin());
 		}
 	}
+}
+void CTsOmxPlayer::ClearLastFrame()
+{
+    int ret = -1;
+    ALOGD( "Begin CTsOmxPlayer::ClearLastFrame().\n");
+    mKeepLastFrame = false;
+
+    ALOGD( "End  CTsOmxPlayer::ClearLastFrame().\n");
+    return;
 }
 
 CTsOmxPlayer::RunWorker::RunWorker(CTsOmxPlayer* player, dt_module_t module) :

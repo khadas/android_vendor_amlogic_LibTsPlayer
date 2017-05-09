@@ -9,7 +9,6 @@
 #include "player.h"
 #include "player_type.h"
 #include "vformat.h"
-#include "CTsPlayer.h"
 #include "aformat.h"
 #include "android_runtime/AndroidRuntime.h"
 #include <gui/Surface.h> 
@@ -57,9 +56,10 @@ static FILE * GetTestResultLogHandle()
 extern "C" {
 #endif
 
-Proxy_MediaProcessor* proxy_mediaProcessor = NULL; 
-FILE *fp;
-char* m_pcBuf = NULL;
+Proxy_MediaProcessor* proxy_mediaProcessor[2] ={NULL, NULL};
+FILE *fp[2];
+
+char* m_pcBuf[2] = {NULL};
 int isPause = 0;
 #define WRITE_DATA_SIZE (32*1024)
 void Java_com_ctc_MediaProcessorDemoActivity_nativeWriteFile(JNIEnv* env, jobject thiz, jstring Function, jstring Return, jstring Result)
@@ -84,21 +84,21 @@ void Java_com_ctc_MediaProcessorDemoActivity_nativeWriteFile(JNIEnv* env, jobjec
 	return;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeCreateSurface(JNIEnv* env, jobject thiz, jobject pSurface, int w, int h)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeCreateSurface(JNIEnv* env, jobject thiz, jobject pSurface, int w, int h, int use_omx_decoder)
 {
 	LOGI("get the surface");
 	sp<Surface> surface(android_view_Surface_getSurface(env, pSurface));
 	LOGI("success: get surface");
-	proxy_mediaProcessor->Proxy_SetSurface(surface.get());
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_SetSurface(surface.get());
 	LOGI("success: set surface ");
-	proxy_mediaProcessor->Proxy_SetEPGSize(w, h);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_SetEPGSize(w, h);
 
 	return 0;
 } 
 
-void Java_com_ctc_MediaProcessorDemoActivity_nativeSetEPGSize(JNIEnv* env, jobject thiz, int w, int h)
+void Java_com_ctc_MediaProcessorDemoActivity_nativeSetEPGSize(JNIEnv* env, jobject thiz, int w, int h, int use_omx_decoder)
 {
-	proxy_mediaProcessor->Proxy_SetEPGSize(w, h);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_SetEPGSize(w, h);
 	return;
 }
 
@@ -191,7 +191,7 @@ void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler)
     }    
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thiz, jstring url)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thiz, jstring url, int use_omx_decoder)
 {
 	VIDEO_PARA_T  videoPara={0};
 	AUDIO_PARA_T audioPara[MAX_AUDIO_PARAM_SIZE]={0};
@@ -274,7 +274,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	free(pCtrl->file_name);
 	free(pCtrl);
 
-	proxy_mediaProcessor=new Proxy_MediaProcessor();
+	proxy_mediaProcessor[use_omx_decoder]=new Proxy_MediaProcessor(use_omx_decoder);
 	
 /*	videoPara.pid = 0x45;//101;
 	videoPara.nVideoWidth = 544;
@@ -292,12 +292,12 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	audioPara.nExtraSize = 0;
 	audioPara.pExtraData = NULL;*/
 	
-	proxy_mediaProcessor->Proxy_InitVideo(&videoPara);
-	proxy_mediaProcessor->Proxy_InitAudio(audioPara);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_InitVideo(&videoPara);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_InitAudio(audioPara);
 	IPTV_PLAYER_EVT_CB pfunc;
 
 	pfunc = test_player_evt_func;
-	proxy_mediaProcessor->Proxy_playerback_register_evt_cb(pfunc, NULL);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_playerback_register_evt_cb(pfunc, NULL);
 	
 /*	
 	sParam[0].pid=0x106;
@@ -309,10 +309,15 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	sParam[3].pid=0x109;
 	sParam[3].sub_type=CODEC_ID_DVB_SUBTITLE;*/
 	
-	proxy_mediaProcessor->Proxy_InitSubtitle(sParam);
-	if (m_pcBuf == NULL) {
-		m_pcBuf = (char* )malloc(WRITE_DATA_SIZE);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_InitSubtitle(sParam);
+ALOGI("Proxy_InitSubtitle");
+	if (m_pcBuf[0] == NULL) {
+		m_pcBuf[0] = (char* )malloc(WRITE_DATA_SIZE);
 	}
+	if (m_pcBuf[1] == NULL) {
+		m_pcBuf[1] = (char* )malloc(WRITE_DATA_SIZE);
+	}
+	ALOGI("Proxy_InitSubtitle end");
 	return 0;
 	
 fail:
@@ -323,22 +328,25 @@ fail:
 	return -1;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStartPlay(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStartPlay(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_StartPlay();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_StartPlay();
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobject thiz, jstring url, jint bufsize)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobject thiz, jstring url,int use_omx_decoder, jint bufsize)
 {
 	const char* URL = (*env).GetStringUTFChars(url, NULL);
 
 	int rd_result = 0;
-	fp = fopen(URL, "rb+");
-	if (fp == NULL) {
+		LOGI("Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData : ur:%s\n",URL);
+	fp[use_omx_decoder] = fopen(URL, "rb+");
+	if (fp[use_omx_decoder] == NULL)
+		{
 		LOGE("open file:error!");
 		return -1;
 	}
+
 
 	while(true) {
 		Mutex::Autolock l(gMutexLock);
@@ -348,7 +356,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 		char* buffer = (char* )malloc(bufsize);
 		rd_result = fread(buffer, bufsize, 1, fp);*/
 		bufsize = WRITE_DATA_SIZE;
-		rd_result = fread(m_pcBuf, WRITE_DATA_SIZE, 1, fp);
+		rd_result = fread(m_pcBuf[use_omx_decoder], WRITE_DATA_SIZE, 1, fp[use_omx_decoder]);
 		if (rd_result <= 0)	 {
 			LOGE("read the end of file");
 			exit(1);
@@ -356,7 +364,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 
 		while(bufsize > 0) {
 			//int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) buffer, (unsigned int) bufsize);
-			int wd_result = proxy_mediaProcessor->Proxy_WriteData((unsigned char*) m_pcBuf, (unsigned int) bufsize);
+			int wd_result = proxy_mediaProcessor[use_omx_decoder]->Proxy_WriteData((unsigned char*) m_pcBuf[use_omx_decoder], (unsigned int) bufsize);
 			//LOGE("the wd_result[%d]", wd_result);
 			
                         if(wd_result < 0)
@@ -370,145 +378,149 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 	return 0;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetPlayMode(JNIEnv* env, jobject thiz)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetPlayMode(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	int result = proxy_mediaProcessor->Proxy_GetPlayMode();
+	int result = proxy_mediaProcessor[use_omx_decoder]->Proxy_GetPlayMode();
 	LOGE("step:1");
 
 	return (jint)result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeSetVideoWindow(JNIEnv* env, jobject thiz ,jint x, jint y, jint width, jint height)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeSetVideoWindow(JNIEnv* env, jobject thiz ,jint x, jint y, jint width, jint height, int use_omx_decoder)
 {
-	int result = proxy_mediaProcessor->Proxy_SetVideoWindow(x, y, width, height);
+	int result = proxy_mediaProcessor[use_omx_decoder]->Proxy_SetVideoWindow(x, y, width, height);
 	LOGE("SetVideoWindow result:[%d]", result);
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativePause(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativePause(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
 	LOGE("NEXT:Pause");
 	isPause = 1;
-	jboolean result = proxy_mediaProcessor->Proxy_Pause();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_Pause();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeResume(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeResume(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
 	LOGE("NEXT:Resume");
 	isPause = 0;
-	jboolean result = proxy_mediaProcessor->Proxy_Resume();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_Resume();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSeek(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSeek(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
 	LOGE("nativeSeek---0");
 	Mutex::Autolock l(gMutexLock);
 	LOGE("nativeSeek---1");	
-	fseek(fp, 0, 0);
+	fseek(fp[use_omx_decoder], 0, 0);
 	LOGE("nativeSeek---2");
-	jboolean result = proxy_mediaProcessor->Proxy_Seek();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_Seek();
 	LOGE("nativeSeek---3");
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeVideoShow(JNIEnv* env, jobject thiz)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeVideoShow(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jint result = proxy_mediaProcessor->Proxy_VideoShow();
+	jint result = proxy_mediaProcessor[use_omx_decoder]->Proxy_VideoShow();
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeVideoHide(JNIEnv* env, jobject thiz)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeVideoHide(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jint result = proxy_mediaProcessor->Proxy_VideoHide();
+	jint result = proxy_mediaProcessor[use_omx_decoder]->Proxy_VideoHide();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeFast(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeFast(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_Fast();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_Fast();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStopFast(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStopFast(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_StopFast();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_StopFast();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStop(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStop(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_Stop();
-	if (m_pcBuf != NULL) {
-		free(m_pcBuf);
-		m_pcBuf = NULL;
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_Stop();
+	if (m_pcBuf[0] != NULL) {
+		free(m_pcBuf[0]);
+		m_pcBuf[0] = NULL;
+	}
+	if (m_pcBuf[1] != NULL) {
+		free(m_pcBuf[1]);
+		m_pcBuf[1] = NULL;
 	}
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetVolume(JNIEnv* env, jobject thiz)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetVolume(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jint result = proxy_mediaProcessor->Proxy_GetVolume();
+	jint result = proxy_mediaProcessor[use_omx_decoder]->Proxy_GetVolume();
 	LOGE("the volume is [%d]",result);
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetVolume(JNIEnv* env, jobject thiz,jint volume)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetVolume(JNIEnv* env, jobject thiz,jint volume, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_SetVolume(volume);
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_SetVolume(volume);
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetRatio(JNIEnv* env, jobject thiz,jint nRatio)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetRatio(JNIEnv* env, jobject thiz,jint nRatio, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_SetRatio(nRatio);
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_SetRatio(nRatio);
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetAudioBalance(JNIEnv* env, jobject thiz)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetAudioBalance(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jint result = proxy_mediaProcessor->Proxy_GetAudioBalance();
+	jint result = proxy_mediaProcessor[use_omx_decoder]->Proxy_GetAudioBalance();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetAudioBalance(JNIEnv* env, jobject thiz, jint nAudioBalance)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSetAudioBalance(JNIEnv* env, jobject thiz, jint nAudioBalance, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_SetAudioBalance(nAudioBalance);
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_SetAudioBalance(nAudioBalance);
 	return result;
 }
 
-void Java_com_ctc_MediaProcessorDemoActivity_nativeGetVideoPixels(JNIEnv* env, jobject thiz)
+void Java_com_ctc_MediaProcessorDemoActivity_nativeGetVideoPixels(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
 	int width;
 	int height;
 	LOGE("the video prixels ");
-	proxy_mediaProcessor->Proxy_GetVideoPixels(width, height);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_GetVideoPixels(width, height);
 	LOGE("the video prixels :[%d]*[%d]",width, height);
 	return;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeIsSoftFit(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeIsSoftFit(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jboolean result = proxy_mediaProcessor->Proxy_IsSoftFit();
+	jboolean result = proxy_mediaProcessor[use_omx_decoder]->Proxy_IsSoftFit();
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetCurrentPlayTime(JNIEnv* env, jobject thiz)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetCurrentPlayTime(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
-	jint result = proxy_mediaProcessor->Proxy_GetCurrentPlayTime();
+	jint result = proxy_mediaProcessor[use_omx_decoder]->Proxy_GetCurrentPlayTime();
 	return result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeInitSubtitle(JNIEnv* env, jobject thiz)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeInitSubtitle(JNIEnv* env, jobject thiz, int use_omx_decoder)
 {
 	//jboolean result = proxy_mediaProcessor->Proxy_InitSubtitle();
 	return true;//result;
 }
 
-jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSwitchSubtitle(JNIEnv* env, jobject thiz, jint sub_pid)
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSwitchSubtitle(JNIEnv* env, jobject thiz, jint sub_pid, int use_omx_decoder)
 {
-	proxy_mediaProcessor->Proxy_SwitchSubtitle(sub_pid);
+	proxy_mediaProcessor[use_omx_decoder]->Proxy_SwitchSubtitle(sub_pid);
 	return true;
 }
 

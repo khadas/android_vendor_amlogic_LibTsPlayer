@@ -40,7 +40,16 @@ public class MediaProcessorDemoActivity extends Activity {
 	private SurfaceHolder myHolder = null;
 	private SurfaceView mySurfaceView = null;
 	private PropertieList propList = new PropertieList();
-	private String url = null; 
+	String url = getUrl(); 
+	String url1 = getUrl1();
+	private static String getUrl() {
+		return SystemProperties.get("iptv.demo.url",
+			"/storage/external_storage/sdcard1/iptv_test.ts");
+	}
+	private static String getUrl1() {
+		return SystemProperties.get("iptv.demo.url1",
+			"/storage/external_storage/sdcard1/iptv_test.ts");
+	}
 	private int playBufferSize = 32;
 	private Button pause = null;
 	private Button resume = null; 
@@ -72,9 +81,7 @@ public class MediaProcessorDemoActivity extends Activity {
 	private int player_status = 0;
 	private Handler MainHandler = null;
 
-	private String getUrl() {
-		return propList.getPlayUrl();
-	}
+
 	
 	private int getBufferSize() {
 		return propList.getPlayBufferSize(32);
@@ -83,8 +90,18 @@ public class MediaProcessorDemoActivity extends Activity {
 	class drawSurface implements Runnable{
 		public String url;
 		public void run() {
-			nativeWriteData(this.url, playBufferSize);
+			Log.i(TAG, "nativeWriteData1 start");
+			nativeWriteData(this.url, 0, playBufferSize);
+			Log.i(TAG, "nativeWriteData1 end");
 		} 
+	}
+
+	class drawSurface1 implements Runnable{
+		public String url1;
+		public void run()
+		{
+			nativeWriteData(this.url1, 1, playBufferSize);
+		}
 	}
 	
 	public boolean onKeyDown(int keyCode, KeyEvent msg) {
@@ -103,10 +120,10 @@ public class MediaProcessorDemoActivity extends Activity {
 		player_status = PLAYER_STOP;
 		Log.d(TAG, "before nativeStop, time is: " + System.currentTimeMillis());
 
-		nativeStop();  
+		nativeStop(1);  
 		Log.d(TAG, "before nativeSetEPGSize, time is: " + System.currentTimeMillis());
 
-		nativeSetEPGSize(1280, 720);
+        nativeSetEPGSize(1280, 720, 0);
 		Log.d(TAG, "after nativeSetEPGSize, time is: " + System.currentTimeMillis());
 
 		Date a = new Date();
@@ -131,21 +148,22 @@ public class MediaProcessorDemoActivity extends Activity {
 
 	@Override
 	public void onResume() {
-		if (nativeInit(url) == 0) {
-			Log.i(TAG, "Init: success");
-		} else {
-			Log.i(TAG, "Init: error");
-		}
-		Log.d(TAG, "onResume()");
+            if (nativeInit(url, 0) == 0)
+              Log.i("Init:", "success");
+            else {
+              Log.i("Init:", "error");
+            }
+            Log.d(getClass().getName(), "onResume()");
             
-		Log.i(TAG, "create surface: next");  
-		if (nativeCreateSurface(mySurface, 1280, 720) == 0) 
-			Log.i(TAG, "create surface: success");  
+            Log.i("create surface:", "next");  
+            if (nativeCreateSurface(mySurface, 1280, 720, 0) == 0) 
+            	Log.i("create surface:", "success");  
 
-		nativeSetEPGSize(1280, 720);
-		nativeSetVideoWindow(420, 40, 640, 480);
-		nativeStartPlay();
-		Log.i(TAG, "play success");
+            nativeSetEPGSize(1280, 720, 0);
+            nativeSetVideoWindow(420, 100, 640, 480, 0);
+            
+            nativeStartPlay(0);
+            Log.i("play", "success"); 
 
 		drawSurface playData = new drawSurface();  
 		playData.url = url;
@@ -170,7 +188,6 @@ public class MediaProcessorDemoActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main); 
 
-		url = getUrl(); 
 		playBufferSize = getBufferSize();
 
 		mFilter = new IntentFilter();
@@ -193,7 +210,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		pause = (Button)findViewById(R.id.pause);
 		pause.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View v) {
-				result_b = nativePause();
+				result_b = nativePause(0);
 				Function.setText("Pause");
 				if (result_b == true) {
 					Return_t.setText("true");
@@ -213,7 +230,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		resume = (Button)findViewById(R.id.resume);
 		resume.setOnClickListener(new Button.OnClickListener(){
 			public void onClick(View v) {
-				result_b = nativeResume();
+				result_b = nativeResume(0);
 				Function.setText("Resume");
 				if (result_b == true) {
 					Return_t.setText("true");
@@ -233,7 +250,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		seek = (Button)findViewById(R.id.seek);
 		seek.setOnClickListener(new Button.OnClickListener(){ 
 			public void onClick(View v) {
-				result_b = nativeSeek();
+				result_b = nativeSeek(0);
 				Function.setText("Seek");  
 				if (result_b == true) {
 					Return_t.setText("true");
@@ -253,7 +270,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		fast = (Button)findViewById(R.id.fast);
 		fast.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				result_b = nativeFast(); 
+				result_b = nativeFast(0); 
 				Function.setText("Fast");
 				if (result_b == true) {
 					Return_t.setText("true");
@@ -273,7 +290,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		stopfast = (Button)findViewById(R.id.stopfast);
 		stopfast.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				result_b = nativeStopFast();
+				result_b = nativeStopFast(0);
 				Function.setText("StopFast");
 				if (result_b == true) {
 					result_s = String.valueOf(result_b);
@@ -294,7 +311,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		videoshow = (Button)findViewById(R.id.videoshow);
 		videoshow.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				result_i = nativeVideoShow();
+				result_i = nativeVideoShow(0);
 				Function.setText("VideoShow");
 				if (result_i == 0) {
 					result_s = String.valueOf(result_i);
@@ -316,7 +333,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		videohide = (Button)findViewById(R.id.videohide);
 		videohide.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				result_i = nativeVideoHide();
+				result_i = nativeVideoHide(0);
 				Function.setText("VideoHide");
 				if (result_i == 0) {
 					result_s = String.valueOf(result_i);
@@ -338,7 +355,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		stop = (Button)findViewById(R.id.stop);
 		stop.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				result_b = nativeStop();
+				result_b = nativeStop(0);
 				Function.setText("Stop");
 				if (result_b == true) {
 					result_s = String.valueOf(result_b);
@@ -359,7 +376,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		getVolume = (Button)findViewById(R.id.getVolume);
 		getVolume.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				result_i = nativeGetVolume();
+				result_i = nativeGetVolume(0);
 				Function.setText("GetVolume");
 				result_s = String.valueOf(result_i);
 				Return_t.setText(result_s);
@@ -373,7 +390,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		setVolume = (Button)findViewById(R.id.setVolume);
 		setVolume.setOnClickListener(new Button.OnClickListener() { 
 			public void onClick(View v) {
-				result_b = nativeSetVolume(60);
+				result_b = nativeSetVolume(60,0);
 				Function.setText("SetVolume");
 				if (result_b == true) {
 					result_s = String.valueOf(result_b);
@@ -394,7 +411,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		setRatio = (Button)findViewById(R.id.setRatio);
 		setRatio.setOnClickListener(new Button.OnClickListener() { 
 			public void onClick(View v) {
-				result_b = nativeSetRatio(1);
+				result_b = nativeSetRatio(1,0);
 				Function.setText("SetRatio");
 				if (result_b == true) {
 					result_s = String.valueOf(result_b);
@@ -415,7 +432,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		getAudioBalance = (Button)findViewById(R.id.getAudioBalance);
 		getAudioBalance.setOnClickListener(new Button.OnClickListener(){ 
 			public void onClick(View v) {
-				result_i = nativeGetAudioBalance();
+				result_i = nativeGetAudioBalance(0);
 				Function.setText("GetAudioBalance");
 				result_s = String.valueOf(result_i);
 				Return_t.setText(result_s);
@@ -429,8 +446,8 @@ public class MediaProcessorDemoActivity extends Activity {
 		setAudioBalance = (Button)findViewById(R.id.setAudioBalance);
 		setAudioBalance.setOnClickListener(new Button.OnClickListener(){ 
 			public void onClick(View v) {
-				result_i = nativeGetAudioBalance();
-				result_b = nativeSetAudioBalance(result_i>1?(result_i-1):3);
+				result_i = nativeGetAudioBalance(0);
+				result_b = nativeSetAudioBalance(result_i>1?(result_i-1):3,0);
 				Function.setText("SetAudioBalance");
 				if (result_b == true) {
 					result_s = String.valueOf(result_b);
@@ -451,7 +468,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		getVideoPixels = (Button)findViewById(R.id.getVideoPixels);
 		getVideoPixels.setOnClickListener(new Button.OnClickListener(){ 
 			public void onClick(View v) {
-				nativeGetVideoPixels();
+				nativeGetVideoPixels(0);
 				Function.setText("GetVideoPixels");
 				Return_t.setText("void");
 				Result.setTextColor(Color.BLUE);
@@ -464,20 +481,42 @@ public class MediaProcessorDemoActivity extends Activity {
 		isSoftFit = (Button)findViewById(R.id.isSoftFit);
 		isSoftFit.setOnClickListener(new Button.OnClickListener(){  
 			public void onClick(View v) {
-				result_b = nativeIsSoftFit();
-				Function.setText("IsSoftFit");
-				if (result_b == true) {
-					result_s = String.valueOf(result_b);
-					Return_t.setText(result_s);
-					Result.setTextColor(Color.BLUE);
-					Result.setText("soft fit");
-					nativeWriteFile("function:IsSoftFit", "return:true", "result:soft fit");
-				} else {
-					Return_t.setText("false");
-					Result.setTextColor(Color.RED);
-					Result.setText("hardware fit");
-					nativeWriteFile("function:IsSoftFit", "return:false", "result:hardware fit");
+                /*result_b = nativeIsSoftFit(0);
+        		Function.setText("IsSoftFit");
+        		if (result_b == true)
+        		{
+        			result_s = String.valueOf(result_b);
+        			Return_t.setText(result_s);
+        			Result.setTextColor(Color.BLUE);
+        			Result.setText("soft fit");
+        			nativeWriteFile("function:IsSoftFit", "return:true", "result:soft fit");
+        		}
+        		else
+        		{
+        			Return_t.setText("false");
+        			Result.setTextColor(Color.RED);
+        			Result.setText("hardware fit");
+        			nativeWriteFile("function:IsSoftFit", "return:false", "result:hardware fit");
+                }*/
+				if (nativeInit(url1, 1) == 0)
+				  Log.i("Init:", "success");
+				else {
+				  Log.i("Init:", "error");
 				}
+				Log.d(getClass().getName(), "onResume()");
+
+				Log.i("create surface:", "next");
+
+				nativeSetEPGSize(1280, 720, 1);
+				nativeSetVideoWindow(600, 320, 320, 240, 1);
+
+				nativeStartPlay(1);
+				Log.i("play", "success"); 
+
+				drawSurface1 playData1 = new drawSurface1();
+				playData1.url1 = url1;
+				Thread player1 = new Thread(playData1);
+				player1.start();
 			}
 		}); 
 
@@ -485,7 +524,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		getPlayMode = (Button)findViewById(R.id.getPlayMode);
 		getPlayMode.setOnClickListener(new Button.OnClickListener(){ 
 			public void onClick(View v) {
-				result_i = nativeGetPlayMode();
+				result_i = nativeGetPlayMode(0);
 				Function.setText("GetPlayMode");
 				result_s = String.valueOf(result_i);
 				Return_t.setText(result_s);
@@ -499,7 +538,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		setEPGSize = (Button)findViewById(R.id.setEPGSize);
 		setEPGSize.setOnClickListener(new Button.OnClickListener(){ 
 			public void onClick(View v) {
-				nativeSetEPGSize(640, 530);
+				nativeSetEPGSize(640, 530, 0);
 				Function.setText("SetEPGSize");
 				Return_t.setText("void");
 				Result.setTextColor(Color.BLUE);
@@ -514,31 +553,32 @@ public class MediaProcessorDemoActivity extends Activity {
 	}
 	private TextView v;
 
-	private static native int nativeCreateSurface(Surface mySurface, int width, int heigth);
-	private static native int nativeInit(String url);
-	private static native int nativeWriteData(String url, int bufsize);
-	private static native int nativeSetVideoWindow(int x, int y, int width, int height);
-	private static native boolean nativeStartPlay();
-	private static native int nativeGetPlayMode();
-	private static native boolean nativePause();
-	private static native boolean nativeResume();  
-	private static native boolean nativeSeek();
-	private static native int nativeVideoShow();
-	private static native int nativeVideoHide();
-	private static native boolean nativeFast();
-	private static native boolean nativeStopFast(); 
-	private static native boolean nativeStop();
-	private static native int nativeGetVolume();
-	private static native boolean nativeSetVolume(int volume);
-	private static native boolean nativeSetRatio(int nRatio);
-	private static native int nativeGetAudioBalance();
-	private static native boolean nativeSetAudioBalance(int nAudioBalance);
-	private static native void nativeGetVideoPixels();
-	private static native boolean nativeIsSoftFit();
-	private static native boolean nativeDelete();
-	private static native void nativeSetEPGSize(int w, int h);
-	private static native void nativeWriteFile(String functionName, String returnValue, String resultValue);
-	private static native int nativeGetCurrentPlayTime();
-	private static native void nativeInitSubtitle();
-	private static native void nativeSwitchSubtitle(int sub_pid);
+    private static native int nativeCreateSurface(Surface mySurface, int width, int heigth, int use_omx_decoder);
+    private static native int nativeInit(String url, int use_omx_decoder);
+	private static native int nativeWriteData(String url, int use_omx_decoder, int bufsize);
+    private static native int nativeSetVideoWindow(int x, int y, int width, int height, int use_omx_decoder);
+    private static native boolean nativeStartPlay(int use_omx_decoder);
+    private static native int nativeGetPlayMode(int use_omx_decoder);
+    private static native boolean nativePause(int use_omx_decoder);
+    private static native boolean nativeResume(int use_omx_decoder);
+    private static native boolean nativeSeek(int use_omx_decoder);
+    private static native int nativeVideoShow(int use_omx_decoder);
+    private static native int nativeVideoHide(int use_omx_decoder);
+    private static native boolean nativeFast(int use_omx_decoder);
+    private static native boolean nativeStopFast(int use_omx_decoder);
+    private static native boolean nativeStop(int use_omx_decoder);
+    private static native int nativeGetVolume(int use_omx_decoder);
+    private static native boolean nativeSetVolume(int volume, int use_omx_decoder);
+    private static native boolean nativeSetRatio(int nRatio, int use_omx_decoder);
+    private static native int nativeGetAudioBalance(int use_omx_decoder);
+    private static native boolean nativeSetAudioBalance(int nAudioBalance, int use_omx_decoder);
+    private static native void nativeGetVideoPixels(int use_omx_decoder);
+    private static native boolean nativeIsSoftFit(int use_omx_decoder);
+    private static native boolean nativeDelete();
+    private static native void nativeSetEPGSize(int w, int h, int use_omx_decoder);
+    private static native void nativeWriteFile(String functionName, String returnValue, String resultValue);
+    
+    private static native int nativeGetCurrentPlayTime(int use_omx_decoder);
+    private static native void nativeInitSubtitle(int use_omx_decoder);
+    private static native void nativeSwitchSubtitle(int sub_pid, int use_omx_decoder);
 }

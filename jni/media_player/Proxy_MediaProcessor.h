@@ -10,12 +10,14 @@
 #define _PROXY_MEDIA_PROCESSOR_H_
 
 #include <CTC_MediaControl.h>
+#include <CTsOmxPlayer.h>
 #include "vformat.h"
 #include "aformat.h"
 //#include "AudioBufferProvider.h"
 //#include "Common.h"
 #include "android_runtime/AndroidRuntime.h"
 #include <gui/Surface.h> 
+#include <gui/ISurfaceTexture.h>
 #include "android_runtime/android_view_Surface.h"
 //#include "CTC_MediaProcessor.h"
 using namespace android;
@@ -23,9 +25,9 @@ using namespace android;
 class Proxy_MediaProcessor
 {
 	protected:
-		ITsPlayer* ctc_MediaControl;
+        sp<ITsPlayer> ctc_MediaControl;
 	public:
-		Proxy_MediaProcessor();
+		Proxy_MediaProcessor(int use_omx_decoder = 0);
 		~Proxy_MediaProcessor();
 	public:
 	//	CTC_MediaControl* Proxy_GetMediaControl();

@@ -71,6 +71,7 @@ public:
     virtual bool createOmxDecoder();
 	virtual void renderFrame();
 	virtual void releaseYUVFrames();
+    virtual void ClearLastFrame() ;
 
 private:
     FILE* mFp;
@@ -170,7 +171,9 @@ private:
 	int mFPSProbeSize;
 	bool mForceStop;
 	bool mKeepLastFrame;
+    bool mOpenLog;
 	size_t mInputQueueSize;
+	int mYuvNo;
 	sp<AMessage> mFormatMsg;
 };
 

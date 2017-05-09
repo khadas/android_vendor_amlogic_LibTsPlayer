@@ -53,6 +53,16 @@ AVFilterContext *filter_buffersink_ctx;
 
 AVRational time_base = {1, 1000000};
 
+static int s_extrator_frame_cnt = 0;
+static int s_decode_frame_cnt = 0;
+static int s_test_frame_num = 0;
+static int s_writefrom_iframe = 0;
+static int s_first_i_comming = 0;
+static int s_nDumpEs = 0;
+static FILE* mFp = NULL;
+static int mEsNo = 0;
+static int mYuvNo = 0;
+static bool mOpenLog = false;
 int ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), MediaInfo *pMi) {
 	if (inited)
 		return 0;
@@ -62,13 +72,43 @@ int ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Media
 #if USE_AVFILTER
 	avfilter_register_all();
 #endif
+	char value[PROPERTY_VALUE_MAX];
+	int ffmpeg_rawbufsize = 4*1024;
+	if(property_get("iptv.soft.ffmpegbufsize",value, "4096")>0) {
+		ffmpeg_rawbufsize = atoi(value);
+		ALOGI("iptv.soft.ffmpegbufsize:%d", ffmpeg_rawbufsize);
+	}
 
-	aviobuffer = (unsigned char *) av_malloc(32768);
+	memset(value, 0x0, sizeof(value));
+	if(property_get("iptv.soft.iwrite",value, "0")>0) {
+		s_writefrom_iframe = atoi(value);
+		ALOGI("iptv.soft.iwrite:%d", s_writefrom_iframe);
+	}
+	s_first_i_comming = 0;
+    mEsNo = 0;
+    mYuvNo = 0;
+	memset(value, 0x0, sizeof(value));
+    property_get("iptv.omx.dumpes", value, "0");
+    s_nDumpEs = atoi(value);
+    if (s_nDumpEs == 1) {
+        char tmpfilename[1024]="";
+        static int s_nDumpCnt=0;
+        sprintf(tmpfilename,"/storage/external_storage/sda1/Live%d.es",s_nDumpCnt);
+        s_nDumpCnt++;
+        mFp = fopen(tmpfilename, "wb+");
+    }
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    int open_log = 0;
+    if(property_get("iptv.soft.log", value, NULL)>0)
+        sscanf(value, "%d", &open_log);
+    if (open_log)
+        mOpenLog = true;
+	aviobuffer = (unsigned char *) av_malloc(ffmpeg_rawbufsize);
 	if (!aviobuffer) {
 		ALOGE("aviobuffer malloc failed");
 		goto fail1;
 	}
-	avio = avio_alloc_context(aviobuffer, 32768, 0, NULL, read_cb, NULL, NULL);
+	avio = avio_alloc_context(aviobuffer, ffmpeg_rawbufsize, 0, NULL, read_cb, NULL, NULL);
 	if (!avio) {
 		ALOGE("avio_alloc_context failed");
 		av_free(aviobuffer);
@@ -82,6 +122,13 @@ int ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Media
 
 	pFormatCtx->pb = avio;
 	pFormatCtx->probesize = 128 * 1024;
+	memset(value, 0x0, sizeof(value));
+	if(property_get("iptv.soft.noprobe",value, NULL) > 0) {
+		ALOGI("iptv.soft.noprobe:%d", value);
+		if (atoi(value) == 1) {
+			pFormatCtx->iformat = av_find_input_format("mpegts");
+		}
+	}
 	if (avformat_open_input(&pFormatCtx, NULL, NULL, NULL) != 0) {
 		ALOGE("Couldn't open input stream.\n");
 		goto fail2;
@@ -166,8 +213,16 @@ int ffextractor_init(int (*read_cb)(void *opaque, uint8_t *buf, int size), Media
 #endif
 
 	inited = 1;
+	ALOGI("ffmpeg buf[start:0x%p, buf_ptr:0x%p, end:0x%p, buffer_size:%d]",
+		pFormatCtx->pb->buffer, pFormatCtx->pb->buf_ptr, pFormatCtx->pb->buf_end, pFormatCtx->pb->buffer_size);
 	av_dump_format(pFormatCtx, 0, "", 0);
 	ALOGD("################ffextractor init successful################");
+	s_extrator_frame_cnt = 0;
+	s_decode_frame_cnt = 0;
+	char levels_value1[92];
+	if(property_get("iptv.soft.testframe",levels_value1, "60")>0) {
+		s_test_frame_num = atoi(levels_value1);
+	}
 	return 0;
 
 fail4:
@@ -198,6 +253,32 @@ void ffextractor_read_packet(size_t *queue_size) {
 		}
 
 		if (packet.stream_index == videoStream) {
+			if (s_test_frame_num > 0) {
+				if (s_extrator_frame_cnt <= s_test_frame_num) {
+					s_extrator_frame_cnt++;
+					if (mOpenLog)
+						ALOGE("v:read_frame[no:key:pts:pos](%d, %d, 0x%llx, %lld)", 
+							s_extrator_frame_cnt, (packet.flags& AV_PKT_FLAG_KEY), packet.pts, packet.pos);
+				}
+			}
+			if (s_writefrom_iframe == 1) {
+				if (s_first_i_comming == 0) {
+					if ((packet.flags& AV_PKT_FLAG_KEY) == 1) {
+						s_first_i_comming = 1;
+						ALOGI("first i frame");
+						ALOGI("ffmpeg buf[start:0x%p, buf_ptr:0x%p, end:0x%p, buffer_size:%d]",
+							pFormatCtx->pb->buffer, pFormatCtx->pb->buf_ptr, pFormatCtx->pb->buf_end, 
+							pFormatCtx->pb->buffer_size);
+					} else {
+						av_free_packet(&packet);
+						return;
+					}
+				}
+			}
+            ALOGD_IF(mOpenLog, "ffextractor_read_packet: packet.pts=%lld, packet.dts=%lld, packet.size=%d, packet.flags=%d, mEsNo=%d", packet.pts, packet.dts, packet.size, packet.flags, mEsNo++);
+            if (mFp != NULL) {
+                fwrite(packet.data, 1, packet.size, mFp);
+            }
 			AutoMutex l(AVPacketQueueLock);
 			AVPacketQueue.push_back(packet);
 			*queue_size = AVPacketQueue.size();
@@ -228,6 +309,11 @@ YUVFrame *ff_decode_frame() {
 		{
 			packet = *AVPacketQueue.begin();
 			AVPacketQueue.erase(AVPacketQueue.begin());
+			if (s_test_frame_num > 0 && s_decode_frame_cnt == 0) {
+				if (mOpenLog)
+					ALOGE("start decoding first packet[no:key:pts:pos](%d, %d, 0x%llx, %lld)",
+						s_decode_frame_cnt, (packet.flags& AV_PKT_FLAG_KEY), packet.pts, packet.pos);
+			}
 		}
 		else
 		{
@@ -240,11 +326,24 @@ YUVFrame *ff_decode_frame() {
 						  pFrame, 
 						  &frameFinished,
 						  &packet);
+	if (s_test_frame_num > 0) {
+		if (s_decode_frame_cnt <= s_test_frame_num) {
+			if (mOpenLog)
+				ALOGE("decode err:%d,frameFinished:%d [no:key:pts:pos](%d, %d, 0x%llx, %lld)", 
+					err, frameFinished, s_decode_frame_cnt, (packet.flags& AV_PKT_FLAG_KEY), packet.pts, packet.pos);
+			if (err > 0 && frameFinished) {
+				s_decode_frame_cnt = s_test_frame_num + 1;
+			}
+		}
+	}
+	int pkt_key = (packet.flags& AV_PKT_FLAG_KEY);
+	int64_t pkt_pos = packet.pos;
+	int64_t pkt_pts = packet.pts;
 	av_free_packet(&packet);
 	if (err > 0 && frameFinished) {
 		width = pFrame->width;
 		height = pFrame->height;
-		
+		ALOGD_IF(mOpenLog, "pFrame->pkt_pts=%lld, pFrame->pkt_dts=%lld, pFrame->pts=%lld, mYuvNo=%d", pFrame->pkt_pts, pFrame->pkt_dts, pFrame->pts, mYuvNo++);
 		int interlaced = pFrame->interlaced_frame;
 		int64_t pts = av_frame_get_best_effort_timestamp(pFrame);
 		pts = av_rescale_q(pts,
@@ -376,9 +475,22 @@ YUVFrame *ff_decode_frame() {
 				}
 		}
 
+		if (s_test_frame_num > 0) {
+			if (s_decode_frame_cnt <= s_test_frame_num) {
+				if (mOpenLog)
+					ALOGE("decode err:%d,frameFinished:%d [no:key:pts:pos:pts](%d, %d, %d, %d, 0x%llx, %lld, 0x%llx)", 
+						err, frameFinished, s_decode_frame_cnt, pkt_key, pkt_pts, pkt_pos, frameOut->pts);
+			}
+			s_decode_frame_cnt++;
+		}
 		return frameOut;
 	} else {
 		ALOGE_IF(checkLogMask(), "Decode frame failed");
+	}
+	if (s_test_frame_num > 0) {
+		if (s_decode_frame_cnt <= s_test_frame_num) {
+			s_decode_frame_cnt++;
+		}
 	}
 	return frameOut;
 }

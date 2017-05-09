@@ -183,7 +183,7 @@ int enable_gl_2xscale(const char *);
 int Active_osd_viewport(int , int );
 
 class CTsPlayer;
-class ITsPlayer{
+class ITsPlayer : public RefBase{
 public:
 	ITsPlayer(){}
 	virtual ~ITsPlayer(){}
@@ -243,6 +243,10 @@ public:
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
 #endif
 	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
+    virtual void ClearLastFrame() = 0;
+     virtual void BlackOut(int EarseLastFrame)= 0;
+    virtual bool SetErrorRecovery(int mode) = 0;
+    virtual void GetAvbufStatus(PAVBUF_STATUS pstatus) = 0;
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
     virtual int GetVideoDropNumber() = 0;
@@ -326,6 +330,12 @@ public:
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
 #endif
 	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
+    virtual void ClearLastFrame() ;
+
+    virtual void BlackOut(int EarseLastFrame) ;
+    virtual bool SetErrorRecovery(int mode);
+
+    virtual void GetAvbufStatus(PAVBUF_STATUS pstatus);
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
 	virtual bool SubtitleShowHide(bool bShow);

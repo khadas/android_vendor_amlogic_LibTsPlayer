@@ -183,7 +183,7 @@ int enable_gl_2xscale(const char *);
 int Active_osd_viewport(int , int );
 
 class CTsPlayer;
-class ITsPlayer : public RefBase{
+class ITsPlayer{
 public:
 	ITsPlayer(){}
 	virtual ~ITsPlayer(){}

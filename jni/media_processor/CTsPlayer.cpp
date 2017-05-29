@@ -2869,6 +2869,9 @@ int CTsPlayer::GetVideoFrameInfo(void *pthis, VIDEO_FRM_STATUS_INFO_T *videoFrmI
                 amsysfs_get_sysfs_str("/sys/module/amvdec_h264/parameters/frame_info_buf_p",vdec_frame_info,768);
             } else if (tsplayer->pcodec->video_type == VFORMAT_HEVC){
                 amsysfs_get_sysfs_str("/sys/module/amvdec_h265/parameters/frame_info_buf_p",vdec_frame_info,768);
+            }else{
+                LOGI("GetVideoFrameInfo codec:%d\n",tsplayer->pcodec);
+                return ret;
             }
         } else {
             LOGW("Error: pcodec is null!\n");
@@ -2880,6 +2883,9 @@ int CTsPlayer::GetVideoFrameInfo(void *pthis, VIDEO_FRM_STATUS_INFO_T *videoFrmI
                 amsysfs_get_sysfs_str("/sys/module/amvdec_h264/parameters/frame_info_buf_p",vdec_frame_info,768);
             } else if (tsplayer->vcodec->video_type == VFORMAT_HEVC){
                 amsysfs_get_sysfs_str("/sys/module/amvdec_h265/parameters/frame_info_buf_p",vdec_frame_info,768);
+            }else{
+                LOGI("GetVideoFrameInfo codec:%d\n",tsplayer->vcodec);
+                return ret;
             }
         } else {
             LOGW("Error: vcodec is null!\n");

@@ -72,6 +72,9 @@ public:
 	virtual void renderFrame();
 	virtual void releaseYUVFrames();
     virtual void ClearLastFrame() ;
+    virtual void leaveChannel() ;
+    virtual int  VideoHide(void);
+    virtual int  VideoShow(void);
 
 private:
     FILE* mFp;

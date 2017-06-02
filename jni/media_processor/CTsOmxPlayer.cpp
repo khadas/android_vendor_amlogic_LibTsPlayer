@@ -52,6 +52,9 @@ CTsOmxPlayer::CTsOmxPlayer():CTsPlayer(true) {
 	ALOGD("mPTSDrift=%d", mPTSDrift);
 	mFPSProbeSize = 0;
 	mSoftRenderer = NULL;
+	mSoftComposerClient = NULL;
+	mSoftControl = NULL;
+	mSoftSurface = NULL;
 	mSoftRenderWidth = 0;
 	mSoftRenderHeight = 0;
 	mForceStop = false;
@@ -92,7 +95,10 @@ CTsOmxPlayer::~CTsOmxPlayer() {
     LOG_LINE();
     ALOGD("disposing surface");
     if (!mKeepLastFrame) {
-    mSoftComposerClient->dispose();
+        if (mSoftComposerClient != NULL) {
+            mSoftComposerClient->dispose();
+            mSoftComposerClient = NULL;
+        }
         Ctc_SoftSurface = NULL;
         Ctc_SoftControl = NULL;
         Ctc_SoftComposerClient = NULL;
@@ -266,6 +272,33 @@ int CTsOmxPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize) {
 	}
 
     return ret;
+}
+
+void CTsOmxPlayer::leaveChannel() {
+    LOG_LINE();
+    Stop();
+}
+
+int CTsOmxPlayer::VideoHide(void) {
+    LOG_LINE();
+    if (mSoftControl != NULL) {
+        SurfaceComposerClient::openGlobalTransaction();
+        CHECK_EQ(mSoftControl->hide(), (status_t)OK);
+        SurfaceComposerClient::closeGlobalTransaction();
+    }
+    ALOGI("VideoHide been called\n");
+    return 0;
+}
+
+int CTsOmxPlayer::VideoShow(void) {
+    LOG_LINE();
+    if (mSoftControl != NULL) {
+        SurfaceComposerClient::openGlobalTransaction();
+        CHECK_EQ(mSoftControl->show(), (status_t)OK);
+        SurfaceComposerClient::closeGlobalTransaction();
+    }
+    ALOGI("VideoShow been called\n");
+    return 0;
 }
 
 bool CTsOmxPlayer::Stop() {

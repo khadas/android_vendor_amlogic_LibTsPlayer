@@ -404,8 +404,7 @@ private:
 
 #ifdef TELECOM_QOS_SUPPORT
     static void *threadGetVideoInfo(void *pthis);
-    int ParseVideoFrameInfo(void *pthis,char *vdec_frame_info, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo);
-    int GetVideoFrameInfo(void *pthis, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo);
+    int GetVideoFrameInfo(void *pthis);
 #endif
 
     bool    m_isBlackoutPolicy;

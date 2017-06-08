@@ -17,6 +17,7 @@ LOCAL_SRC_FILES := \
 	CTsPlayer.cpp \
 	CTC_MediaControl.cpp \
 	CTC_MediaProcessor.cpp \
+	Util.cpp \
 	subtitleservice.cpp \
 	CTsOmxPlayer.cpp
 

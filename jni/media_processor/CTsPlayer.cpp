@@ -1311,6 +1311,10 @@ bool CTsPlayer::StartPlay(){
         mLastVdecInfoNum = 0;
 #endif
         memset(&mCtsplayerState, 0, sizeof(struct ctsplayer_state));
+        video_ratio = 0;
+        Video_frame_format = 0;
+        video_rWH = 0;
+
         ret = iStartPlay();
         codec_set_freerun_mode(pcodec, 0);
         return ret;
@@ -2058,6 +2062,8 @@ static int get_android_stream_volume(float *volume)
                 	hasSetVolume=-1;
                 	return 0;
                 }
+
+                return 0;
             }
             else
                 LOGI("get stream volume failed\n");			
@@ -2066,6 +2072,34 @@ static int get_android_stream_volume(float *volume)
             LOGI("get output handle failed\n");
     }
     return -1;
+}
+
+static int set_android_stream_volume(float volume)
+{
+	unsigned int sr = 0;
+
+	AudioSystem::getOutputSamplingRate(&sr,AUDIO_STREAM_MUSIC);
+	if(sr > 0){
+		audio_io_handle_t handle = -1;
+		handle = AudioSystem::getOutput(AUDIO_STREAM_MUSIC,
+				48000,
+				AUDIO_FORMAT_PCM_16_BIT,
+				AUDIO_CHANNEL_OUT_STEREO,
+				AUDIO_OUTPUT_FLAG_PRIMARY
+				);
+
+		if(handle > 0){
+			if (AudioSystem::setStreamVolume(AUDIO_STREAM_MUSIC,volume, handle) == 	NO_ERROR) {
+				LOGI("set stream volume suc\n");
+				return 0;
+			}
+			LOGI("set stream volume failed\n");
+		}
+		else
+			LOGI("set output handle failed\n");
+	}
+
+	return -1;
 }
 
 int CTsPlayer::GetVolume()
@@ -2079,6 +2113,7 @@ int CTsPlayer::GetVolume()
         return m_nVolume;
     }
     
+	m_nVolume = (int)(volume*100);
     return (int)(volume*100);
 }
 
@@ -2089,7 +2124,8 @@ bool CTsPlayer::SetVolume(int volume)
         LOGI("SetVolume , value is invalid \n");
         return false;
     }
-    int ret = codec_set_volume(pcodec, (float)volume/100.0);
+    //int ret = codec_set_volume(pcodec, (float)volume/100.0);
+    int ret = set_android_stream_volume((float)volume/100.0);
     m_nVolume = volume;
     hasSetVolume=1;
     return true;

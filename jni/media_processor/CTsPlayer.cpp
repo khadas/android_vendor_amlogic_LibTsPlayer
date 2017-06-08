@@ -2984,13 +2984,11 @@ int CTsPlayer::GetVideoTotalNumber()
 
 int CTsPlayer::updateCTCInfo() 
 {
+	int first_pic_comming = 0;
     // check first frame comming
     if (mCtsplayerState.first_picture_comming == 0) {
         if (get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")) {
-            mCtsplayerState.first_picture_comming = 1;
-            mCtsplayerState.first_frame_pts = get_sysfs_int("/sys/class/tsync/firstvpts");
-            pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
-
+            first_pic_comming = 1;
         } else {
             return 0;
         }
@@ -3093,6 +3091,12 @@ int CTsPlayer::updateCTCInfo()
 
     
   
+    if (first_pic_comming == 1) {
+        mCtsplayerState.first_picture_comming = 1;
+        mCtsplayerState.first_frame_pts = get_sysfs_int("/sys/class/tsync/firstvpts");
+        pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
+    }
+
     return 0;
 
 }

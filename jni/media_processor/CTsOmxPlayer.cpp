@@ -164,15 +164,18 @@ bool CTsOmxPlayer::StartPlay() {
 
 int CTsOmxPlayer::SetVideoWindow(int x,int y,int width,int height) {
     LOG_LINE();
-    if (mSoftComposerClient != NULL) {
-        ALOGI("CTsOmxPlayer::SetVideoWindow: mSoftComposerClient dispose!");
-        mSoftComposerClient->dispose();
-        mSoftComposerClient = NULL;
+    if ((mSoftNativeX != x) || (mSoftNativeY != y)
+            || (mSoftNativeWidth != width) || (mSoftNativeHeight != height)) {
+        if (mSoftComposerClient != NULL) {
+            ALOGI("CTsOmxPlayer::SetVideoWindow: mSoftComposerClient dispose!");
+            mSoftComposerClient->dispose();
+            mSoftComposerClient = NULL;
+        }
+        mSoftNativeX = x;
+        mSoftNativeY = y;
+        mSoftNativeWidth = width;
+        mSoftNativeHeight = height;
     }
-    mSoftNativeX = x;
-    mSoftNativeY = y;
-    mSoftNativeWidth = width;
-    mSoftNativeHeight = height;
     ALOGI("CTsOmxPlayer::SetVideoWindow: %d, %d, %d, %d\n", x, y, width, height);
     return 0;
 }
@@ -194,7 +197,8 @@ bool CTsOmxPlayer::createWindowSurface() {
     CHECK(mSoftControl != NULL);
     CHECK(mSoftControl->isValid());
     SurfaceComposerClient::openGlobalTransaction();
-    CHECK_EQ(mSoftControl->setLayer(INT_MAX-100), (status_t)OK);
+    //CHECK_EQ(mSoftControl->setLayer(INT_MAX-100), (status_t)OK);
+    CHECK_EQ(mSoftControl->setLayer(0), (status_t)OK);
 
     sp<IBinder> dpy = mSoftComposerClient->getBuiltInDisplay(0);
     if (dpy == NULL) {

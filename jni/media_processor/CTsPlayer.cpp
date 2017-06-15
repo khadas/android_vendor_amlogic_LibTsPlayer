@@ -178,9 +178,9 @@ static int read_cb(void *opaque, uint8_t *buf, int size) {
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO  , "TsPlayer", __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN  , "TsPlayer", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR  , "TsPlayer", __VA_ARGS__)
-#define SCALING_MODE  "performance"
-#define DEFAULT_MODE  "interactive"
-#define CPU_SCALING_MODE_NODE  "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+#define SCALING_MODE  "1"
+#define DEFAULT_MODE  "0"
+#define CPU_SCALING_MODE_NODE  "/sys/devices/system/cpu/cpufreq/interactive/boost"
 int perform_flag =0;
 
 #ifdef TELECOM_VFORMAT_SUPPORT

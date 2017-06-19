@@ -2761,7 +2761,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
 }
 
 #ifdef TELECOM_QOS_SUPPORT
-int CTsPlayer::GetVideoFrameInfo(void *pthis, VIDEO_FRM_STATUS_INFO_T *videoFrmInfo)
+int CTsPlayer::GetVideoFrameInfo(void *pthis)
 {
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;

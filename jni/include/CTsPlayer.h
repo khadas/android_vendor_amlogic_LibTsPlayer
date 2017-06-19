@@ -148,13 +148,15 @@ typedef enum {
 typedef struct {
     VID_FRAME_TYPE_e enVidFrmType;
     int  nVidFrmSize;
+    int  nVidFrmQP;
     int  nVidFrmPTS;
-    int  nMaxQP;
-    int  nMinQP;
-    int  nAvgQP;
     int  nMaxMV;
     int  nMinMV;
     int  nAvgMV;
+    int  SkipRatio;
+    int  nMaxQP;
+    int  nMinQP;
+    int  nAvgQP;
     int  nMaxSkip;
     int  nMinSkip;
     int  nAvgSkip;

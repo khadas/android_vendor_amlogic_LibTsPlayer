@@ -1307,7 +1307,7 @@ bool CTsPlayer::StartPlay(){
         }else{
             pcodec->start_no_out = 0;
         }
-#ifdef TELECOM_QOS_SUPPORTs
+#ifdef TELECOM_QOS_SUPPORT
         mLastVdecInfoNum = 0;
 #endif
         memset(&mCtsplayerState, 0, sizeof(struct ctsplayer_state));

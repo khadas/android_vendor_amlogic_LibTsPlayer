@@ -2268,46 +2268,54 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 {
     int count = 0;
 
-    while((a_aPara[count].pid != pid) &&(a_aPara[count].pid != 0)
+    while ((a_aPara[count].pid != pid) &&(a_aPara[count].pid != 0)
             &&(count < MAX_AUDIO_PARAM_SIZE)) {
         count++;
     }
 
-    if(!m_bIsPlay)
+    if (!m_bIsPlay) {
+        LOGE("Player is not on play status!\n");
         return;
+    }
+    if (count >= MAX_AUDIO_PARAM_SIZE) {
+        LOGE("count(%d) over MAX_AUDIO_PARAM_SIZE!\n", count);
+        return;
+    }
+    if (pcodec->audio_pid == (int)a_aPara[count].pid) {
+        LOGE("Same audio pid(%d), do not change!\n", pcodec->audio_pid);
+        return;
+    }
 
     lp_lock(&mutex);
     codec_audio_automute(pcodec->adec_priv, 1);
     codec_close_audio(pcodec);
     pcodec->audio_pid = 0xffff;
 
-    if(codec_set_audio_pid(pcodec)) {
+    if (codec_set_audio_pid(pcodec)) {
         LOGE("set invalid audio pid failed\n");
         lp_unlock(&mutex);
         return;
     }
 
-    if(count < MAX_AUDIO_PARAM_SIZE) {
-        pcodec->has_audio = 1;
-        pcodec->audio_type = a_aPara[count].aFmt;
-        pcodec->audio_pid = (int)a_aPara[count].pid;
-    }
+    pcodec->has_audio = 1;
+    pcodec->audio_type = a_aPara[count].aFmt;
+    pcodec->audio_pid = (int)a_aPara[count].pid;
     LOGI("SwitchAudioTrack pcodec->audio_samplerate: %d, pcodec->audio_channels: %d\n", pcodec->audio_samplerate, pcodec->audio_channels);
     LOGI("SwitchAudioTrack pcodec->audio_type: %d, pcodec->audio_pid: %d\n", pcodec->audio_type, pcodec->audio_pid);
 
     //codec_set_audio_pid(pcodec);
-    if(IS_AUIDO_NEED_EXT_INFO(pcodec->audio_type)) {
+    if (IS_AUIDO_NEED_EXT_INFO(pcodec->audio_type)) {
         pcodec->audio_info.valid = 1;
         LOGI("set audio_info.valid to 1");
     }
 
-    if(codec_audio_reinit(pcodec)) {
+    if (codec_audio_reinit(pcodec)) {
         LOGE("reset init failed\n");
         lp_unlock(&mutex);
         return;
     }
 
-    if(codec_reset_audio(pcodec)) {
+    if (codec_reset_audio(pcodec)) {
         LOGE("reset audio failed\n");
         lp_unlock(&mutex);
         return;

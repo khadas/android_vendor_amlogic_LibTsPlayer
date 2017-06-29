@@ -29,6 +29,7 @@ extern "C" {
 #define lock_t          pthread_mutex_t
 #define lp_lock_init(x,v)   pthread_mutex_init(x,v)
 #define lp_lock(x)      pthread_mutex_lock(x)
+#define lp_trylock(x)   pthread_mutex_trylock(x)
 #define lp_unlock(x)    pthread_mutex_unlock(x)
 
 
@@ -99,6 +100,66 @@ typedef struct ST_LPbuffer{
 }LPBUFFER_T;
 
 
+typedef struct ctsplayer_state {
+    int valid;
+
+    // setting
+    int64_t last_update_time;
+    /*for caton info*/
+    int catoning;
+    int caton_start_underflow;
+    int64_t caton_start_time;
+    int last_underflow;
+    /*for calc avg stream bitrate*/
+    int64_t bytes_record_starttime_ms;
+    int64_t bytes_record_start;
+    int64_t bytes_record_cur;
+
+    // player info
+    int first_picture_comming;
+    int64_t first_frame_pts;
+    int64_t avdiff;
+    int ff_mode;
+    int ts_error;
+    int ts_sync_loss;
+    int ecm_error;
+
+    // video info
+    int64_t vpts;
+    int video_ratio;
+    int video_rWH = 0;
+    int Video_frame_format = 0;
+    int video_width;
+    int video_height;
+    int vbuf_size;
+    int vbuf_used;
+    int vdec_error;
+    int vdec_drop;
+    int vdec_underflow;
+    int vpts_error;
+    int frame_rate;
+
+    // audio info
+    int64_t apts;
+    int abuf_size;
+    int abuf_used;
+    int adec_error;
+    int adec_drop;
+    int adec_underflow;
+    int apts_error;
+
+    //audio decode info
+    int samplate;
+    int channel;
+    int bitrate;
+    int audio_bps;
+    int audio_type;
+
+    //other info
+    int stream_bitrate;//avg from writedata, duration 1 sec
+    int caton_times; //the num of carton
+    int caton_time;
+};
 
 typedef enum{    
 	IPTV_PLAYER_EVT_STREAM_VALID=0,    
@@ -129,7 +190,14 @@ typedef enum{
 	IPTV_PLAYER_ATTR_AUD_SAMPLERATE,     //音频缓冲区已使用大小    
 	IPTV_PLAYER_ATTR_AUD_BITRATE,     //音频缓冲区已使用大小    
 	IPTV_PLAYER_ATTR_AUD_CHANNEL_NUM,     //音频缓冲区已使用大小    
-	IPTV_PLAYER_ATTR_BUTT}
+	IPTV_PLAYER_ATTR_BUTT,
+	IPTV_PLAYER_ATTR_V_FRAME_RATE = 0x100, //video frame rate
+	IPTV_PLAYER_ATTR_V_HEIGHT, //video height
+	IPTV_PLAYER_ATTR_V_WIDTH,  //video width
+	IPTV_PLAYER_ATTR_STREAM_BITRATE,//stream bitrate
+	IPTV_PLAYER_ATTR_CATON_TIMES,  //the num of caton
+	IPTV_PLAYER_ATTR_CATON_TIME,    //the time of caton total time
+}
 IPTV_ATTR_TYPE_e;
 
 
@@ -418,6 +486,9 @@ private:
     virtual bool  iStop( );
     int64_t m_PreviousOverflowTime;
 	size_t mInputQueueSize;
+	ctsplayer_state m_sCtsplayerState;
+	void update_caton_info();
+	void update_stream_bitrate();
 };
 
 #endif

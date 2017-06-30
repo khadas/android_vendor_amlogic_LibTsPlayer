@@ -170,6 +170,12 @@ int Proxy_MediaProcessor::Proxy_GetCurrentPlayTime()
 	return currentPlayTime;	
 }
 
+void Proxy_MediaProcessor::Proxy_SwitchAudioTrack(int pid)
+{
+	ctc_MediaControl->SwitchAudioTrack(pid);
+	return;
+}
+
 void Proxy_MediaProcessor::Proxy_InitSubtitle(PSUBTITLE_PARA_T sParam)
 {
 	ctc_MediaControl->InitSubtitle(sParam);
@@ -181,6 +187,7 @@ void Proxy_MediaProcessor::Proxy_SwitchSubtitle(int pid)
 	ctc_MediaControl->SwitchSubtitle(pid);
 	return;
 }
+
 void Proxy_MediaProcessor::Proxy_playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander)
 {
 	ctc_MediaControl->playerback_register_evt_cb(pfunc, hander);

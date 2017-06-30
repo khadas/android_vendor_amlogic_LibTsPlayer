@@ -280,9 +280,9 @@ void QuitIptv(bool isSoftFit, bool isBlackoutPolicy)
 {
     amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd", 0);
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
-    if(isBlackoutPolicy)
+    if(!isBlackoutPolicy)
         amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
-    else {
+    else {
         if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") != 2)
             amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
     }
@@ -400,7 +400,7 @@ CTsPlayer::CTsPlayer()
     prop_softfit = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.blackout.policy",value,"0");
+    property_get("iptv.blackout.policy", value, "1");
     prop_blackout_policy = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -468,7 +468,6 @@ CTsPlayer::CTsPlayer()
     LOGI("window_axis: %s\n", old_window_axis);
     LOGI("free_scale: %s\n", old_free_scale);
 
-    amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
     if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
         amsysfs_set_sysfs_int("/sys/class/video/disable_video", 2);
     memset(a_aPara, 0, sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
@@ -562,7 +561,7 @@ CTsPlayer::CTsPlayer()
         pthread_attr_destroy(&attr);
     }
 
-    m_nMode = M_LIVE;
+    //m_nMode = M_LIVE;
     LunchIptv(m_isSoftFit);
     m_fp = NULL;
     sp<IBinder> binder =defaultServiceManager()->getService(String16("media.player"));
@@ -777,12 +776,10 @@ int CTsPlayer::VideoShow(void)
 {
     LOGI("VideoShow\n");
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 1280 720 0 8");
-    if(!m_isBlackoutPolicy) {
-        if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
-            amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
-        else
-            LOGW("video is enable, no need to set disable_video again\n");
-    }
+    if(amsysfs_get_sysfs_int("/sys/class/video/disable_video") == 1)
+        amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
+    else
+        LOGW("video is enable, no need to set disable_video again\n");
     return 0;
 }
 
@@ -790,8 +787,7 @@ int CTsPlayer::VideoHide(void)
 {
     LOGI("VideoHide\n");
     //amsysfs_set_sysfs_str("/sys/class/graphics/fb0/video_hole", "0 0 0 0 0 0");
-    if(!m_isBlackoutPolicy)
-        amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
+    amsysfs_set_sysfs_int("/sys/class/video/disable_video",2);
     return 0;
 }
 
@@ -1415,12 +1411,10 @@ bool CTsPlayer::iStartPlay()
     }
     LOGI("StartPlay codec_init After: %d\n", ret);
     if(ret == 0) {
-        if (m_nMode == M_LIVE) {
-            if(m_isBlackoutPolicy)
-                amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
-            else
-                amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",0);
-        }
+        if (m_isBlackoutPolicy)
+            amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 0);
+        else
+            amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
         m_bIsPlay = true;
         m_bIsPause = false;
         keep_vdec_mem = 0;
@@ -1727,41 +1721,42 @@ bool CTsPlayer::StopFast()
     ret = iStartPlay();
     if(!ret)
         return false;
-    if(m_isBlackoutPolicy) {
-        ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
+    if (!m_isBlackoutPolicy) {
+        ret = amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
         if (ret)
             return false;
-	}
+    }
 
     return true;
 }
+
 bool CTsPlayer::Stop(){
-        int ret;
+    int ret;
 
-        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
-        if(!m_bIsPlay){
-           LOGI("already is Stoped\n");
-           return true;
-        }
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
+    if (!m_bIsPlay) {
+        LOGI("already is Stoped\n");
+        return true;
+    }
 
-        codec_set_freerun_mode(pcodec, 0);
-        if (pcodec->has_sub == 1) {
-            memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
-        }
+    codec_set_freerun_mode(pcodec, 0);
+    if (pcodec->has_sub == 1) {
+        memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
+    }
 
-        if(pcodec->video_type == VFORMAT_HEVC) {
-            amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 8);
-        }
+    if (pcodec->video_type == VFORMAT_HEVC) {
+        amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 8);
+    }
 
-        ret =  iStop();
+    ret = iStop();
 
-        adec_underflow = 0;
-        vdec_underflow = 0;
-        video_ratio = 0;
-        video_rWH = 0;
-        Video_frame_format = 0;
+    adec_underflow = 0;
+    vdec_underflow = 0;
+    video_ratio = 0;
+    video_rWH = 0;
+    Video_frame_format = 0;
 
-        return ret;
+    return ret;
 }
 
 bool CTsPlayer::iStop()
@@ -1772,32 +1767,32 @@ bool CTsPlayer::iStop()
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
-    if(perform_flag){
+    if (perform_flag) {
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;
     }
-    if(m_bIsPlay) {
+    if (m_bIsPlay) {
         LOGI("m_bIsPlay is true");
-        if(m_fp != NULL) {
+        if (m_fp != NULL) {
             fclose(m_fp);
             m_fp = NULL;
         }
 
         //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
-		if(prop_softdemux == 1){
-			uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
+        if (prop_softdemux == 1) {
+            uint8_t *tmp_buf = (uint8_t *)malloc(1024*32);
             if (tmp_buf == NULL) {
                 LOGE("malloc tmp_buf failed");
                 return false;
             }
-			close(pipe_fd[1]);
-            while(read(pipe_fd[0], tmp_buf, 1024*32)>0);
+            close(pipe_fd[1]);
+            while (read(pipe_fd[0], tmp_buf, 1024*32)>0);
                 free(tmp_buf);
             close(pipe_fd[0]);
             LOGI("pipe closed first");
         }
         lp_lock(&mutex);
-        if(m_bIsPlay == false){
+        if (m_bIsPlay == false) {
             LOGI("Already stop return\n");
             lp_unlock(&mutex);
             return true;//avoid twice stop
@@ -1876,8 +1871,6 @@ bool CTsPlayer::Seek()
 {
     LOGI("Seek");
     int ret = 0;
-    if(m_isBlackoutPolicy)
-        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     if(pcodec->video_type == VFORMAT_HEVC) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
     }

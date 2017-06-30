@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:background="#55000000"
     android:orientation="vertical" >
 	<LinearLayout 
 	    android:layout_width="fill_parent"
@@ -127,6 +128,11 @@
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
 	        android:text="@string/button_g_playmode" />
+	       <Button
+	        android:id="@+id/switchAudioTrack"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/button_s_audio" />
 	       <Button
 	        android:id="@+id/switchSubtitle"
 	        android:layout_width="fill_parent"

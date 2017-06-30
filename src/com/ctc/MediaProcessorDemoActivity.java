@@ -68,6 +68,7 @@ public class MediaProcessorDemoActivity extends Activity {
 	private Button isSoftFit = null;
 	private Button getPlayMode = null;
 	private Button setEPGSize = null;
+	private Button switchAudioTrack = null;
 	private Button switchSubtitle = null;
 	private TextView Function = null;
 	private TextView Return_t = null;
@@ -91,7 +92,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		public String url;
 		public void run() {
 			Log.i(TAG, "nativeWriteData1 start");
-			nativeWriteData(this.url, 0, playBufferSize);
+			nativeWriteData(this.url, playBufferSize, 0);
 			Log.i(TAG, "nativeWriteData1 end");
 		} 
 	}
@@ -100,7 +101,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		public String url1;
 		public void run()
 		{
-			nativeWriteData(this.url1, 1, playBufferSize);
+			nativeWriteData(this.url1, playBufferSize, 1);
 		}
 	}
 	
@@ -545,17 +546,24 @@ public class MediaProcessorDemoActivity extends Activity {
 				Result.setText("success");
 				nativeWriteFile("function:SetEPGSize", "return:void", "result:success"); 
 			}
-		});  
-	}
+		});
 
-	static {
-		System.loadLibrary("CTC_MediaProcessorjni");   
-	}
-	private TextView v;
+        //SwitchAudioTrack
+        switchAudioTrack = (Button)findViewById(R.id.switchAudioTrack);
+        switchAudioTrack.setOnClickListener(new Button.OnClickListener() { 
+            public void onClick(View v) {
+                nativeSwitchAudioTrack(0);
+            }
+        });
+    }
+
+    static {
+        System.loadLibrary("CTC_MediaProcessorjni");   
+    }
 
     private static native int nativeCreateSurface(Surface mySurface, int width, int heigth, int use_omx_decoder);
     private static native int nativeInit(String url, int use_omx_decoder);
-	private static native int nativeWriteData(String url, int use_omx_decoder, int bufsize);
+    private static native int nativeWriteData(String url, int bufsize, int use_omx_decoder);
     private static native int nativeSetVideoWindow(int x, int y, int width, int height, int use_omx_decoder);
     private static native boolean nativeStartPlay(int use_omx_decoder);
     private static native int nativeGetPlayMode(int use_omx_decoder);
@@ -577,8 +585,8 @@ public class MediaProcessorDemoActivity extends Activity {
     private static native boolean nativeDelete();
     private static native void nativeSetEPGSize(int w, int h, int use_omx_decoder);
     private static native void nativeWriteFile(String functionName, String returnValue, String resultValue);
-    
     private static native int nativeGetCurrentPlayTime(int use_omx_decoder);
+    private static native void nativeSwitchAudioTrack(int use_omx_decoder);
     private static native void nativeInitSubtitle(int use_omx_decoder);
     private static native void nativeSwitchSubtitle(int sub_pid, int use_omx_decoder);
 }

@@ -57,6 +57,7 @@ class Proxy_MediaProcessor
 		void Proxy_SetSurface(Surface* pSurface);//设置显示用的surface
 
 		int Proxy_GetCurrentPlayTime();
+		void Proxy_SwitchAudioTrack(int pid);
 		void Proxy_InitSubtitle(PSUBTITLE_PARA_T sParam);
 		void Proxy_SwitchSubtitle(int pid);//设置显示用的surface		
 		void Proxy_playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);

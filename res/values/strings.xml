@@ -24,6 +24,7 @@
     <string name="button_g_vp">GetVideoPixels</string>
     <string name="button_is_soft_fit">IsSoftFit</string>
     <string name="button_g_playmode">GetPlayMode</string>
+    <string name="button_s_audio">SwitchAudioTrack</string>
     <string name="button_s_sub">SwitchSubtitle</string>
     <string name="txt_1_space"> </string>
 

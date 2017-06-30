@@ -31,6 +31,10 @@ Mutex    gMutexLock;
 
 static FILE * g_TestResultLogHandle = NULL;
 
+static AUDIO_PARA_T audioPara[MAX_AUDIO_PARAM_SIZE] = {0};
+static int audio_index = 0;
+static int audio_count = 0;
+
 static FILE * GetTestResultLogHandle()
 {
 	if(g_TestResultLogHandle == NULL) {
@@ -193,8 +197,7 @@ void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler)
 
 jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thiz, jstring url, int use_omx_decoder)
 {
-	VIDEO_PARA_T  videoPara={0};
-	AUDIO_PARA_T audioPara[MAX_AUDIO_PARAM_SIZE]={0};
+	VIDEO_PARA_T videoPara={0};
 	SUBTITLE_PARA_T sParam[MAX_SUBTITLE_PARAM_SIZE]={0};
 	//get video pids  merge form kplayer
 	play_control_t *pCtrl = NULL; 
@@ -202,6 +205,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	media_info_t minfo; 
 	const char* URL = (*env).GetStringUTFChars(url, NULL);
 	pCtrl = (play_control_t*)malloc(sizeof(play_control_t));  
+	memset(audioPara, 0, sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
 	memset(pCtrl,0,sizeof(play_control_t));   
 	memset(&minfo,0,sizeof(media_info_t));
 	player_init();
@@ -217,7 +221,9 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	  ALOGI("player start failed!error=%d",pid);
 	  goto fail;
 	}
-
+	
+	audio_index = 0;
+	audio_count = 0;
 	signal(SIGSEGV, signal_handler);
 	while(!PLAYER_THREAD_IS_STOPPED(player_get_state(pid))) {
 		if(player_get_state(pid) >= PLAYER_INITOK) {
@@ -232,6 +238,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	        ALOGI("player_get_media_info get video pid  %d  ",videoPara.pid);
 	      }
 	      if(minfo.stream_info.has_audio && minfo.stream_info.total_audio_num > 0) {
+	      	audio_count = minfo.stream_info.total_audio_num;
 	        for(i = 0;i<minfo.stream_info.total_audio_num;i++){
 	          audioPara[i].pid=minfo.audio_info[i]->id; 
 	          audioPara[i].nChannels = minfo.audio_info[i]->channel;
@@ -334,7 +341,7 @@ jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeStartPlay(JNIEnv* env, jo
 	return result;
 }
 
-jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobject thiz, jstring url,int use_omx_decoder, jint bufsize)
+jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobject thiz, jstring url, jint bufsize, int use_omx_decoder)
 {
 	const char* URL = (*env).GetStringUTFChars(url, NULL);
 
@@ -508,6 +515,23 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeGetCurrentPlayTime(JNIEnv* en
 {
 	jint result = proxy_mediaProcessor[use_omx_decoder]->Proxy_GetCurrentPlayTime();
 	return result;
+}
+
+jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeSwitchAudioTrack(JNIEnv* env, jobject thiz, int use_omx_decoder)
+{
+	if ((audio_count > 0) && (audio_count < MAX_AUDIO_PARAM_SIZE)) {
+		int pid = 0;
+		audio_index++;
+
+		if (audio_index >= audio_count)
+			audio_index = 0;
+		pid = audioPara[audio_index].pid;
+		LOGI("Auido index: %d, count: %d, pid: %d\n", audio_index, audio_count, pid);
+		proxy_mediaProcessor[use_omx_decoder]->Proxy_SwitchAudioTrack(pid);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 jboolean Java_com_ctc_MediaProcessorDemoActivity_nativeInitSubtitle(JNIEnv* env, jobject thiz, int use_omx_decoder)

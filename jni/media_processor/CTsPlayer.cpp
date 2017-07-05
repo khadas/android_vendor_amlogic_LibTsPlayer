@@ -2825,7 +2825,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
             tsplayer->update_caton_info();
             tsplayer->update_stream_bitrate();
             checkcount++;
-            if (lp_trylock(&tsplayer->mutex) < 0) {
+            if (lp_trylock(&tsplayer->mutex) != 0) {
                 continue;
             }
 

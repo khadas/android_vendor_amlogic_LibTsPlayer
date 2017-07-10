@@ -550,6 +550,8 @@ CTsPlayer::CTsPlayer()
     pthread_attr_destroy(&attr);
 
 #ifdef TELECOM_QOS_SUPPORT
+    pfunc_player_param_evt = NULL;
+    player_evt_param_handler = NULL;
     pthread_attr_init(&attr);
     pthread_create(&mVdecThread, &attr, threadGetVideoInfo, this);
     pthread_attr_destroy(&attr);

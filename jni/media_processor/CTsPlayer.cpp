@@ -92,8 +92,6 @@ static int prop_start_no_out = 0;
 #include <fcntl.h>
 #include "amffextractor.h"
 
-
-
 static int s_nDumpTs = 0;
 static int pipe_fd[2] = { -1, -1 };
 static bool am_ffextractor_inited = false;
@@ -1219,13 +1217,11 @@ bool CTsPlayer::iStartPlay()
         LOGI("set audio_info.valid to 1");
     }
 
-
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",H264_error_skip_reserve);
 	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",0);
-
-    if(!m_bFast) {
+    if (!m_bFast) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
-        if((int)a_aPara[0].pid != 0) {
+        if ((int)a_aPara[0].pid != 0) {
             pcodec->has_audio = 1;
             pcodec->audio_pid = (int)a_aPara[0].pid;
         }
@@ -1272,7 +1268,6 @@ bool CTsPlayer::iStartPlay()
 			pcodec->am_sysinfo.param=(void *)am_sysinfo_param;
 			pcodec->am_sysinfo.height = vPara.nVideoHeight;
 			pcodec->am_sysinfo.width = vPara.nVideoWidth;
-
 		}
 		else{
         	pcodec->am_sysinfo.param = (void *)(0);
@@ -1863,7 +1858,7 @@ bool CTsPlayer::iStop()
     } else {
         LOGI("m_bIsPlay is false");
     }
-    if (pcodec->has_sub == 1)
+    if (NULL != pcodec && pcodec->has_sub == 1)
         mSubRatioThreadStop = true;
 
     return true;
@@ -1876,8 +1871,8 @@ bool CTsPlayer::Seek()
     if(pcodec->video_type == VFORMAT_HEVC) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
     }
-    ret=codec_set_freerun_mode(pcodec, 0);
-    if(ret){
+    ret = codec_set_freerun_mode(pcodec, 0);
+    if (ret) {
         LOGI("error seek set freerun_mode 0 fail\n");
     }
     iStop();
@@ -1947,7 +1942,7 @@ static int set_android_stream_volume(float volume)
 			LOGI("set output handle failed\n");
 	}
 
-	return -1;
+    return -1;
 }
 
 int CTsPlayer::GetVolume()
@@ -2136,7 +2131,6 @@ void CTsPlayer::readExtractor() {
 		return;
 	}
 
-
 	lp_lock(&mutex);
 	if(m_bIsPlay == false){
 		LOGI("now in stop state,return\n");
@@ -2145,7 +2139,6 @@ void CTsPlayer::readExtractor() {
    	}
 	am_ffextractor_read_packet(vcodec, acodec);
 	lp_unlock(&mutex);
-
 }
 
 void CTsPlayer::SwitchAudioTrack(int pid)
@@ -2349,7 +2342,6 @@ int64_t CTsPlayer::GetCurrentPlayTime()
     	else{
             tmppts = codec_get_vpts(pcodec);
     	}
-
     }
     video_pts = tmppts;
     if(m_bFast && (pcodec->video_type != VFORMAT_HEVC)){
@@ -2841,8 +2833,6 @@ void *CTsPlayer::threadReadPacket(void *pthis) {
     LOGV("threadReadPakcet end\n");
     return NULL;
 }
-
-
 
 void CTsPlayer::Report_video_paramters()
 {

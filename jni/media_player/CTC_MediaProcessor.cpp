@@ -364,7 +364,7 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeWriteData(JNIEnv* env, jobjec
 		rd_result = fread(m_pcBuf[use_omx_decoder], WRITE_DATA_SIZE, 1, fp[use_omx_decoder]);
 		if (rd_result <= 0)	 {
 			LOGE("read the end of file");
-			exit(1);
+			return 0;
 		}
 
 		while(bufsize > 0) {

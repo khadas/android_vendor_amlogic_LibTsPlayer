@@ -82,12 +82,11 @@ typedef enum {
     CODEC_ID_DVB_TELETEXT,
     CODEC_ID_SRT,
     CODEC_ID_MICRODVD,
-	}SUB_TYPE;
+}SUB_TYPE;
 #endif
 typedef struct{
-	unsigned short	pid;//pid
+    unsigned short pid;//pid
 	int sub_type; 
-	
 }SUBTITLE_PARA_T, *PSUBTITLE_PARA_T;
 
 typedef struct ST_LPbuffer{
@@ -98,7 +97,6 @@ typedef struct ST_LPbuffer{
     int valid_can_read;
     bool enlpflag;
 }LPBUFFER_T;
-
 
 typedef struct ctsplayer_state {
     int valid;
@@ -161,45 +159,43 @@ typedef struct ctsplayer_state {
     int caton_time;
 };
 
-typedef enum{    
-	IPTV_PLAYER_EVT_STREAM_VALID=0,    
-	IPTV_PLAYER_EVT_FIRST_PTS,     //first frame decoded event    
-	IPTV_PLAYER_EVT_VOD_EOS,       //VOD EOS event    
-	IPTV_PLAYER_EVT_ABEND,         //under flow event    
-	IPTV_PLAYER_EVT_PLAYBACK_ERROR,// playback error event    
-	IPTV_PLAYER_EVT_VID_FRAME_ERROR =0x200,// 视频解码错误    
-	IPTV_PLAYER_EVT_VID_DISCARD_FRAME,// 视频解码丢帧    
-	IPTV_PLAYER_EVT_VID_DEC_UNDERFLOW,// 视频解码下溢    
-	IPTV_PLAYER_EVT_VID_PTS_ERROR,// 视频解码Pts错误    
-	IPTV_PLAYER_EVT_AUD_FRAME_ERROR,// 音频解码错误    
-	IPTV_PLAYER_EVT_AUD_DISCARD_FRAME,// 音频解码丢弃    
-	IPTV_PLAYER_EVT_AUD_DEC_UNDERFLOW,//音频解码下溢    
-	IPTV_PLAYER_EVT_AUD_PTS_ERROR,// 音频PTS错误    
-	IPTV_PLAYER_EVT_BUTT    
+typedef enum {
+    IPTV_PLAYER_EVT_STREAM_VALID=0,
+    IPTV_PLAYER_EVT_FIRST_PTS,     //first frame decoded event
+    IPTV_PLAYER_EVT_VOD_EOS,       //VOD EOS event
+    IPTV_PLAYER_EVT_ABEND,         //under flow event
+    IPTV_PLAYER_EVT_PLAYBACK_ERROR,// playback error event
+    IPTV_PLAYER_EVT_VID_FRAME_ERROR =0x200,// 视频解码错误
+    IPTV_PLAYER_EVT_VID_DISCARD_FRAME,// 视频解码丢帧
+    IPTV_PLAYER_EVT_VID_DEC_UNDERFLOW,// 视频解码下溢
+    IPTV_PLAYER_EVT_VID_PTS_ERROR,// 视频解码Pts错误
+    IPTV_PLAYER_EVT_AUD_FRAME_ERROR,// 音频解码错误
+    IPTV_PLAYER_EVT_AUD_DISCARD_FRAME,// 音频解码丢弃
+    IPTV_PLAYER_EVT_AUD_DEC_UNDERFLOW,//音频解码下溢
+    IPTV_PLAYER_EVT_AUD_PTS_ERROR,// 音频PTS错误
+    IPTV_PLAYER_EVT_BUTT
 }IPTV_PLAYER_EVT_e;
 
-typedef enum{    
-	IPTV_PLAYER_ATTR_VID_ASPECT=0,  /* 视频宽高比 0--640*480，1--720*576，2--1280*720，3--1920*1080,4--3840*2160,5--others等标识指定分辨率*/    
-	IPTV_PLAYER_ATTR_VID_RATIO,     //视频宽高比, 0代表4：3，1代表16：9    
-	IPTV_PLAYER_ATTR_VID_SAMPLETYPE,     //帧场模式, 1代表逐行源，0代表隔行源    
-	IPTV_PLAYER_ATTR_VIDAUDDIFF,     //音视频播放diff    
-	IPTV_PLAYER_ATTR_VID_BUF_SIZE,     //视频缓冲区大小    
-	IPTV_PLAYER_ATTR_VID_USED_SIZE,     //视频缓冲区使用大小    
-	IPTV_PLAYER_ATTR_AUD_BUF_SIZE,     //音频缓冲区大小    
-	IPTV_PLAYER_ATTR_AUD_USED_SIZE,     //音频缓冲区已使用大小    
-	IPTV_PLAYER_ATTR_AUD_SAMPLERATE,     //音频缓冲区已使用大小    
-	IPTV_PLAYER_ATTR_AUD_BITRATE,     //音频缓冲区已使用大小    
-	IPTV_PLAYER_ATTR_AUD_CHANNEL_NUM,     //音频缓冲区已使用大小    
-	IPTV_PLAYER_ATTR_BUTT,
-	IPTV_PLAYER_ATTR_V_FRAME_RATE = 0x100, //video frame rate
-	IPTV_PLAYER_ATTR_V_HEIGHT, //video height
-	IPTV_PLAYER_ATTR_V_WIDTH,  //video width
-	IPTV_PLAYER_ATTR_STREAM_BITRATE,//stream bitrate
-	IPTV_PLAYER_ATTR_CATON_TIMES,  //the num of caton
-	IPTV_PLAYER_ATTR_CATON_TIME,    //the time of caton total time
-}
-IPTV_ATTR_TYPE_e;
-
+typedef enum {
+    IPTV_PLAYER_ATTR_VID_ASPECT=0,  /* 视频宽高比 0--640*480，1--720*576，2--1280*720，3--1920*1080,4--3840*2160,5--others等标识指定分辨率*/
+    IPTV_PLAYER_ATTR_VID_RATIO,     //视频宽高比, 0代表4：3，1代表16：9
+    IPTV_PLAYER_ATTR_VID_SAMPLETYPE,     //帧场模式, 1代表逐行源，0代表隔行源
+    IPTV_PLAYER_ATTR_VIDAUDDIFF,     //音视频播放diff
+    IPTV_PLAYER_ATTR_VID_BUF_SIZE,     //视频缓冲区大小
+    IPTV_PLAYER_ATTR_VID_USED_SIZE,     //视频缓冲区使用大小
+    IPTV_PLAYER_ATTR_AUD_BUF_SIZE,     //音频缓冲区大小
+    IPTV_PLAYER_ATTR_AUD_USED_SIZE,     //音频缓冲区已使用大小
+    IPTV_PLAYER_ATTR_AUD_SAMPLERATE,     //音频缓冲区已使用大小
+    IPTV_PLAYER_ATTR_AUD_BITRATE,     //音频缓冲区已使用大小
+    IPTV_PLAYER_ATTR_AUD_CHANNEL_NUM,     //音频缓冲区已使用大小
+    IPTV_PLAYER_ATTR_BUTT,
+    IPTV_PLAYER_ATTR_V_FRAME_RATE = 0x100, //video frame rate
+    IPTV_PLAYER_ATTR_V_HEIGHT, //video height
+    IPTV_PLAYER_ATTR_V_WIDTH,  //video width
+    IPTV_PLAYER_ATTR_STREAM_BITRATE,//stream bitrate
+    IPTV_PLAYER_ATTR_CATON_TIMES,  //the num of caton
+    IPTV_PLAYER_ATTR_CATON_TIME,    //the time of caton total time
+}IPTV_ATTR_TYPE_e;
 
 typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
 
@@ -255,160 +251,149 @@ int Active_osd_viewport(int , int );
 class CTsPlayer;
 class ITsPlayer{
 public:
-	ITsPlayer(){}
-	virtual ~ITsPlayer(){}
+    ITsPlayer(){}
+    virtual ~ITsPlayer(){}
 public:
-	virtual int  GetPlayMode()=0;
-	//显示窗口
-	virtual int  SetVideoWindow(int x,int y,int width,int height)=0;
-	//x显示视频
-	virtual int  VideoShow(void)=0;
-	//隐藏视频
-	virtual int  VideoHide(void)=0;
-	//初始化视频参数
-	virtual void InitVideo(PVIDEO_PARA_T pVideoPara)=0;
-	//初始化音频参数
-	virtual void InitAudio(PAUDIO_PARA_T pAudioPara)=0;
-	//开始播放
-	virtual bool StartPlay()=0;
-	//把ts流写入
-	virtual int WriteData(unsigned char* pBuffer, unsigned int nSize)=0;
-	//暂停
-	virtual bool Pause()=0;
-	//继续播放
-	virtual bool Resume()=0;
-	//快进快退
-	virtual bool Fast()=0;
-	//停止快进快退
-	virtual bool StopFast()=0;
-	//停止
-	virtual bool Stop()=0;
+    virtual int  GetPlayMode()=0;
+    //显示窗口
+    virtual int  SetVideoWindow(int x,int y,int width,int height)=0;
+    //x显示视频
+    virtual int  VideoShow(void)=0;
+    //隐藏视频
+    virtual int  VideoHide(void)=0;
+    //初始化视频参数
+    virtual void InitVideo(PVIDEO_PARA_T pVideoPara)=0;
+    //初始化音频参数
+    virtual void InitAudio(PAUDIO_PARA_T pAudioPara)=0;
+    //开始播放
+    virtual bool StartPlay()=0;
+    //把ts流写入
+    virtual int WriteData(unsigned char* pBuffer, unsigned int nSize)=0;
+    //暂停
+    virtual bool Pause()=0;
+    //继续播放
+    virtual bool Resume()=0;
+    //快进快退
+    virtual bool Fast()=0;
+    //停止快进快退
+    virtual bool StopFast()=0;
+    //停止
+    virtual bool Stop()=0;
     //定位
     virtual bool Seek()=0;
     //设定音量
-	//设定音量
-	virtual bool SetVolume(int volume)=0;
-	//获取音量
-	virtual int GetVolume()=0;
-	//设定视频显示比例
-	virtual bool SetRatio(int nRatio)=0;
-	//获取当前声道
-	virtual int GetAudioBalance()=0;
-	//设置声道
-	virtual bool SetAudioBalance(int nAudioBalance)=0;
-	//获取视频分辩率
-	virtual void GetVideoPixels(int& width, int& height)=0;
-	virtual bool IsSoftFit()=0;
-	virtual void SetEPGSize(int w, int h)=0;
+    virtual bool SetVolume(int volume)=0;
+    //获取音量
+    virtual int GetVolume()=0;
+    //设定视频显示比例
+    virtual bool SetRatio(int nRatio)=0;
+    //获取当前声道
+    virtual int GetAudioBalance()=0;
+    //设置声道
+    virtual bool SetAudioBalance(int nAudioBalance)=0;
+    //获取视频分辩率
+    virtual void GetVideoPixels(int& width, int& height)=0;
+    virtual bool IsSoftFit()=0;
+    virtual void SetEPGSize(int w, int h)=0;
     virtual void SetSurface(Surface* pSurface)=0;
-	
-	//16位色深需要设置colorkey来透出视频；
-     virtual void SwitchAudioTrack(int pid) = 0;
-     virtual void SwitchSubtitle(int pid) = 0;
-     virtual void SetProperty(int nType, int nSub, int nValue) = 0;
-     virtual int64_t GetCurrentPlayTime() = 0;
-     virtual void leaveChannel() = 0;
-	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
+
+    //16位色深需要设置colorkey来透出视频；
+    virtual void SwitchAudioTrack(int pid) = 0;
+    virtual void SwitchSubtitle(int pid) = 0;
+    virtual void SetProperty(int nType, int nSub, int nValue) = 0;
+    virtual int64_t GetCurrentPlayTime() = 0;
+    virtual void leaveChannel() = 0;
+    virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
 #ifdef TELECOM_QOS_SUPPORT
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
 #endif
-	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
+    virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
     virtual void ClearLastFrame() = 0;
-     virtual void BlackOut(int EarseLastFrame)= 0;
+    virtual void BlackOut(int EarseLastFrame)= 0;
     virtual bool SetErrorRecovery(int mode) = 0;
     virtual void GetAvbufStatus(PAVBUF_STATUS pstatus) = 0;
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
     virtual int GetVideoDropNumber() = 0;
-	virtual int GetVideoTotalNumber() = 0;
-	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
-	virtual bool SubtitleShowHide(bool bShow) = 0;
+    virtual int GetVideoTotalNumber() = 0;
+    virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
+    virtual bool SubtitleShowHide(bool bShow) = 0;
 };
 
 class CTsPlayer : public ITsPlayer
 {
 public:
-	CTsPlayer();
+    CTsPlayer();
 #ifdef USE_OPTEEOS
-	CTsPlayer(bool DRMMode);
-	CTsPlayer(bool DRMMode, bool omx_player);
+    CTsPlayer(bool DRMMode);
+    CTsPlayer(bool DRMMode, bool omx_player);
 #else
-	CTsPlayer(bool omx_player);
+    CTsPlayer(bool omx_player);
 #endif
-	virtual ~CTsPlayer();
+    virtual ~CTsPlayer();
 public:
-	//取得播放模式
-	virtual int  GetPlayMode();
-	//显示窗口
-	virtual int  SetVideoWindow(int x,int y,int width,int height);
-	//x显示视频
-	virtual int  VideoShow(void);
-	//隐藏视频
-	virtual int  VideoHide(void);
-	//初始化视频参数
-	virtual void InitVideo(PVIDEO_PARA_T pVideoPara);
-	//初始化音频参数
-	virtual void InitAudio(PAUDIO_PARA_T pAudioPara);
-	//
-	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara);
-	//开始播放
-	virtual bool StartPlay();
-	//把ts流写入
-	virtual int WriteData(unsigned char* pBuffer, unsigned int nSize);
-	//暂停
-	virtual bool Pause();
-	//继续播放
-	virtual bool Resume();
-	//快进快退
-	virtual bool Fast();
-	//停止快进快退
-	virtual bool StopFast();
-	//停止
-	virtual bool Stop();
-	//定位
-    	virtual bool Seek();
-        //设定音量
-	//设定音量
-	virtual bool SetVolume(int volume);
-	//获取音量
-	virtual int GetVolume();
-	//设定视频显示比例
-	virtual bool SetRatio(int nRatio);
-	//获取当前声道
-	virtual int GetAudioBalance();
-	//设置声道
-	virtual bool SetAudioBalance(int nAudioBalance);
-	//获取视频分辩率
-	virtual void GetVideoPixels(int& width, int& height);
-	virtual bool IsSoftFit();
-	virtual void SetEPGSize(int w, int h);
+    //取得播放模式
+    virtual int  GetPlayMode();
+    //显示窗口
+    virtual int  SetVideoWindow(int x,int y,int width,int height);
+    //x显示视频
+    virtual int  VideoShow(void);
+    //隐藏视频
+    virtual int  VideoHide(void);
+    //初始化视频参数
+    virtual void InitVideo(PVIDEO_PARA_T pVideoPara);
+    //初始化音频参数
+    virtual void InitAudio(PAUDIO_PARA_T pAudioPara);
+    virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara);
+    //开始播放
+    virtual bool StartPlay();
+    //把ts流写入
+    virtual int WriteData(unsigned char* pBuffer, unsigned int nSize);
+    //暂停
+    virtual bool Pause();
+    //继续播放
+    virtual bool Resume();
+    //快进快退
+    virtual bool Fast();
+    //停止快进快退
+    virtual bool StopFast();
+    //停止
+    virtual bool Stop();
+    //定位
+    virtual bool Seek();
+    //设定音量
+    virtual bool SetVolume(int volume);
+    //获取音量
+    virtual int GetVolume();
+    //设定视频显示比例
+    virtual bool SetRatio(int nRatio);
+    //获取当前声道
+    virtual int GetAudioBalance();
+    //设置声道
+    virtual bool SetAudioBalance(int nAudioBalance);
+    //获取视频分辩率
+    virtual void GetVideoPixels(int& width, int& height);
+    virtual bool IsSoftFit();
+    virtual void SetEPGSize(int w, int h);
     virtual void SetSurface(Surface* pSurface);
-
-	//16位色深需要设置colorkey来透出视频；
-
-    virtual void SwitchAudioTrack(int pid) ;
-
-    virtual void SwitchSubtitle(int pid) ;
-    
-    virtual void SetProperty(int nType, int nSub, int nValue) ;
-    
-    virtual int64_t GetCurrentPlayTime() ;
-    
-    virtual void leaveChannel() ;
-	virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
+    //16位色深需要设置colorkey来透出视频；
+    virtual void SwitchAudioTrack(int pid);
+    virtual void SwitchSubtitle(int pid);
+    virtual void SetProperty(int nType, int nSub, int nValue);
+    virtual int64_t GetCurrentPlayTime();
+    virtual void leaveChannel();
+    virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
 #ifdef TELECOM_QOS_SUPPORT
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
 #endif
-	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
-    virtual void ClearLastFrame() ;
-
-    virtual void BlackOut(int EarseLastFrame) ;
+    virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
+    virtual void ClearLastFrame();
+    virtual void BlackOut(int EarseLastFrame);
     virtual bool SetErrorRecovery(int mode);
-
     virtual void GetAvbufStatus(PAVBUF_STATUS pstatus);
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
-	virtual bool SubtitleShowHide(bool bShow);
+    virtual bool SubtitleShowHide(bool bShow);
     virtual int GetVideoDropNumber();
     virtual void Report_video_paramters();
     //virtual void Report_Audio_paramters();
@@ -417,30 +402,30 @@ public:
     virtual int updateCTCInfo();
     /*end add*/
     bool mIsOmxPlayer;
-	
+
 protected:
-	int		m_bLeaveChannel;
-	
+    int		m_bLeaveChannel;
+
 private:
-	AUDIO_PARA_T a_aPara[MAX_AUDIO_PARAM_SIZE];
-	SUBTITLE_PARA_T sPara[MAX_SUBTITLE_PARAM_SIZE];
-	VIDEO_PARA_T vPara;	
-	int player_pid;
-	codec_para_t codec;
-	codec_para_t *pcodec;
-	codec_para_t    *vcodec;
-    codec_para_t    *acodec;
-    codec_para_t    *scodec;
-	bool		m_bIsPlay;
-	int			m_nOsdBpp;
-	int			m_nAudioBalance;
-	int			m_nVolume;
-	int	m_nEPGWidth;
-	int 	m_nEPGHeight;
-	bool	m_bFast;
-	bool 	m_bSetEPGSize;
-    bool    m_bWrFirstPkg;
-    int	    m_nMode;
+    AUDIO_PARA_T a_aPara[MAX_AUDIO_PARAM_SIZE];
+    SUBTITLE_PARA_T sPara[MAX_SUBTITLE_PARAM_SIZE];
+    VIDEO_PARA_T vPara;	
+    int player_pid;
+    codec_para_t  codec;
+    codec_para_t  *pcodec;
+    codec_para_t  *vcodec;
+    codec_para_t  *acodec;
+    codec_para_t  *scodec;
+    bool		  m_bIsPlay;
+    int			  m_nOsdBpp;
+    int			  m_nAudioBalance;
+    int			  m_nVolume;
+    int           m_nEPGWidth;
+    int           m_nEPGHeight;
+    bool          m_bFast;
+    bool          m_bSetEPGSize;
+    bool          m_bWrFirstPkg;
+    int	          m_nMode;
 
 #ifdef TELECOM_QOS_SUPPORT
     int     mLastVdecInfoNum;
@@ -478,17 +463,17 @@ private:
 #endif
 
     bool    m_isBlackoutPolicy;
-    bool m_bchangeH264to4k;
-    lock_t mutex_lp;
+    bool    m_bchangeH264to4k;
+    lock_t  mutex_lp;
     void checkVdecstate();
-    bool        m_bIsPause;
-    virtual bool  iStartPlay( );
-    virtual bool  iStop( );
+    bool    m_bIsPause;
+    virtual bool iStartPlay( );
+    virtual bool iStop( );
     int64_t m_PreviousOverflowTime;
-	size_t mInputQueueSize;
-	ctsplayer_state m_sCtsplayerState;
-	void update_caton_info();
-	void update_stream_bitrate();
+    size_t  mInputQueueSize;
+    ctsplayer_state m_sCtsplayerState;
+    void update_caton_info();
+    void update_stream_bitrate();
 };
 
 #endif

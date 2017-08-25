@@ -1634,11 +1634,8 @@ bool CTsPlayer::Fast()
     int ret;
 
     LOGI("Fast");
-
-	ret = amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/chip_fast_flag", 1);
-    if(ret)
-        return false;
-
+    
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/chip_fast_flag", 1);
     if(m_bFast){
       LOGI("Last is Fast");
       return true;
@@ -1685,10 +1682,7 @@ bool CTsPlayer::StopFast()
 {
     int ret;
 
-	ret = amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/chip_fast_flag", 0);
-    if(ret)
-        return false;
-
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/chip_fast_flag", 0);
     if(!m_bFast){
       LOGI("Last is None fast");
       return true;

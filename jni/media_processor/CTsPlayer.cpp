@@ -1141,7 +1141,8 @@ bool CTsPlayer::StartPlay(){
 #endif
         memset(&m_sCtsplayerState, 0, sizeof(struct ctsplayer_state));
 		m_sCtsplayerState.last_underflow = get_sysfs_int("/sys/module/amvideo/parameters/underflow");
-        video_ratio = 0;
+        video_ratio = -1;
+        m_sCtsplayerState.video_ratio = -1;
         Video_frame_format = 0;
         video_rWH = 0;
 
@@ -1834,6 +1835,7 @@ bool CTsPlayer::iStop()
         }
 #endif
         m_bWrFirstPkg = true;
+        video_ratio = 0;
         //add_di();
         if (pcodec->has_sub == 1)
             subtitleClose();
@@ -2691,6 +2693,13 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
         if (tsplayer->m_bIsPlay) {
             tsplayer->update_caton_info();
             tsplayer->update_stream_bitrate();
+            if (tsplayer->m_sCtsplayerState.video_width == 0) {
+                tsplayer->Report_video_paramters();
+                tsplayer->updateCTCInfo();
+                LOGI("first updateCTCInfo,width :%d,height:%d\n",
+                    tsplayer->m_sCtsplayerState.video_width,
+                    tsplayer->m_sCtsplayerState.video_height);
+            }
             checkcount++;
             if (lp_trylock(&tsplayer->mutex) != 0) {
                 continue;
@@ -2837,6 +2846,10 @@ void CTsPlayer::Report_video_paramters()
     int rVideoWidth = 0;
     char tVideoFFMode[64] = {0};
     float videoWH = 0;
+
+    if (!get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")) {
+        return;
+    }
 
     rVideoHeight = amsysfs_get_sysfs_int("/sys/class/video/frame_height");
     rVideoWidth = amsysfs_get_sysfs_int("/sys/class/video/frame_width");
@@ -2991,7 +3004,10 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.vpts = (int64_t)videopts;
         m_sCtsplayerState.video_width = video_status.width;
         m_sCtsplayerState.video_height = video_status.height;
-        m_sCtsplayerState.video_ratio = video_ratio;
+        if (video_ratio == -1)
+            Report_video_paramters();
+        else
+            m_sCtsplayerState.video_ratio = video_ratio;
         m_sCtsplayerState.video_rWH= video_rWH;
         m_sCtsplayerState.Video_frame_format = Video_frame_format;
         m_sCtsplayerState.vbuf_used = video_buf.data_len;

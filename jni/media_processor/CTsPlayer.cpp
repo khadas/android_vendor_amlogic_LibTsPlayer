@@ -3004,10 +3004,25 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.vpts = (int64_t)videopts;
         m_sCtsplayerState.video_width = video_status.width;
         m_sCtsplayerState.video_height = video_status.height;
-        if (video_ratio == -1)
-            Report_video_paramters();
-        else
-            m_sCtsplayerState.video_ratio = video_ratio;
+        if (( m_sCtsplayerState.video_width==640) &&
+            (m_sCtsplayerState.video_height==480)) {
+            video_ratio = 0;
+        } else if (( m_sCtsplayerState.video_width==720) &&
+            (m_sCtsplayerState.video_height==576)) {
+            video_ratio = 1;
+        } else if (( m_sCtsplayerState.video_width==1280) &&
+            (m_sCtsplayerState.video_height==720)) {
+            video_ratio = 2;
+        } else if (( m_sCtsplayerState.video_width==1920) &&
+            (m_sCtsplayerState.video_height==1080)) {
+            video_ratio = 3;
+        } else if (( m_sCtsplayerState.video_width==3840) &&
+            (m_sCtsplayerState.video_height==2160)) {
+            video_ratio = 4;
+        } else {
+            video_ratio = 5;
+        }
+        m_sCtsplayerState.video_ratio = video_ratio;
         m_sCtsplayerState.video_rWH= video_rWH;
         m_sCtsplayerState.Video_frame_format = Video_frame_format;
         m_sCtsplayerState.vbuf_used = video_buf.data_len;

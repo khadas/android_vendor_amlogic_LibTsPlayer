@@ -2355,7 +2355,7 @@ int64_t CTsPlayer::GetCurrentPlayTime()
 void CTsPlayer::leaveChannel()
 {
     LOGI("leaveChannel be call\n");
-    iStop();
+    Stop();
 }
 
 void CTsPlayer::SetSurface(Surface* pSurface)

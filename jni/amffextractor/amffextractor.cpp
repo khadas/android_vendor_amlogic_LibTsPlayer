@@ -255,6 +255,7 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 {
 	AVPacket  packet;
 	int temp_size = 0;
+    int write_max = 20;
 	int64_t pts;		
 	if (!inited) {
 		return;
@@ -319,7 +320,7 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
       }
 #endif
 
-		for(int retry_count=0; retry_count<20; retry_count++) {
+		for(int retry_count=0; retry_count < write_max; retry_count++) {
             ret = codec_write(vcodec, packet.data + temp_size, packet.size - temp_size);
             if((ret < 0) || (ret > packet.size)) {
                 if(ret < 0 && errno == EAGAIN) {
@@ -332,6 +333,10 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 				if(am_debug)
                 	ALOGV("Video Read and write: data nSize is %d! temp_size=%d,retry_number:%d\n", 
 							packet.size, temp_size,retry_count);
+                if(retry_count == write_max -1 && temp_size < packet.size) {
+                    ALOGV("not write complete,increase write_max\n");
+                    write_max += 10;
+                }
                 if(temp_size >= packet.size) {
                     temp_size = packet.size;
                     break;
@@ -361,7 +366,7 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 		    packet.size+=sizeof(drminfo_t);
 	       	}
 #endif
-		for(int retry_count=0; retry_count<20; retry_count++) {
+		for(int retry_count=0; retry_count < write_max; retry_count++) {
             ret = codec_write(acodec, packet.data + temp_size, packet.size-temp_size);
             if((ret < 0) || (ret > packet.size)) {
                 if(ret < 0 && errno == EAGAIN) {
@@ -374,6 +379,11 @@ void am_ffextractor_read_packet(codec_para_t *vcodec, codec_para_t *acodec)
 				if(am_debug)
                 	ALOGV("Audio Read and write: data nSize is %d! temp_size=%d,retry_count:%d\n", 
 							packet.size, temp_size,retry_count);
+                if(retry_count == write_max - 1 && temp_size < packet.size) {
+                    ALOGV("not write complete,increase write_max\n");
+                    write_max += 10;
+                }
+
                 if(temp_size >= packet.size) {
                     temp_size = packet.size;
                     break;

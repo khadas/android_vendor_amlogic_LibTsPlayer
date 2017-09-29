@@ -1446,7 +1446,7 @@ bool CTsPlayer::iStartPlay()
         subtitleResetForSeek();
         subtitleOpen("", this);// "" fit for api param, no matter what the path is for inner subtitle.
         subtitleShow();
-        setSubRatioAuto();
+        //setSubRatioAuto();// 1.this function in subtitleservice is do nothing;2.don't free thread resource
     }
     lp_unlock(&mutex);
     return !ret;

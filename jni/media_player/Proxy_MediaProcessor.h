@@ -25,7 +25,7 @@ using namespace android;
 class Proxy_MediaProcessor
 {
 	protected:
-		ITsPlayer* ctc_MediaControl;
+		sp<ITsPlayer> ctc_MediaControl;
 	public:
 		Proxy_MediaProcessor(int use_omx_decoder = 0);
 		~Proxy_MediaProcessor();

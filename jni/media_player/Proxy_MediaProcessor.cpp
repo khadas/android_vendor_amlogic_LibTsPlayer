@@ -16,7 +16,7 @@ Proxy_MediaProcessor::Proxy_MediaProcessor(int use_omx_decoder)
 
 Proxy_MediaProcessor::~Proxy_MediaProcessor()
 {
-	delete ctc_MediaControl;
+	ctc_MediaControl.clear();
 }
 
 int Proxy_MediaProcessor::Proxy_GetMediaControlVersion()

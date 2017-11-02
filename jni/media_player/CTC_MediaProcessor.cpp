@@ -308,13 +308,13 @@ jint Java_com_ctc_MediaProcessorDemoActivity_nativeInit(JNIEnv* env, jobject thi
 	
 /*	
 	sParam[0].pid=0x106;
-	sParam[0].sub_type=CODEC_ID_DVB_SUBTITLE;
+	sParam[0].sub_type=CTC_CODEC_ID_DVB_SUBTITLE;
 	sParam[1].pid=0x107;
-	sParam[1].sub_type=CODEC_ID_DVB_SUBTITLE;
+	sParam[1].sub_type=CTC_CODEC_ID_DVB_SUBTITLE;
 	sParam[2].pid=0x108;
-	sParam[2].sub_type=CODEC_ID_DVB_SUBTITLE;
+	sParam[2].sub_type=CTC_CODEC_ID_DVB_SUBTITLE;
 	sParam[3].pid=0x109;
-	sParam[3].sub_type=CODEC_ID_DVB_SUBTITLE;*/
+	sParam[3].sub_type=CTC_CODEC_ID_DVB_SUBTITLE;*/
 	
 	proxy_mediaProcessor[use_omx_decoder]->Proxy_InitSubtitle(sParam);
 	ALOGI("Proxy_InitSubtitle");

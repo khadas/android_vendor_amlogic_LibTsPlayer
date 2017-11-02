@@ -19,6 +19,7 @@ class CTC_MediaProcessor:public CTsPlayer
 typedef enum {
     PLAYER_TYPE_NORMAL = 0,
     PLAYER_TYPE_OMX,
+    PLAYER_TYPE_HWOMX,
 } player_type_t;
 
 ITsPlayer* GetMediaProcessor();  // { return NULL; }

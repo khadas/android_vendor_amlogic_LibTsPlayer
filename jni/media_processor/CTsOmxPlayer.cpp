@@ -304,21 +304,6 @@ void CTsOmxPlayer::leaveChannel() {
 
 int CTsOmxPlayer::VideoHide(void) {
     LOG_LINE();
-    if (!mKeepLastFrame) {
-        LOG_LINE();
-        if (mSoftComposerClient != NULL) {
-            mSoftComposerClient->dispose();
-            mSoftComposerClient = NULL;
-        }
-        Ctc_SoftSurface = NULL;
-        Ctc_SoftControl = NULL;
-        Ctc_SoftComposerClient = NULL;
-    } else {
-        Ctc_SoftSurface = mSoftSurface;
-        Ctc_SoftControl = mSoftControl;
-        Ctc_SoftComposerClient = mSoftComposerClient;
-    }
-
     if (mSoftControl != NULL) {
         SurfaceComposerClient::openGlobalTransaction();
         CHECK_EQ(mSoftControl->hide(), (status_t)OK);

@@ -65,6 +65,7 @@ LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
 LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice
 LOCAL_SHARED_LIBRARIES +=libgui
 LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor libamFFExtractor
+LOCAL_SHARED_LIBRARIES +=libliveplayer
 
 ifeq ($(TARGET_USE_OPTEEOS),true)
 LOCAL_SHARED_LIBRARIES += libtelecom_iptv

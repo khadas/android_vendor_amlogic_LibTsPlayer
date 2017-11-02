@@ -20,7 +20,6 @@ extern "C" {
 #include <amports/aformat.h>
 #include <amports/amstream.h>
 #include <codec.h>
-#include <codec_info.h>
 }
 
 #include <string.h>
@@ -53,6 +52,15 @@ typedef struct{
 #define MAX_AUDIO_PARAM_SIZE 10
 #define MAX_SUBTITLE_PARAM_SIZE 10
 
+typedef enum
+{
+    PLAYER_STREAMTYPE_NULL		= -1,
+	PLAYER_STREAMTYPE_TS,					//TS鏁版嵁
+    PLAYER_STREAMTYPE_VIDEO,				//ES Video鏁版嵁
+    PLAYER_STREAMTYPE_AUDIO,				//ES Audio鏁版嵁
+    PLAYER_STREAMTYPE_SUBTITLE,
+    PLAYER_STREAMTYPE_MAX,
+}PLAYER_STREAMTYPE_E;
 typedef struct{
 	unsigned short	pid;//pid
 	int				nVideoWidth;//视频宽度
@@ -60,6 +68,8 @@ typedef struct{
 	int				nFrameRate;//帧率
 	vformat_t		vFmt;//视频格式
 	unsigned long	cFmt;//编码格式
+	uint32_t		nExtraSize;
+	uint8_t			*pExtraData;
 }VIDEO_PARA_T, *PVIDEO_PARA_T;
 typedef struct{
 	unsigned short	pid;//pid
@@ -73,16 +83,16 @@ typedef struct{
 #ifndef AVCODEC_AVCODEC_H
 typedef enum {
 	/* subtitle codecs */
-    CODEC_ID_DVD_SUBTITLE= 0x17000,
-    CODEC_ID_DVB_SUBTITLE,
-    CODEC_ID_TEXT,  ///< raw UTF-8 text
-    CODEC_ID_XSUB,
-    CODEC_ID_SSA,
-    CODEC_ID_MOV_TEXT,
-    CODEC_ID_HDMV_PGS_SUBTITLE,
-    CODEC_ID_DVB_TELETEXT,
-    CODEC_ID_SRT,
-    CODEC_ID_MICRODVD,
+    CTC_CODEC_ID_DVD_SUBTITLE= 0x17000,
+    CTC_CODEC_ID_DVB_SUBTITLE,
+    CTC_CODEC_ID_TEXT,  ///< raw UTF-8 text
+    CTC_CODEC_ID_XSUB,
+    CTC_CODEC_ID_SSA,
+    CTC_CODEC_ID_MOV_TEXT,
+    CTC_CODEC_ID_HDMV_PGS_SUBTITLE,
+    CTC_CODEC_ID_DVB_TELETEXT,
+    CTC_CODEC_ID_SRT,
+    CTC_CODEC_ID_MICRODVD,
 }SUB_TYPE;
 #endif
 typedef struct{
@@ -105,10 +115,10 @@ typedef struct ctsplayer_state {
     // setting
     int64_t last_update_time;
     /*for caton info*/
-    struct codec_quality_info quality_info;
     int catoning;
     int caton_start_underflow;
     int64_t caton_start_time;
+    int last_underflow;
     /*for calc avg stream bitrate*/
     int64_t bytes_record_starttime_ms;
     int64_t bytes_record_start;
@@ -132,13 +142,11 @@ typedef struct ctsplayer_state {
     int video_height;
     int vbuf_size;
     int vbuf_used;
-    int vdec_total;
     int vdec_error;
     int vdec_drop;
     int vdec_underflow;
     int vpts_error;
     int frame_rate;
-    int current_fps;
 
     // audio info
     int64_t apts;
@@ -202,7 +210,7 @@ typedef enum {
 
 typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
 
-
+#ifdef TELECOM_QOS_SUPPORT
 typedef enum {
     VID_FRAME_TYPE_UNKNOWN = 0,
     VID_FRAME_TYPE_I,
@@ -236,6 +244,7 @@ typedef enum {
 }IPTV_PLAYER_PARAM_Evt_e;
 
 typedef void (*IPTV_PLAYER_PARAM_EVENT_CB)( void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, void *pParam);
+#endif
 
 typedef struct {
     int abuf_size;
@@ -251,7 +260,7 @@ int enable_gl_2xscale(const char *);
 int Active_osd_viewport(int , int );
 
 class CTsPlayer;
-class ITsPlayer{
+class ITsPlayer: public RefBase {
 public:
     ITsPlayer(){}
     virtual ~ITsPlayer(){}
@@ -302,24 +311,34 @@ public:
     //16位色深需要设置colorkey来透出视频；
     virtual void SwitchAudioTrack(int pid) = 0;
     virtual void SwitchSubtitle(int pid) = 0;
+    virtual bool SubtitleShowHide(bool bShow) = 0;
     virtual void SetProperty(int nType, int nSub, int nValue) = 0;
     virtual int64_t GetCurrentPlayTime() = 0;
     virtual void leaveChannel() = 0;
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
-
+#ifdef TELECOM_QOS_SUPPORT
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
-
+#endif
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
+    virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara)= 0;
     virtual void ClearLastFrame() = 0;
     virtual void BlackOut(int EarseLastFrame)= 0;
     virtual bool SetErrorRecovery(int mode) = 0;
     virtual void GetAvbufStatus(PAVBUF_STATUS pstatus) = 0;
+    virtual void SetVideoHole(int x,int y,int w,int h) = 0;
+    virtual void writeScaleValue() = 0;
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
     virtual int GetVideoDropNumber() = 0;
     virtual int GetVideoTotalNumber() = 0;
-    virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
-    virtual bool SubtitleShowHide(bool bShow) = 0;
+	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
+	virtual int GetCurrentVidPTS(unsigned long long *pPTS)=0;
+	virtual void GetVideoInfo(int *width, int *height, int *ratio)=0;
+	virtual int GetPlayerInstanceNo() = 0;
+	virtual void ExecuteCmd(const char* cmd_str) = 0;
+	virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp) = 0;
+    virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL) = 0;
+	/*end add*/
 };
 
 class CTsPlayer : public ITsPlayer
@@ -349,6 +368,7 @@ public:
     virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara);
     //开始播放
     virtual bool StartPlay();
+    virtual bool StartRender();
     //把ts流写入
     virtual int WriteData(unsigned char* pBuffer, unsigned int nSize);
     //暂停
@@ -381,26 +401,37 @@ public:
     //16位色深需要设置colorkey来透出视频；
     virtual void SwitchAudioTrack(int pid);
     virtual void SwitchSubtitle(int pid);
+    virtual bool SubtitleShowHide(bool bShow);
     virtual void SetProperty(int nType, int nSub, int nValue);
     virtual int64_t GetCurrentPlayTime();
     virtual void leaveChannel();
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
-
+#ifdef TELECOM_QOS_SUPPORT
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
-
+#endif
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
+    virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara);
     virtual void ClearLastFrame();
     virtual void BlackOut(int EarseLastFrame);
     virtual bool SetErrorRecovery(int mode);
     virtual void GetAvbufStatus(PAVBUF_STATUS pstatus);
+    virtual void SetVideoHole(int x,int y,int w,int h);
+    virtual void writeScaleValue();
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
-    virtual bool SubtitleShowHide(bool bShow);
+
     virtual int GetVideoDropNumber();
+    virtual void Report_video_paramters();
     //virtual void Report_Audio_paramters();
     virtual int GetVideoTotalNumber();
+	virtual int GetCurrentVidPTS(unsigned long long *pPTS);
+	virtual void GetVideoInfo(int *width, int *height, int *ratio);
+	virtual int GetPlayerInstanceNo();
+	virtual void ExecuteCmd(const char* cmd_str);
     virtual void readExtractor();
     virtual int updateCTCInfo();
+    virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp);
+    virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL) {return 0;}
     /*end add*/
     bool mIsOmxPlayer;
 
@@ -427,12 +458,18 @@ private:
     bool          m_bSetEPGSize;
     bool          m_bWrFirstPkg;
     int	          m_nMode;
+
+#ifdef TELECOM_QOS_SUPPORT
+    int     mLastVdecInfoNum;
+#endif
+
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
-    
+
+#ifdef TELECOM_QOS_SUPPORT
     IPTV_PLAYER_PARAM_EVENT_CB  pfunc_player_param_evt;
     void *player_evt_param_handler;
-
+#endif
 
     unsigned int writecount ;
     int64_t m_StartPlayTimePoint;
@@ -440,14 +477,23 @@ private:
     FILE*	  m_fp;
     lock_t  mutex;
     pthread_t mThread;
+
+#ifdef TELECOM_QOS_SUPPORT
+    pthread_t mVdecThread;
+#endif
+
     pthread_t readThread;
     virtual void checkAbend();
     virtual void checkBuffLevel();
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
     static void *threadReadPacket(void *pthis);
-    virtual int ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos);
-    
+
+#ifdef TELECOM_QOS_SUPPORT
+    static void *threadGetVideoInfo(void *pthis);
+    int GetVideoFrameInfo(void *pthis);
+#endif
+
     bool    m_isBlackoutPolicy;
     bool    m_bchangeH264to4k;
     lock_t  mutex_lp;
@@ -458,10 +504,7 @@ private:
     int64_t m_PreviousOverflowTime;
     size_t  mInputQueueSize;
     ctsplayer_state m_sCtsplayerState;
-    pthread_t mInfoThread;
-    int mLastVdecInfoNum;
-    static void * threadReportInfo(void *pthis);
-    void update_caton_info(struct av_param_info_t * info);
+    void update_caton_info();
     void update_stream_bitrate();
 };
 

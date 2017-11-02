@@ -104,6 +104,6 @@ typedef enum {
 							((afmt == AFORMAT_AAC_LATM || afmt == AFORMAT_AAC) \
 							 &&codec->profile == 0/* FF_PROFILE_AAC_MAIN*/)
 
-#define IS_SUB_NEED_PREFEED_HEADER(sfmt) ((sfmt == CODEC_ID_DVD_SUBTITLE) )
+#define IS_SUB_NEED_PREFEED_HEADER(sfmt) ((sfmt == CTC_CODEC_ID_DVD_SUBTITLE) )
 #endif /* AFORMAT_H */
 

@@ -7,6 +7,14 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <utils/Log.h>
+#include <gui/ISurfaceComposer.h>
+#include <gui/SurfaceComposerClient.h>
+#include <android/native_window.h>
+
+#include <gui/Surface.h>
+#include <ui/DisplayInfo.h>
+
+
 #include <cutils/properties.h>
 #include <CTC_MediaControl.h>
 #define kReadSize (64*1024)
@@ -225,6 +233,42 @@ void* doWrite(void *arg) {
     }
     return NULL;
 }
+sp<SurfaceControl> mSoftControl[9];
+sp<Surface> mSoftSurface[9];
+sp<SurfaceComposerClient> mSoftComposerClient[9];
+
+void createSurface(int mInstanceNo, int x, int y, int weight, int high) {
+    mSoftComposerClient[mInstanceNo] = new SurfaceComposerClient;
+    mSoftComposerClient[mInstanceNo]->initCheck();
+
+//    sp<IBinder> display(SurfaceComposerClient::getBuiltInDisplay(ISurfaceComposer::eDisplayIdMain));
+//    DisplayInfo info;
+//    SurfaceComposerClient::getDisplayInfo(display, &info);
+//    ALOGI("CTsHwOmxPlayer::mInstanceNo=%d,createWindowSurface: %d, %d, %d, %d\n", mInstanceNo, mSoftNativeX, mSoftNativeY, mSoftNativeWidth, mSoftNativeHeight);
+
+    mSoftControl[mInstanceNo] = mSoftComposerClient[mInstanceNo]->createSurface(
+                String8("ctc"),
+                weight,
+                high,
+                PIXEL_FORMAT_RGB_565,
+                0);
+	ALOGD("createSurface:x = %d, y = %d, weight = %d,high = %d", x, y, weight,high);
+    if (mSoftControl[mInstanceNo] == NULL)
+		return;
+    mSoftControl[mInstanceNo]->isValid();
+
+    SurfaceComposerClient::openGlobalTransaction();
+
+    mSoftControl[mInstanceNo]->setLayer(INT_MAX);
+    mSoftControl[mInstanceNo]->show();
+    mSoftControl[mInstanceNo]->setPosition(x, y);
+    SurfaceComposerClient::closeGlobalTransaction();
+
+    mSoftSurface[mInstanceNo] = mSoftControl[mInstanceNo]->getSurface();
+    if (mSoftSurface[mInstanceNo] == NULL)
+		return;
+	player[mInstanceNo]->SetSurface(mSoftSurface[mInstanceNo].get());
+}
 
 int main(int argc, char* argv[]) {
     ALOGD("start ctc_test");
@@ -266,9 +310,10 @@ int main(int argc, char* argv[]) {
                 sprintf(filename, "/storage/external_storage/sda1/demo_video_mp4/test%d.ts", i);
             mSourceFD[i] = open(filename, O_RDONLY);
             get_info_av(filename, vidPara+i, audPara+i);
-            player[i] = GetMediaControl(2);
+            player[i] = GetMediaControl(0);
             player[i]->InitVideo(vidPara+i);
             player[i]->InitAudio(audPara+i);
+			createSurface(i, x, y, w, h);
             player[i]->SetVideoWindow(x, y, w, h);
             player[i]->StartPlay();
             LOG_LINE();
@@ -291,6 +336,7 @@ int main(int argc, char* argv[]) {
             //player[i]->InitVideo(vidPara+i);
             //player[i]->InitAudio(audPara+i);
             player[i]->setDataSource(filename);
+			createSurface(i, x, y, w, h);
             player[i]->SetVideoWindow(x, y, w, h);
             player[i]->StartPlay();
         }

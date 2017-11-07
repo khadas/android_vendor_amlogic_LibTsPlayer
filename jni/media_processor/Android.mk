@@ -62,10 +62,14 @@ LOCAL_STATIC_LIBRARIES := libamcodec libamadec
 
 LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils libamsubdec
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
-LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice
+LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice libui
 LOCAL_SHARED_LIBRARIES +=libgui
 LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor libamFFExtractor
 LOCAL_SHARED_LIBRARIES +=libliveplayer
+
+ifeq ($(NEED_AML_CTC_MIDDLE),true)
+LOCAL_SHARED_LIBRARIES += libCTC_AmMediaControl libCTC_AmMediaProcessor libffmpeg30
+endif
 
 ifeq ($(TARGET_USE_OPTEEOS),true)
 LOCAL_SHARED_LIBRARIES += libtelecom_iptv

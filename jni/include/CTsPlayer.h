@@ -419,6 +419,7 @@ public:
     virtual void writeScaleValue();
     virtual int GetRealTimeFrameRate();
     virtual int GetVideoFrameRate();
+    virtual void update_nativewindow();
 
     virtual int GetVideoDropNumber();
     virtual void Report_video_paramters();
@@ -458,6 +459,9 @@ private:
     bool          m_bSetEPGSize;
     bool          m_bWrFirstPkg;
     int	          m_nMode;
+    sp<ANativeWindow> mNativeWindow;
+    int width_old,width_new;
+    int height_old,height_new;
 
 #ifdef TELECOM_QOS_SUPPORT
     int     mLastVdecInfoNum;

@@ -23,7 +23,7 @@ LOCAL_C_INCLUDES := \
 	$(TOP)/frameworks/native/include/media/openmax \
 
 LOCAL_SHARED_LIBRARIES := \
-	libCTC_MediaProcessor liblog libbinder libutils libcutils libamffmpeg
+	libCTC_MediaProcessor libstagefright_foundation libui libgui liblog libbinder libutils libcutils libamffmpeg
 LOCAL_CFLAGS += -Wno-multichar
 
 LOCAL_MODULE_TAGS := optional

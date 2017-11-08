@@ -374,14 +374,9 @@ CTsPlayer::CTsPlayer()
     prop_esdata = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-//    property_get("media.ctcplayer.enable", value, "0");
-//    prop_multi_play = atoi(value);
 	if (property_get("media.ctcplayer.enable", value, NULL) > 0)
         prop_multi_play = atoi(value);
 
-//    memset(value, 0, PROPERTY_VALUE_MAX);
-//    property_get("iptv.softdemux", value, "0");
-//    prop_softdemux = atoi(value);
 #ifdef USE_OPTEEOS
     if(DRMMode)
         prop_softdemux = 1;
@@ -657,7 +652,7 @@ CTsPlayer::~CTsPlayer()
     }
     Stop();
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
-//    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
     if(perform_flag){
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;
@@ -713,7 +708,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     int mode_w = 0, mode_h = 0;
 
     LOGI("CTsPlayer::SetVideoWindow: %d, %d, %d, %d\n", x, y, width, height);
-//	amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+	amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
 	s_video_axis[0] = x;
 	s_video_axis[1] = y;
 	s_video_axis[2] = width;
@@ -1347,7 +1342,7 @@ bool CTsPlayer::iStartPlay()
             vcodec->video_type = pcodec->video_type;
             vcodec->video_pid  = pcodec->video_pid;
             vcodec->stream_type = STREAM_TYPE_ES_VIDEO;
-            if (prop_multi_play == 1) {
+            if (CheckMultiSupported(pcodec->video_type) == true) {
                 vcodec->dec_mode = STREAM_TYPE_STREAM;
             } else {
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
@@ -1406,7 +1401,12 @@ bool CTsPlayer::iStartPlay()
 
     //check_remove_ppmgr();
     if(prop_softdemux == 0) {
-		pcodec->dec_mode = STREAM_TYPE_STREAM;
+
+		if (CheckMultiSupported(pcodec->video_type) == true) {
+			pcodec->dec_mode = STREAM_TYPE_STREAM;
+		} else {
+			pcodec->dec_mode = STREAM_TYPE_SINGLE;
+		}
         ret = codec_init(pcodec);
     } else{
 #ifdef USE_OPTEEOS
@@ -1490,6 +1490,26 @@ bool CTsPlayer::iStartPlay()
     }
     return !ret;
 }
+
+bool CTsPlayer::CheckMultiSupported(int video_type){
+	int multi_dec_support = 1;
+    char value[92];
+    if(property_get("media.ctcplayer.enable", value, NULL) > 0) {
+        sscanf(value, "%d", &multi_dec_support);
+        ALOGD("media.ctcplayer.enable=%d", multi_dec_support);
+    } else
+        ALOGW("Can not read property media.ctcplayer.enable, using %d\n", multi_dec_support);
+    if ((video_type != VFORMAT_HEVC) && (video_type != VFORMAT_H264)) {
+	    ALOGI("CheckMultiSupported --video_type:%d\n", video_type);
+		multi_dec_support = 0;
+	}
+    if(multi_dec_support) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 
 #if 0
 int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp)
@@ -1999,7 +2019,7 @@ bool CTsPlayer::StopFast()
 bool CTsPlayer::Stop(){
     int ret;
 
-//    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
     if (!m_bIsPlay) {
         LOGI("already is Stoped\n");
         return true;
@@ -2640,7 +2660,7 @@ void CTsPlayer::leaveChannel()
 void CTsPlayer::SetSurface(Surface* pSurface)
 {
     LOGI("SetSurface pSurface: %p\n", pSurface);
-  //  amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
     sp<IGraphicBufferProducer> mGraphicBufProducer;
 
     mGraphicBufProducer = pSurface->getIGraphicBufferProducer();

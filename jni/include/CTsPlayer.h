@@ -510,6 +510,7 @@ private:
     ctsplayer_state m_sCtsplayerState;
     void update_caton_info();
     void update_stream_bitrate();
+    bool CheckMultiSupported(int video_type);
 };
 
 #endif

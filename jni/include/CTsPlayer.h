@@ -20,6 +20,7 @@ extern "C" {
 #include <amports/aformat.h>
 #include <amports/amstream.h>
 #include <codec.h>
+#include <codec_info.h>
 }
 
 #include <string.h>
@@ -115,10 +116,10 @@ typedef struct ctsplayer_state {
     // setting
     int64_t last_update_time;
     /*for caton info*/
+    struct codec_quality_info quality_info;
     int catoning;
     int caton_start_underflow;
     int64_t caton_start_time;
-    int last_underflow;
     /*for calc avg stream bitrate*/
     int64_t bytes_record_starttime_ms;
     int64_t bytes_record_start;
@@ -142,11 +143,13 @@ typedef struct ctsplayer_state {
     int video_height;
     int vbuf_size;
     int vbuf_used;
+    int vdec_total;
     int vdec_error;
     int vdec_drop;
     int vdec_underflow;
     int vpts_error;
     int frame_rate;
+    int current_fps;
 
     // audio info
     int64_t apts;
@@ -210,7 +213,7 @@ typedef enum {
 
 typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
 
-#ifdef TELECOM_QOS_SUPPORT
+
 typedef enum {
     VID_FRAME_TYPE_UNKNOWN = 0,
     VID_FRAME_TYPE_I,
@@ -244,7 +247,6 @@ typedef enum {
 }IPTV_PLAYER_PARAM_Evt_e;
 
 typedef void (*IPTV_PLAYER_PARAM_EVENT_CB)( void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, void *pParam);
-#endif
 
 typedef struct {
     int abuf_size;
@@ -316,9 +318,9 @@ public:
     virtual int64_t GetCurrentPlayTime() = 0;
     virtual void leaveChannel() = 0;
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
-#ifdef TELECOM_QOS_SUPPORT
+
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
-#endif
+
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
     virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara)= 0;
     virtual void ClearLastFrame() = 0;
@@ -406,9 +408,9 @@ public:
     virtual int64_t GetCurrentPlayTime();
     virtual void leaveChannel();
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
-#ifdef TELECOM_QOS_SUPPORT
+
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
-#endif
+
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
     virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara);
     virtual void ClearLastFrame();
@@ -422,7 +424,6 @@ public:
     virtual void update_nativewindow();
 
     virtual int GetVideoDropNumber();
-    virtual void Report_video_paramters();
     //virtual void Report_Audio_paramters();
     virtual int GetVideoTotalNumber();
 	virtual int GetCurrentVidPTS(unsigned long long *pPTS);
@@ -463,17 +464,13 @@ private:
     int width_old,width_new;
     int height_old,height_new;
 
-#ifdef TELECOM_QOS_SUPPORT
-    int     mLastVdecInfoNum;
-#endif
 
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
 
-#ifdef TELECOM_QOS_SUPPORT
     IPTV_PLAYER_PARAM_EVENT_CB  pfunc_player_param_evt;
     void *player_evt_param_handler;
-#endif
+
 
     unsigned int writecount ;
     int64_t m_StartPlayTimePoint;
@@ -482,9 +479,6 @@ private:
     lock_t  mutex;
     pthread_t mThread;
 
-#ifdef TELECOM_QOS_SUPPORT
-    pthread_t mVdecThread;
-#endif
 
     pthread_t readThread;
     virtual void checkAbend();
@@ -493,10 +487,7 @@ private:
     static void *threadCheckAbend(void *pthis);
     static void *threadReadPacket(void *pthis);
 
-#ifdef TELECOM_QOS_SUPPORT
-    static void *threadGetVideoInfo(void *pthis);
-    int GetVideoFrameInfo(void *pthis);
-#endif
+    virtual int ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos);
 
     bool    m_isBlackoutPolicy;
     bool    m_bchangeH264to4k;
@@ -508,7 +499,10 @@ private:
     int64_t m_PreviousOverflowTime;
     size_t  mInputQueueSize;
     ctsplayer_state m_sCtsplayerState;
-    void update_caton_info();
+    pthread_t mInfoThread;
+    int mLastVdecInfoNum;
+    static void * threadReportInfo(void *pthis);
+    void update_caton_info(struct av_param_info_t * info);
     void update_stream_bitrate();
     bool CheckMultiSupported(int video_type);
 };

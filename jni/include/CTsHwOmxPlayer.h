@@ -88,7 +88,7 @@ public:
     virtual int64_t GetCurrentPlayTime();
     virtual void leaveChannel();
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
-    //virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
+    virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
     //ZTEDSP 20140905 闁告艾鐗嗛崣锟�760D 濞寸媴绲块悥婊堝储閻斿娼楅柟鎭掑劚瑜版盯宕氶崶銊ュ簥闂傚﹤鐤囧娲嫉婢舵劖锛栧Λ甯嫹
     virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara);
     virtual void BlackOut(int EarseLastFrame);

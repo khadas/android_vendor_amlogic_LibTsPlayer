@@ -19,7 +19,8 @@ LOCAL_SRC_FILES := \
 	CTC_MediaProcessor.cpp \
 	Util.cpp \
 	subtitleservice.cpp \
-	CTsOmxPlayer.cpp
+	CTsOmxPlayer.cpp \
+        CTC_AmlPlayer.cpp
 
 OS_MAJOR_VER	:= $(shell echo $(PLATFORM_VERSION) | cut -d. -f1)
 $(warning $(OS_MAJOR_VER))

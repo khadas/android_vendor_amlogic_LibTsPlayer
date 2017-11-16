@@ -48,7 +48,7 @@ static int prop_playerwatchdog_support =0;
 static bool s_h264sameucode = false;
 int prop_softdemux = 0;
 int prop_esdata = 0;
-int prop_multi_play = 1;
+int prop_multi_play = 0;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
 int prop_readffmpeg = 0;
@@ -1367,27 +1367,29 @@ bool CTsPlayer::iStartPlay()
 #endif
     }
 
-    do{
-		get_vfm_map_info(vfm_map);
-		s = strstr(vfm_map,"(1)");
-		p = strstr(vfm_map,"ionvideo}");
-		video_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/videobufused");
-		audio_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/audiobufused");
-		subtitle_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/subtitlebufused");
-		userdata_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/userdatabufused");
-		LOGI("s=%s,p=%s\n",s,p);
-		LOGI("buf used video:%d,audio:%d,subtitle:%d,userdata:%d\n",
-			video_buf_used,audio_buf_used,subtitle_buf_used,userdata_buf_used);
-		if((s == NULL)&&(p == NULL)&&(video_buf_used==0)&&(audio_buf_used==0)&&
-	   		(subtitle_buf_used==0)&&(userdata_buf_used==0))
-    		LOGI("not find valid,begin init\n");
-		else{
-			sleep_number++;
-			usleep(50*1000);
-    		LOGI("find find find,sleep_number=%d\n",sleep_number);
-		}
-    }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
-            (subtitle_buf_used != 0)||(userdata_buf_used != 0));
+    if (prop_multi_play == 0) {
+        do{
+    		get_vfm_map_info(vfm_map);
+    		s = strstr(vfm_map,"(1)");
+    		p = strstr(vfm_map,"ionvideo}");
+    		video_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/videobufused");
+    		audio_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/audiobufused");
+    		subtitle_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/subtitlebufused");
+    		userdata_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/userdatabufused");
+    		LOGI("s=%s,p=%s\n",s,p);
+    		LOGI("buf used video:%d,audio:%d,subtitle:%d,userdata:%d\n",
+    			video_buf_used,audio_buf_used,subtitle_buf_used,userdata_buf_used);
+    		if((s == NULL)&&(p == NULL)&&(video_buf_used==0)&&(audio_buf_used==0)&&
+    	   		(subtitle_buf_used==0)&&(userdata_buf_used==0))
+        		LOGI("not find valid,begin init\n");
+    		else{
+    			sleep_number++;
+    			usleep(50*1000);
+        		LOGI("find find find,sleep_number=%d\n",sleep_number);
+    		}
+        }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
+                (subtitle_buf_used != 0)||(userdata_buf_used != 0));
+    }
 
     //check_remove_ppmgr();
     if(prop_softdemux == 0) {
@@ -1476,7 +1478,7 @@ bool CTsPlayer::iStartPlay()
     lp_unlock(&mutex);
 	for (int i = 0; i<4; i++) {
 		ALOGE("call update_nativewindow");
-        update_nativewindow();
+        //update_nativewindow();
     }
     return !ret;
 }
@@ -2653,7 +2655,7 @@ void CTsPlayer::SetSurface(Surface* pSurface)
     }
     native_window_set_buffer_count(mNativeWindow.get(), 4);
     native_window_set_usage(mNativeWindow.get(), GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP | GRALLOC_USAGE_AML_VIDEO_OVERLAY);
-    native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGB_565);
+    native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGBA_8888);
 }
 void CTsPlayer::update_nativewindow() {
     ANativeWindowBuffer* buf;
@@ -2678,7 +2680,7 @@ void CTsPlayer::update_nativewindow() {
     graphicBuffer->unlock();
     graphicBuffer.clear();
     ALOGV("checkBuffLevel___queueBuffer_DEPRECATED");
-    
+
     mNativeWindow->queueBuffer_DEPRECATED(mNativeWindow.get(), buf);
 
 }
@@ -3013,7 +3015,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 
 
         return 1;
-        for(i=0;i<QOS_FRAME_NUM;i++) {     
+        for(i=0;i<QOS_FRAME_NUM;i++) {
 #if 0
                   LOGI("##kernel Info, LastNum=%d,curNum=%d, type %d size %d PTS %d QP %d MaxMV %d MinMV %d AvgMV %d AvgSkip %d\n",
                 mLastVdecInfoNum,  pframe_qos[i].num,
@@ -3174,7 +3176,7 @@ int CTsPlayer::updateCTCInfo()
         av_param_info.av_info.first_vpts,
         av_param_info.av_info.frame_format,
         av_param_info.av_info.width,
-        av_param_info.av_info.height 
+        av_param_info.av_info.height
     );
 #endif
     buf_status audio_buf;

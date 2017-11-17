@@ -154,6 +154,18 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
         vpamr->vFmt = VFORMAT_H264;
 	} else if (strcmp(vfmt_name, "hevc") == 0) {
 	    vpamr->vFmt = VFORMAT_HEVC;
+	} else if (strcmp(vfmt_name, "mpeg12") == 0) {
+	    vpamr->vFmt = VFORMAT_MPEG12;
+	} else if (strcmp(vfmt_name, "mpeg4") == 0) {
+	    vpamr->vFmt = VFORMAT_MPEG4;
+	} else if (strcmp(vfmt_name, "vc1") == 0) {
+	    vpamr->vFmt = VFORMAT_VC1;
+	} else if (strcmp(vfmt_name, "avs") == 0) {
+	    vpamr->vFmt = VFORMAT_AVS;
+	} else if (strcmp(vfmt_name, "h264mvc") == 0) {
+	    vpamr->vFmt = VFORMAT_H264MVC;
+	} else if (strcmp(vfmt_name, "h264_4K2K") == 0) {
+	    vpamr->vFmt = VFORMAT_H264_4K2K;
 	}
 
 	vpamr->pid = st_video->id;
@@ -174,6 +186,20 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
 		    apamr->aFmt = AFORMAT_MPEG2;
         } else if (strcmp(afmt_name, "aac") == 0) {
             apamr->aFmt = AFORMAT_AAC;
+        } else if (strcmp(afmt_name, "ac3") == 0) {
+            apamr->aFmt = AFORMAT_AC3;
+        } else if (strcmp(afmt_name, "mpeg") == 0) {
+            apamr->aFmt = AFORMAT_MPEG;
+        } else if (strcmp(afmt_name, "alaw") == 0) {
+            apamr->aFmt = AFORMAT_ALAW;
+        } else if (strcmp(afmt_name, "dts") == 0) {
+            apamr->aFmt = AFORMAT_DTS;
+        } else if (strcmp(afmt_name, "mpeg1") == 0) {
+            apamr->aFmt = AFORMAT_MPEG1;
+        } else if (strcmp(afmt_name, "eac3") == 0) {
+            apamr->aFmt = AFORMAT_EAC3;
+        } else if (strcmp(afmt_name, "alac") == 0) {
+            apamr->aFmt = AFORMAT_ALAC;
         }
 
 	    apamr->pid = st_audio->id;
@@ -281,6 +307,10 @@ int main(int argc, char* argv[]) {
 
     int instNum = atoi(argv[1]);
     fprintf(stderr, "instNum=%d\n", instNum);
+    if (instNum > 1)
+        property_set("media.ctcplayer.enable", "1");
+    else
+        property_set("media.ctcplayer.enable", "0");
     int column_number = ceil(sqrt((double)instNum));
     int line_number = ceil(((double)instNum) /column_number);
     int x,y,w = 1920 / column_number,h = 1080 / line_number;

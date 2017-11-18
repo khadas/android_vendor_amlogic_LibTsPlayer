@@ -1476,9 +1476,9 @@ bool CTsPlayer::iStartPlay()
         //setSubRatioAuto();// 1.this function in subtitleservice is do nothing;2.don't free thread resource
     }
     lp_unlock(&mutex);
-	for (int i = 0; i<4; i++) {
-		ALOGE("call update_nativewindow");
-        //update_nativewindow();
+    for (int i = 0; i<4; i++) {
+        ALOGE("call update_nativewindow");
+        update_nativewindow();
     }
     return !ret;
 }
@@ -2655,17 +2655,18 @@ void CTsPlayer::SetSurface(Surface* pSurface)
     }
     native_window_set_buffer_count(mNativeWindow.get(), 4);
     native_window_set_usage(mNativeWindow.get(), GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP | GRALLOC_USAGE_AML_VIDEO_OVERLAY);
-    native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGBA_8888);
+    //native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGBA_8888);
+    native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGB_565);
 }
 void CTsPlayer::update_nativewindow() {
     ANativeWindowBuffer* buf;
     char* vaddr;
-	mNativeWindow->query(mNativeWindow.get(),NATIVE_WINDOW_WIDTH,&width_new);
+	/*mNativeWindow->query(mNativeWindow.get(),NATIVE_WINDOW_WIDTH,&width_new);
 	mNativeWindow->query(mNativeWindow.get(),NATIVE_WINDOW_HEIGHT,&height_new);
 	if (width_old == width_new && height_old == height_new)
 		return;
 	width_old = width_new;
-	height_old = height_new;
+	height_old = height_new;*/
     int err = mNativeWindow->dequeueBuffer_DEPRECATED(mNativeWindow.get(), &buf);
     if (err != 0) {
         ALOGE("dequeueBuffer failed: %s (%d)", strerror(-err), -err);

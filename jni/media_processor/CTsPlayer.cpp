@@ -1228,11 +1228,11 @@ bool CTsPlayer::iStartPlay()
 	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",0);
     if (!m_bFast) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
-        if((prop_softdemux == 0 && (int)a_aPara[0].pid != 0) || (prop_softdemux == 1 && (int)a_aPara[0].nSampleRate != 0)) {
+        if((int)a_aPara[0].pid != 0) {
             pcodec->has_audio = 1;
             pcodec->audio_pid = (int)a_aPara[0].pid;
-			pcodec->audio_samplerate=a_aPara[0].nSampleRate;
-	        pcodec->audio_channels=a_aPara[0].nChannels;
+			//pcodec->audio_samplerate=a_aPara[0].nSampleRate;
+	        //pcodec->audio_channels=a_aPara[0].nChannels;
         }
 
         LOGI("pcodec->audio_samplerate: %d, pcodec->audio_channels: %d\n",
@@ -1635,7 +1635,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
         if(video_buf.size != 0)
             video_buf_level = (float)video_buf.data_len / video_buf.size;
         	//if (video_buf.data_len > 0x1000*1000) { //4M
-        if (video_buf_level >= 0.8) {
+        if (video_buf_level >= 0.9) {
             LOGI("SoftWriteData : video_buf.data_len=%d, timestamp=%lld", video_buf.data_len, timestamp);
             usleep(20*1000);
             return -1;
@@ -1649,6 +1649,11 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
 
     } else if (type == PLAYER_STREAMTYPE_AUDIO) {
         pcodec = acodec;
+
+        // avoid some time not init audio
+        if (acodec->has_audio == 0) {
+            return nSize;
+        }
 	    lp_lock(&mutex);
         codec_get_abuf_state(pcodec, &audio_buf);
 	    lp_unlock(&mutex);

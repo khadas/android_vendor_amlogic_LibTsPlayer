@@ -1636,7 +1636,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
             video_buf_level = (float)video_buf.data_len / video_buf.size;
         	//if (video_buf.data_len > 0x1000*1000) { //4M
         if (video_buf_level >= 0.9) {
-            LOGI("SoftWriteData : video_buf.data_len=%d, timestamp=%lld", video_buf.data_len, timestamp);
+            //LOGI("SoftWriteData : video_buf.data_len=%d, timestamp=%lld", video_buf.data_len, timestamp);
             usleep(20*1000);
             return -1;
         } else {
@@ -1728,6 +1728,14 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
         ret = temp_size;
 
     if(ret > 0) {
+        if(writecount >= MAX_WRITE_COUNT) {
+            m_bWrFirstPkg = false;
+            writecount = 0;
+        }
+
+        if(m_bWrFirstPkg == true) {
+            writecount++;
+        }
     } else {
         return -1;
     }

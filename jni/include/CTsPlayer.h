@@ -1,6 +1,6 @@
 #ifndef _TSPLAYER_H_
 #define _TSPLAYER_H_
-#include <android/log.h>    
+#include <android/log.h>
 #include <pthread.h>
 #include <errno.h>
 #include <stdio.h>
@@ -78,7 +78,7 @@ typedef struct{
 	int				nSampleRate;//采样率
 	aformat_t		aFmt;//音频格式
 	int				nExtraSize;
-	unsigned char*	pExtraData;	
+	unsigned char*	pExtraData;
 }AUDIO_PARA_T, *PAUDIO_PARA_T;
 
 #ifndef AVCODEC_AVCODEC_H
@@ -98,7 +98,7 @@ typedef enum {
 #endif
 typedef struct{
     unsigned short pid;//pid
-	int sub_type; 
+	int sub_type;
 }SUBTITLE_PARA_T, *PSUBTITLE_PARA_T;
 
 typedef struct ST_LPbuffer{
@@ -262,7 +262,7 @@ int enable_gl_2xscale(const char *);
 int Active_osd_viewport(int , int );
 
 class CTsPlayer;
-class ITsPlayer: public RefBase {
+class ITsPlayer{
 public:
     ITsPlayer(){}
     virtual ~ITsPlayer(){}
@@ -313,7 +313,6 @@ public:
     //16位色深需要设置colorkey来透出视频；
     virtual void SwitchAudioTrack(int pid) = 0;
     virtual void SwitchSubtitle(int pid) = 0;
-    virtual bool SubtitleShowHide(bool bShow) = 0;
     virtual void SetProperty(int nType, int nSub, int nValue) = 0;
     virtual int64_t GetCurrentPlayTime() = 0;
     virtual void leaveChannel() = 0;
@@ -322,25 +321,29 @@ public:
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
 
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
-    virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara)= 0;
+
     virtual void ClearLastFrame() = 0;
     virtual void BlackOut(int EarseLastFrame)= 0;
     virtual bool SetErrorRecovery(int mode) = 0;
     virtual void GetAvbufStatus(PAVBUF_STATUS pstatus) = 0;
-    virtual void SetVideoHole(int x,int y,int w,int h) = 0;
-    virtual void writeScaleValue() = 0;
     virtual int GetRealTimeFrameRate() = 0;
     virtual int GetVideoFrameRate() = 0;
     virtual int GetVideoDropNumber() = 0;
     virtual int GetVideoTotalNumber() = 0;
 	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
+    virtual bool SubtitleShowHide(bool bShow) = 0;
+    virtual void SetVideoHole(int x,int y,int w,int h) = 0;
+    virtual void writeScaleValue() = 0;
+    virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara)= 0;
 	virtual int GetCurrentVidPTS(unsigned long long *pPTS)=0;
 	virtual void GetVideoInfo(int *width, int *height, int *ratio)=0;
 	virtual int GetPlayerInstanceNo() = 0;
 	virtual void ExecuteCmd(const char* cmd_str) = 0;
 	virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp) = 0;
     virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL) = 0;
+
 	/*end add*/
+
 };
 
 class CTsPlayer : public ITsPlayer
@@ -443,7 +446,7 @@ protected:
 private:
     AUDIO_PARA_T a_aPara[MAX_AUDIO_PARAM_SIZE];
     SUBTITLE_PARA_T sPara[MAX_SUBTITLE_PARAM_SIZE];
-    VIDEO_PARA_T vPara;	
+    VIDEO_PARA_T vPara;
     int player_pid;
     codec_para_t  codec;
     codec_para_t  *pcodec;

@@ -1756,7 +1756,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
     if(!m_bIsPlay || (m_bchangeH264to4k && !s_h264sameucode))
         return -1;
 
-    LOGI("--WriteData, nSize=%d, prop_softdemux=%d--\n", nSize, prop_softdemux);
+    //LOGI("--WriteData, nSize=%d, prop_softdemux=%d--\n", nSize, prop_softdemux);
 
     //checkBuffstate();
     if(prop_softdemux == 0){

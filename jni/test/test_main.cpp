@@ -27,7 +27,7 @@ pthread_t tid[9];
 
 //int x = 100, y = 100, w = 640, h = 360;
 int last_active_index = 0;
-sp<ITsPlayer> player[9];
+ITsPlayer player[9];
 int mSourceFD[9];
 int my_idx = 0;
 int idx[9];

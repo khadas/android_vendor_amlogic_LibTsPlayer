@@ -16,7 +16,7 @@
 //#include "AudioBufferProvider.h"
 //#include "Common.h"
 #include "android_runtime/AndroidRuntime.h"
-#include <gui/Surface.h> 
+#include <gui/Surface.h>
 #include <gui/ISurfaceTexture.h>
 #include "android_runtime/android_view_Surface.h"
 //#include "CTC_MediaProcessor.h"
@@ -25,7 +25,7 @@ using namespace android;
 class Proxy_MediaProcessor
 {
 	protected:
-		sp<ITsPlayer> ctc_MediaControl;
+		ITsPlayer* ctc_MediaControl;
 	public:
 		Proxy_MediaProcessor(int use_omx_decoder = 0);
 		~Proxy_MediaProcessor();
@@ -59,7 +59,7 @@ class Proxy_MediaProcessor
 		int Proxy_GetCurrentPlayTime();
 		void Proxy_SwitchAudioTrack(int pid);
 		void Proxy_InitSubtitle(PSUBTITLE_PARA_T sParam);
-		void Proxy_SwitchSubtitle(int pid);//设置显示用的surface		
+		void Proxy_SwitchSubtitle(int pid);//设置显示用的surface
 		void Proxy_playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
 };
 

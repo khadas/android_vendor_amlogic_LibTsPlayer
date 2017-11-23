@@ -15,7 +15,7 @@ class CTC_MediaControl:public CTsPlayer
 
 // 获取CTC_MediaControl 派生类的实例对象。在GetMediaControl () 这个接口的实现中，需要创建一个
 // CTC_MediaContro 派生类的实例，然后返回这个实例的指针
-sp<ITsPlayer> GetMediaControl(int use_omx_decoder);  // { return NULL; }
+ITsPlayer* GetMediaControl(int use_omx_decoder);  // { return NULL; }
 
 CTC_MediaControl* GetMediaControlImpl();
 ITsPlayer* GetMediaControl();

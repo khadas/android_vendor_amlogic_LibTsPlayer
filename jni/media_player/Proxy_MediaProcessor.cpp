@@ -8,7 +8,7 @@
 */
 
 #include "Proxy_MediaProcessor.h"
- 
+
 Proxy_MediaProcessor::Proxy_MediaProcessor(int use_omx_decoder)
 {
     ctc_MediaControl = GetMediaControl(use_omx_decoder);
@@ -16,7 +16,8 @@ Proxy_MediaProcessor::Proxy_MediaProcessor(int use_omx_decoder)
 
 Proxy_MediaProcessor::~Proxy_MediaProcessor()
 {
-	ctc_MediaControl.clear();
+	//ctc_MediaControl.clear();
+	delete ctc_MediaControl;
 }
 
 int Proxy_MediaProcessor::Proxy_GetMediaControlVersion()
@@ -24,7 +25,7 @@ int Proxy_MediaProcessor::Proxy_GetMediaControlVersion()
 	int result = 1;
 	return result;
 }
-		
+
 int Proxy_MediaProcessor::Proxy_GetPlayMode()
 {
 	int result = ctc_MediaControl->GetPlayMode();
@@ -102,7 +103,7 @@ bool Proxy_MediaProcessor::Proxy_Stop()
 	bool result = ctc_MediaControl->Stop();
 	return result;
 }
-		
+
 bool Proxy_MediaProcessor::Proxy_Seek()
 {
 	bool result = ctc_MediaControl->Seek();
@@ -167,7 +168,7 @@ int Proxy_MediaProcessor::Proxy_GetCurrentPlayTime()
 {
 	long currentPlayTime=0;
 	currentPlayTime = ctc_MediaControl->GetCurrentPlayTime()/90;//ms
-	return currentPlayTime;	
+	return currentPlayTime;
 }
 
 void Proxy_MediaProcessor::Proxy_SwitchAudioTrack(int pid)

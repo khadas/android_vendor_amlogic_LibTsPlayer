@@ -10,7 +10,7 @@
 #include <cutils/properties.h>
 
 // need single instance?
-sp<ITsPlayer> GetMediaControl(int use_omx_decoder)
+ITsPlayer* GetMediaControl(int use_omx_decoder)
 {
 	/*
     char value[PROPERTY_VALUE_MAX] = {0};

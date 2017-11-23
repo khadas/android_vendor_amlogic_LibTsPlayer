@@ -18,7 +18,7 @@ pthread_t tid[kNum];
 
 int x = 100, y = 100, w = 640, h = 360;
 int last_active_index = 0;
-sp<ITsPlayer> player[kNum];
+ITsPlayer player[kNum];
 int mSourceFD[kNum];
 int my_idx = 0;
 int idx[kNum];

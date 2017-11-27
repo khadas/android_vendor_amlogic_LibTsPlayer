@@ -806,7 +806,9 @@ void CTsPlayer::InitVideo(PVIDEO_PARA_T pVideoPara)
 {
     vPara=*pVideoPara;
 #ifdef TELECOM_VFORMAT_SUPPORT
-    vPara.vFmt = changeVformat(vPara.vFmt);
+    if (prop_multi_play == 0) {
+        vPara.vFmt = changeVformat(vPara.vFmt);
+    }
 #endif
     LOGI("InitVideo vPara->pid: %d, vPara->vFmt: %d\n", vPara.pid, vPara.vFmt);
 }
@@ -820,7 +822,9 @@ void CTsPlayer::InitAudio(PAUDIO_PARA_T pAudioPara)
     memset(a_aPara,0,sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
     while((pAP->pid != 0 || pAP->nSampleRate != 0)&&(count<MAX_AUDIO_PARAM_SIZE)) {
 #ifdef TELECOM_VFORMAT_SUPPORT
-        pAP->aFmt = changeAformat(pAP->aFmt);
+        if (prop_multi_play == 0) {
+            pAP->aFmt = changeAformat(pAP->aFmt);
+        }
 #endif
         a_aPara[count]= *pAP;
         LOGI("InitAudio pAP->pid: %d, pAP->aFmt: %d, channel=%d, samplerate=%d\n", pAP->pid, pAP->aFmt, pAP->nChannels, pAP->nSampleRate);

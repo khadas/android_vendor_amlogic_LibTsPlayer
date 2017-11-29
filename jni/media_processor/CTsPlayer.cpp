@@ -49,6 +49,7 @@ static bool s_h264sameucode = false;
 int prop_softdemux = 0;
 int prop_esdata = 0;
 int prop_multi_play = 0;
+int debug_single_mode = 0;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
 int prop_readffmpeg = 0;
@@ -373,6 +374,10 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
 	if (property_get("media.ctcplayer.enable", value, NULL) > 0)
         prop_multi_play = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    if (property_get("media.ctcplayer.singlemode", value, NULL) > 0)
+        debug_single_mode = atoi(value);
 
 #ifdef USE_OPTEEOS
     if(DRMMode)
@@ -1342,6 +1347,10 @@ bool CTsPlayer::iStartPlay()
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
             }
 
+            if (debug_single_mode) {
+                vcodec->dec_mode = STREAM_TYPE_SINGLE;
+            }
+
             LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d\n",
             vcodec->video_type, vcodec->video_pid);
         }
@@ -1403,6 +1412,10 @@ bool CTsPlayer::iStartPlay()
 		} else {
 			pcodec->dec_mode = STREAM_TYPE_SINGLE;
 		}
+
+        if (debug_single_mode) {
+            pcodec->dec_mode = STREAM_TYPE_SINGLE;
+        }
         ret = codec_init(pcodec);
     } else{
 #ifdef USE_OPTEEOS

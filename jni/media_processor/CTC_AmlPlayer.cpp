@@ -262,8 +262,8 @@ int CTC_AmlPlayer::CTC_InitVideo(void *para)
     int ret = OK;
 
     PVIDEO_PARA_T pVideoPara = (VIDEO_PARA_T*)para;
-    ALOGI("CTC_InitVideo: pVideoPara=%p,para=%p, pVideoPara->pid=%d,vfmt=%d, height=%d\n",
-        pVideoPara, para, pVideoPara->pid, pVideoPara->vFmt, pVideoPara->nVideoHeight);
+    //ALOGI("CTC_InitVideo: pVideoPara=%p,para=%p, pVideoPara->pid=%d,vfmt=%d, height=%d\n",
+    //    pVideoPara, para, pVideoPara->pid, pVideoPara->vFmt, pVideoPara->nVideoHeight);
 
     m_pTsPlayer->InitVideo(pVideoPara);
 
@@ -276,7 +276,7 @@ int CTC_AmlPlayer::CTC_InitAudio(void *para)
 
     PAUDIO_PARA_T pAudioPara = (AUDIO_PARA_T*)para;
 
-    ALOGI("CTC_InitAudio: pAudioPara=%p,para=%p, pAudioPara->pid=%d, channels=%d\n", pAudioPara, para, pAudioPara->pid, pAudioPara->nChannels);
+    //ALOGI("CTC_InitAudio: pAudioPara=%p,para=%p, pAudioPara->pid=%d, channels=%d\n", pAudioPara, para, pAudioPara->pid, pAudioPara->nChannels);
 
     m_pTsPlayer->InitAudio(pAudioPara);
 
@@ -289,6 +289,29 @@ int CTC_AmlPlayer::CTC_InitSubtitle(void *para)
 
     PSUBTITLE_PARA_T pSubPara = (SUBTITLE_PARA_T*)para;
     m_pTsPlayer->InitSubtitle(pSubPara);
+
+    return ret;
+}
+
+int CTC_AmlPlayer::CTC_GetAVStatus(float *abuf, float *vbuf)
+{
+    int ret = OK;
+
+    PAVBUF_STATUS pstatus;
+
+    pstatus = (PAVBUF_STATUS)malloc(sizeof(AVBUF_STATUS));
+
+    m_pTsPlayer->GetAvbufStatus(pstatus);
+    //ALOGI("CTC_GetAVStatus : pstatus->abuf_size=%d, pstatus->abuf_data_len=%d\n", pstatus->abuf_size, pstatus->abuf_data_len);
+    //ALOGI("CTC_GetAVStatus : pstatus->vbuf_size=%d, pstatus->vbuf_data_len=%d\n", pstatus->vbuf_size, pstatus->vbuf_data_len);
+    if (pstatus->abuf_size != 0) {
+        *abuf = (float)pstatus->abuf_data_len/pstatus->abuf_size;
+    }
+    if (pstatus->vbuf_size != 0) {
+        *vbuf = (float)pstatus->vbuf_data_len/pstatus->vbuf_size;
+    }
+
+    free(pstatus);
 
     return ret;
 }

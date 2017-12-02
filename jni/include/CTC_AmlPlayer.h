@@ -44,6 +44,7 @@ class CTC_AmlPlayer
         int  CTC_InitVideo(void *para);
         int  CTC_InitAudio(void *para);
         int  CTC_InitSubtitle(void *para);
+        int CTC_GetAVStatus(float *abuf, float *vbuf);
 
     private:
         ITsPlayer  *m_pTsPlayer;

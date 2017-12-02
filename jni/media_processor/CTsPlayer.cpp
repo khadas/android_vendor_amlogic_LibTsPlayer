@@ -2565,9 +2565,13 @@ void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
 		return;
 	}
 
-	codec_get_abuf_state(pcodec,&audio_buf);
-	codec_get_vbuf_state(pcodec,&video_buf);
-
+    if (prop_softdemux == 1) {
+	    codec_get_abuf_state(acodec,&audio_buf);
+	    codec_get_vbuf_state(vcodec,&video_buf);
+    } else {
+	    codec_get_abuf_state(pcodec,&audio_buf);
+	    codec_get_vbuf_state(pcodec,&video_buf);
+    }
 	pstatus->abuf_size = audio_buf.size;
 	pstatus->abuf_data_len = audio_buf.data_len;
 	pstatus->abuf_free_len = audio_buf.free_len;

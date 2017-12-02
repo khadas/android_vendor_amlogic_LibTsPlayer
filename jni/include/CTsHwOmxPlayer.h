@@ -134,6 +134,7 @@ private:
     int mSoftNativeY;
     int mSoftNativeWidth;
     int mSoftNativeHeight;
+    PLAYER_STREAMTYPE_E ctc_type;
 
     sp<SurfaceComposerClient> mSoftComposerClient;
     bool mIsPlaying;

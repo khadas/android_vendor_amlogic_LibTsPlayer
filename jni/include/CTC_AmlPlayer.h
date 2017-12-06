@@ -45,6 +45,7 @@ class CTC_AmlPlayer
         int  CTC_InitAudio(void *para);
         int  CTC_InitSubtitle(void *para);
         int CTC_GetAVStatus(float *abuf, float *vbuf);
+        int CTC_ClearLastFrame();
 
     private:
         ITsPlayer  *m_pTsPlayer;

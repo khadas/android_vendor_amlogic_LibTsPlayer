@@ -316,3 +316,15 @@ int CTC_AmlPlayer::CTC_GetAVStatus(float *abuf, float *vbuf)
     return ret;
 }
 
+
+int CTC_AmlPlayer::CTC_ClearLastFrame()
+{
+    int ret = OK;
+
+    if (m_pTsPlayer) {
+        m_pTsPlayer->ClearLastFrame();
+    }
+    return ret;
+}
+
+

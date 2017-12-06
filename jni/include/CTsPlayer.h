@@ -241,12 +241,14 @@ typedef struct {
     int  nUnderflow;
 }VIDEO_FRM_STATUS_INFO_T;
 
+#ifdef TELECOM_QOS_SUPPORT
 typedef enum {
     IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT = 0,
     IPTV_PLAYER_PARAM_EVT_BUTT
 }IPTV_PLAYER_PARAM_Evt_e;
 
 typedef void (*IPTV_PLAYER_PARAM_EVENT_CB)( void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, void *pParam);
+#endif
 
 typedef struct {
     int abuf_size;
@@ -317,9 +319,9 @@ public:
     virtual int64_t GetCurrentPlayTime() = 0;
     virtual void leaveChannel() = 0;
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander) = 0;
-
+#ifdef TELECOM_QOS_SUPPORT
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
-
+#endif
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)=0;
 
     virtual void ClearLastFrame() = 0;
@@ -411,9 +413,9 @@ public:
     virtual int64_t GetCurrentPlayTime();
     virtual void leaveChannel();
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
-
+#ifdef TELECOM_QOS_SUPPORT
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
-
+#endif
     virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
     virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara);
     virtual void ClearLastFrame();
@@ -471,9 +473,10 @@ private:
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
 
+#ifdef TELECOM_QOS_SUPPORT
     IPTV_PLAYER_PARAM_EVENT_CB  pfunc_player_param_evt;
     void *player_evt_param_handler;
-
+#endif
 
     unsigned int writecount ;
     int64_t m_StartPlayTimePoint;
@@ -490,7 +493,9 @@ private:
     static void *threadCheckAbend(void *pthis);
     static void *threadReadPacket(void *pthis);
 
+#ifdef TELECOM_QOS_SUPPORT
     virtual int ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos);
+#endif
 
     bool    m_isBlackoutPolicy;
     bool    m_bchangeH264to4k;

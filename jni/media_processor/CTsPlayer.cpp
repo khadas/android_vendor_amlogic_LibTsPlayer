@@ -562,8 +562,10 @@ CTsPlayer::CTsPlayer()
     pthread_create(&mThread, &attr, threadCheckAbend, this);
     pthread_attr_destroy(&attr);
 
+#ifdef TELECOM_QOS_SUPPORT
     pfunc_player_param_evt = NULL;
     player_evt_param_handler = NULL;
+#endif
     pthread_attr_init(&attr);
     pthread_create(&mInfoThread, &attr, threadReportInfo, this);
     pthread_attr_destroy(&attr);
@@ -2727,6 +2729,7 @@ void CTsPlayer::playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hande
     player_evt_hander = hander;
 }
 
+#ifdef TELECOM_QOS_SUPPORT
 void CTsPlayer::RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc)
 {
     pfunc_player_param_evt = pfunc;
@@ -2734,7 +2737,7 @@ void CTsPlayer::RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, 
     player_evt_param_handler = hander;
 
 }
-
+#endif
 void CTsPlayer::checkBuffLevel()
 {
 	int audio_delay=0, video_delay=0;
@@ -3041,6 +3044,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     return NULL;
 }
 
+#ifdef TELECOM_QOS_SUPPORT
 int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 {
     int i;
@@ -3097,6 +3101,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     mLastVdecInfoNum  = pframe_qos[0].num;
     return 0;
 }
+#endif
 
 void *CTsPlayer::threadReportInfo(void *pthis) {
     LOGI("threadGetVideoInfo start pthis: %p\n", pthis);
@@ -3194,7 +3199,9 @@ int CTsPlayer::updateCTCInfo()
             return 0;
         }
 
+#ifdef TELECOM_QOS_SUPPORT
     ReportVideoFrameInfo(av_param_info.vframe_qos);
+#endif
     update_caton_info(&av_param_info);
 #ifdef DEBUG_INFO
     LOGI("apts:%x,aptserr:%d,vpts:%x,vptserr:%d,toggle:%d,curfps:%d,dec(%d,%d,%d),ts_err:%d,fvpts:%x,format:%d,(%dx%d)\n",
@@ -3257,7 +3264,7 @@ int CTsPlayer::updateCTCInfo()
             codec_get_vbuf_state(vcodec, &video_buf);
         }
 
-        m_sCtsplayerState.vpts = (int64_t)av_param_info.av_info.vpts_err;
+        m_sCtsplayerState.vpts = (int64_t)av_param_info.av_info.vpts;
         m_sCtsplayerState.video_width = av_param_info.av_info.width;
         m_sCtsplayerState.video_height = av_param_info.av_info.height;
         m_sCtsplayerState.frame_rate = av_param_info.av_info.fps;

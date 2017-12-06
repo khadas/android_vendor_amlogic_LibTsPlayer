@@ -19,8 +19,7 @@ LOCAL_SRC_FILES := \
 	CTC_MediaProcessor.cpp \
 	Util.cpp \
 	subtitleservice.cpp \
-	CTsOmxPlayer.cpp \
-        CTC_AmlPlayer.cpp
+	CTsOmxPlayer.cpp
 
 OS_MAJOR_VER	:= $(shell echo $(PLATFORM_VERSION) | cut -d. -f1)
 $(warning $(OS_MAJOR_VER))
@@ -58,8 +57,8 @@ LOCAL_C_INCLUDES := \
 	$(SUBTITLE_SERVICE_PATH)/service \
 	$(TOP)/frameworks/av/media/libstagefright/include \
 	$(TOP)/frameworks/native/include/media/openmax
-#LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil 
-LOCAL_STATIC_LIBRARIES := libamcodec libamadec 
+#LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil
+LOCAL_STATIC_LIBRARIES := libamcodec libamadec
 
 LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils libamsubdec
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl

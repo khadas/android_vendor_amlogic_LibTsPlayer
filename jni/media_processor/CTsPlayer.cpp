@@ -1654,7 +1654,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
         if(video_buf.size != 0)
             video_buf_level = (float)video_buf.data_len / video_buf.size;
         	//if (video_buf.data_len > 0x1000*1000) { //4M
-        if (video_buf_level >= 0.9) {
+        if (video_buf_level >= MAX_WRITE_VLEVEL) {
             //LOGI("SoftWriteData : video_buf.data_len=%d, timestamp=%lld", video_buf.data_len, timestamp);
             usleep(20*1000);
             return -1;
@@ -1679,7 +1679,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
 	    if(audio_buf.size != 0)
             audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
         	//if (audio_buf.data_len > 0x1000*250*2) { //2M
-	    if (audio_buf_level >= 0.8) {
+	    if (audio_buf_level >= MAX_WRITE_VLEVEL) {
             LOGI("SoftWriteData : audio_buf.data_len=%d, timestamp=%lld", audio_buf.data_len, timestamp);
             usleep(20*1000);
             return -1;

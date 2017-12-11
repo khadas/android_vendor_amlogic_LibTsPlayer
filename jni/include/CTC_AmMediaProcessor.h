@@ -75,5 +75,6 @@ class CTC_AmMediaProcessor
         int  CTC_GetDuraion();
     private:
         void* m_pHandler;
+        int mInstanceNo;
 };
 #endif

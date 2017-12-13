@@ -27,6 +27,7 @@ public:
     virtual int GetCurrentPlayTime();
     virtual int GetDuration();
     virtual void SetListenNotify(ICTC_MCNotify* notify);
+    virtual void SetVolume(float leftVolume, float rightVolume);
 private:
     CTC_AmMediaProcessor *pAmMediaProce;
     ICTC_MCNotify* mNotify;

@@ -2273,14 +2273,19 @@ int CTsPlayer::GetVolume()
 bool CTsPlayer::SetVolume(int volume)
 {
     LOGI("SetVolume");
+    int ret = 0;
     if(volume<0 || volume>100){
         LOGI("SetVolume , value is invalid \n");
         return false;
     }
-    //int ret = codec_set_volume(pcodec, (float)volume/100.0);
-    int ret = set_android_stream_volume((float)volume/100.0);
-    m_nVolume = volume;
-    hasSetVolume=1;
+    if (prop_multi_play == 1) {
+        ret = codec_set_volume(pcodec, (float)volume/100.0);
+    } else {
+        //int ret = codec_set_volume(pcodec, (float)volume/100.0);
+        ret = set_android_stream_volume((float)volume/100.0);
+        m_nVolume = volume;
+        hasSetVolume=1;
+    }
     return true;
 }
 

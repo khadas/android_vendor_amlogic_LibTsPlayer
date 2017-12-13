@@ -146,3 +146,8 @@ void CTC_AmMediaControl::SetListenNotify(ICTC_MCNotify* notify)
     mNotify = notify;
 }
 
+void CTC_AmMediaControl::SetVolume(float leftVolume, float rightVolume)
+{
+    int volume = (leftVolume + rightVolume) * 100 / 2;
+    pAmMediaProce->CTC_SetVolume(volume);
+}

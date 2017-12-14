@@ -1740,7 +1740,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
                 break;
             }
 	    // release 10ms to other thread, for example decoder and drop pcm
-            usleep(5000);
+            usleep(2000);
         }
     }
 	if (ret >= 0 && temp_size > ret)

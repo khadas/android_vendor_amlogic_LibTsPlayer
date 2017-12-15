@@ -311,9 +311,10 @@ int main(int argc, char* argv[]) {
         property_set("media.ctcplayer.enable", "1");
     else
         property_set("media.ctcplayer.enable", "0");
-    int column_number = ceil(sqrt((double)instNum));
-    int line_number = ceil(((double)instNum) /column_number);
-    int x,y,w = 1920 / column_number,h = 1080 / line_number;
+    //int column_number = ceil(sqrt((double)instNum));
+   // int line_number = ceil(((double)instNum) /column_number);
+   // int x,y,w = 1280 / column_number,h = 720 / line_number;
+    int x = 0, y = 0, w = 1280, h = 720;
     int type_mp4 = atoi(argv[2]);
     int gap=0;
     char video_dir[256]={'\n'};
@@ -331,8 +332,16 @@ int main(int argc, char* argv[]) {
     for (int i=0;i<instNum;i++) {
         LOG_LINE();
         usleep(1000);
-        x = w * (i % column_number);
-        y = h * (i / column_number);
+        //x = w * (i % column_number);
+        //y = h * (i / column_number);
+        w = 1280;
+        h = 720;
+        if (0 != i) {
+            x = 2 + w - w / 5;
+            y = 1 + ((i - 1) * h) / 5;
+            w = w / 5 - 3;
+            h = h / 5 - 2;
+        }
         if (0 == i && !prop_use_omxdecoder) {
             if (0 == type_mp4)
                 sprintf(filename, "/storage/external_storage/sda1/demo_video/test%d.ts", i);
@@ -343,7 +352,7 @@ int main(int argc, char* argv[]) {
             player[i] = GetMediaControl(0);
             player[i]->InitVideo(vidPara+i);
             player[i]->InitAudio(audPara+i);
-			createSurface(i, x, y, w, h);
+            createSurface(i, x, y, w, h);
             player[i]->SetVideoWindow(x, y, w, h);
             player[i]->StartPlay();
             LOG_LINE();
@@ -358,17 +367,32 @@ int main(int argc, char* argv[]) {
             pthread_create(&(tid[i]), NULL, doWrite, (void *)(&idx[i]));
         } else {
             player[i] = GetMediaControl(2);
-            if (0 == type_mp4)
+            if (0 == type_mp4) {
                 sprintf(filename, "/storage/external_storage/sda1/demo_video/test%d.ts", i);
-            else
+                mSourceFD[i] = open(filename, O_RDONLY);
+                createSurface(i, x, y, w, h);
+                player[i]->SetVideoWindow(x, y, w, h);
+                player[i]->StartPlay();
+                LOG_LINE();
+
+                mBuf[i] = (unsigned char*) malloc(sizeof(unsigned char) * kReadSize);
+                if (mBuf[i] == NULL) {
+                    ALOGD("mBuf[%d] == NULL", i);
+                    return 0;
+                }
+
+                idx[i] = i;
+                pthread_create(&(tid[i]), NULL, doWrite, (void *)(&idx[i]));
+            } else {
                 sprintf(filename, "/storage/external_storage/sda1/demo_video_mp4/test%d.mp4", i);
-            LOG_LINE();
-            //player[i]->InitVideo(vidPara+i);
-            //player[i]->InitAudio(audPara+i);
-            player[i]->setDataSource(filename);
-			createSurface(i, x, y, w, h);
-            player[i]->SetVideoWindow(x, y, w, h);
-            player[i]->StartPlay();
+                LOG_LINE();
+                //player[i]->InitVideo(vidPara+i);
+                //player[i]->InitAudio(audPara+i);
+                player[i]->setDataSource(filename);
+                createSurface(i, x, y, w, h);
+                player[i]->SetVideoWindow(x, y, w, h);
+                player[i]->StartPlay();
+            }
         }
         usleep(100 * 1000);
     }

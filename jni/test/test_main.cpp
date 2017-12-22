@@ -20,6 +20,8 @@
 #define kReadSize (64*1024)
 #define LOG_LINE() ALOGD("[%s:%d]", __FUNCTION__, __LINE__);
 unsigned char* mBuf[9];// = (unsigned char*) malloc(sizeof(unsigned char) * kReadSize);
+unsigned char* audioExtraData[9];
+
 //VIDEO_PARA_T vidPara = {0, 640, 480, 24, VFORMAT_H264, 0};
 char filename[256];
 int active_bitmask = 0x0;
@@ -64,7 +66,7 @@ extern "C"
  * @param apamr pointer to the struct of audio information defined in MediaCodec.h
  * @return whether get the base information of the video or not
  */
-static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* apamr)
+static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* apamr, int index)
 {
 	ALOGD("TS_PARSER : Beginning to do get_info_av()......");
 
@@ -200,6 +202,8 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
             apamr->aFmt = AFORMAT_EAC3;
         } else if (strcmp(afmt_name, "alac") == 0) {
             apamr->aFmt = AFORMAT_ALAC;
+        } else if (strcmp(afmt_name, "pcm_bluray") == 0) {
+            apamr->aFmt = AFORMAT_PCM_BLURAY;
         }
 
 	    apamr->pid = st_audio->id;
@@ -208,10 +212,15 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
 	    //apamr->block_align = st_audio->codec->block_align;
 	    //apamr->bit_per_sample = (st_audio->codec->bit_rate) /1000;
 	    apamr->nExtraSize = st_audio->codec->extradata_size;
-	    apamr->pExtraData = NULL;
+        if (apamr->nExtraSize != 0) {
+            audioExtraData[index] = (unsigned char*)malloc(apamr->nExtraSize + 1);
+            memcpy(audioExtraData[index], (const char*)(st_audio->codec->extradata), apamr->nExtraSize + 1);
+            apamr->pExtraData = audioExtraData[index];
+        } else
+            apamr->pExtraData = NULL;
 	}
 
-	ALOGD("TS_PARSER : Stopping to do get_info_av()......\n");
+	ALOGD("TS_PARSER : get_info_av() end......\n");
 
     /* free memory for format and codec */
     avcodec_close(pCodecCtx);
@@ -348,7 +357,7 @@ int main(int argc, char* argv[]) {
             else
                 sprintf(filename, "/storage/external_storage/sda1/demo_video_mp4/test%d.ts", i);
             mSourceFD[i] = open(filename, O_RDONLY);
-            get_info_av(filename, vidPara+i, audPara+i);
+            get_info_av(filename, vidPara+i, audPara+i, i);
             player[i] = GetMediaControl(0);
             player[i]->InitVideo(vidPara+i);
             player[i]->InitAudio(audPara+i);
@@ -418,6 +427,15 @@ int main(int argc, char* argv[]) {
 
 		usleep(100 * 1000);
 	}
-
+    free(vidPara);
+    free(audPara);
+    for (int i = 0; i < 9; i++) {
+        if (mBuf[i] == NULL && audioExtraData[i] == NULL)
+            break;
+        if (mBuf[i] != NULL)
+            free(mBuf[i]);
+        if (audioExtraData[i] != NULL)
+            free(audioExtraData[i]);
+	}
     return 0;
 }

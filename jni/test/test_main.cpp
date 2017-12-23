@@ -20,7 +20,6 @@
 #define kReadSize (64*1024)
 #define LOG_LINE() ALOGD("[%s:%d]", __FUNCTION__, __LINE__);
 unsigned char* mBuf[9];// = (unsigned char*) malloc(sizeof(unsigned char) * kReadSize);
-unsigned char* audioExtraData[9];
 
 //VIDEO_PARA_T vidPara = {0, 640, 480, 24, VFORMAT_H264, 0};
 char filename[256];
@@ -123,7 +122,7 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
 	    aCodec = avcodec_find_encoder(aCodecCtx->codec_id);
     }
 
-    if(pCodec == NULL){
+    /*if(pCodec == NULL){
         ALOGD("TS_PARSER : Video Codec not found.\n");
         //return -1;
     } else if (aCodec == NULL) {
@@ -137,7 +136,7 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
 	} else if (hasAudio && avcodec_open2(aCodecCtx, aCodec, NULL) < 0) {
 		ALOGD("TS_PARSER : Could not open audio codec ! \n");
 		//return -1;
-	}
+	}*/
 
 	av_dump_format(pFormatCtx, 0, filename, 0);
 
@@ -213,9 +212,23 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
 	    //apamr->bit_per_sample = (st_audio->codec->bit_rate) /1000;
 	    apamr->nExtraSize = st_audio->codec->extradata_size;
         if (apamr->nExtraSize != 0) {
-            audioExtraData[index] = (unsigned char*)malloc(apamr->nExtraSize + 1);
-            memcpy(audioExtraData[index], (const char*)(st_audio->codec->extradata), apamr->nExtraSize + 1);
-            apamr->pExtraData = audioExtraData[index];
+            for(int i = 0; i < apamr->nExtraSize; i++)
+                ALOGD("apamr[%d]->pExtraData:%02x", index, *(st_audio->codec->extradata + i));
+            if ((0 == index) && (apamr->aFmt == AFORMAT_PCM_BLURAY)) {
+                uint8_t array[apamr->nExtraSize];
+                memset(array, 0, apamr->nExtraSize);
+                memcpy(array, st_audio->codec->extradata, apamr->nExtraSize);
+                uint8_t tmp;
+                for(int i = 0; i <= (apamr->nExtraSize -1) / 2; i++) {
+                    tmp = array[i];
+                    array[i] = array[apamr->nExtraSize - i - 1];
+                    array[apamr->nExtraSize - i - 1] = tmp;
+                }
+                apamr->pExtraData = array;
+            } else
+                apamr->pExtraData = st_audio->codec->extradata;
+            for(int i = 0; i <= apamr->nExtraSize -1; i++)
+                ALOGD("apamr[%d]->pExtraData: %02x", index, *(apamr->pExtraData + i));
         } else
             apamr->pExtraData = NULL;
 	}
@@ -320,10 +333,14 @@ int main(int argc, char* argv[]) {
         property_set("media.ctcplayer.enable", "1");
     else
         property_set("media.ctcplayer.enable", "0");
-    //int column_number = ceil(sqrt((double)instNum));
-   // int line_number = ceil(((double)instNum) /column_number);
-   // int x,y,w = 1280 / column_number,h = 720 / line_number;
-    int x = 0, y = 0, w = 1280, h = 720;
+    int x, y, w, h, column_number, line_number;
+    if (instNum > 6) {
+        column_number = ceil(sqrt((double)instNum));
+        line_number = ceil(((double)instNum) /column_number);
+        w = 1280 / column_number,h = 720 / line_number;
+    } else {
+        x = 0, y = 0, w = 1280, h = 720;
+    }
     int type_mp4 = atoi(argv[2]);
     int gap=0;
     char video_dir[256]={'\n'};
@@ -341,15 +358,18 @@ int main(int argc, char* argv[]) {
     for (int i=0;i<instNum;i++) {
         LOG_LINE();
         usleep(1000);
-        //x = w * (i % column_number);
-        //y = h * (i / column_number);
-        w = 1280;
-        h = 720;
-        if (0 != i) {
-            x = 2 + w - w / 5;
-            y = 1 + ((i - 1) * h) / 5;
-            w = w / 5 - 3;
-            h = h / 5 - 2;
+        if (instNum > 6) {
+            x = w * (i % column_number);
+            y = h * (i / column_number);
+        } else {
+            w = 1280;
+            h = 720;
+            if (0 != i) {
+                x = 2 + w - w / 5;
+                y = 1 + ((i - 1) * h) / 5;
+                w = w / 5 - 3;
+                h = h / 5 - 2;
+            }
         }
         if (0 == i && !prop_use_omxdecoder) {
             if (0 == type_mp4)
@@ -430,12 +450,10 @@ int main(int argc, char* argv[]) {
     free(vidPara);
     free(audPara);
     for (int i = 0; i < 9; i++) {
-        if (mBuf[i] == NULL && audioExtraData[i] == NULL)
-            break;
         if (mBuf[i] != NULL)
             free(mBuf[i]);
-        if (audioExtraData[i] != NULL)
-            free(audioExtraData[i]);
+        else
+            break;
 	}
     return 0;
 }

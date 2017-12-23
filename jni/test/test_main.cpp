@@ -128,7 +128,7 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
     } else if (aCodec == NULL) {
         ALOGD("TS_PARSER : Audio Codec not found.\n");
         //return -1;
-    }
+    }*/
 
 	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {
 		ALOGD("TS_PARSER : Could not open video codec ! \n");
@@ -136,7 +136,7 @@ static int get_info_av(const char *filename, VIDEO_PARA_T* vpamr, AUDIO_PARA_T* 
 	} else if (hasAudio && avcodec_open2(aCodecCtx, aCodec, NULL) < 0) {
 		ALOGD("TS_PARSER : Could not open audio codec ! \n");
 		//return -1;
-	}*/
+	}
 
 	av_dump_format(pFormatCtx, 0, filename, 0);
 

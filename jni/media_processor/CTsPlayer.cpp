@@ -1239,11 +1239,13 @@ bool CTsPlayer::iStartPlay()
 	amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor",0);
     if (!m_bFast) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_recovery_mode", 0);
-        if((int)a_aPara[0].pid != 0) {
+        if((int)a_aPara[0].pid != 0 || (prop_multi_play == 1 && a_aPara[0].nSampleRate != 0)) {
             pcodec->has_audio = 1;
             pcodec->audio_pid = (int)a_aPara[0].pid;
-			//pcodec->audio_samplerate=a_aPara[0].nSampleRate;
-	        //pcodec->audio_channels=a_aPara[0].nChannels;
+            if (prop_multi_play == 1) {
+                pcodec->audio_samplerate=a_aPara[0].nSampleRate;
+                pcodec->audio_channels=a_aPara[0].nChannels;
+            }
         }
 
         LOGI("pcodec->audio_samplerate: %d, pcodec->audio_channels: %d\n",
@@ -1734,7 +1736,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
             }
         } else {
             temp_size += ret;
-            //LOGI("WriteData : codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
+            //LOGI("SoftWriteData : codec_write  nSize is %d! temp_size=%d retry_count=%d\n", nSize, temp_size, retry_count);
             if(temp_size >= nSize) {
                 temp_size = nSize;
                 break;

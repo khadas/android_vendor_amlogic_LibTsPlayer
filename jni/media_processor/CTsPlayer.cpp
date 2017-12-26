@@ -1512,7 +1512,8 @@ bool CTsPlayer::CheckMultiSupported(int video_type){
         ALOGD("media.ctcplayer.enable=%d", multi_dec_support);
     } else
         ALOGW("Can not read property media.ctcplayer.enable, using %d\n", multi_dec_support);
-    if ((video_type != VFORMAT_HEVC) && (video_type != VFORMAT_H264)) {
+    if ((video_type != VFORMAT_HEVC) && (video_type != VFORMAT_H264)
+            && (video_type != VFORMAT_MPEG12) && (video_type != VFORMAT_MPEG4) && (video_type != VFORMAT_MJPEG)) {
 	    ALOGI("CheckMultiSupported --video_type:%d\n", video_type);
 		multi_dec_support = 0;
 	}

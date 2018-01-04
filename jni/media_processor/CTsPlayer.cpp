@@ -1345,6 +1345,7 @@ bool CTsPlayer::iStartPlay()
             vcodec->video_type = pcodec->video_type;
             vcodec->video_pid  = pcodec->video_pid;
             vcodec->stream_type = STREAM_TYPE_ES_VIDEO;
+            vcodec->am_sysinfo.format = pcodec->am_sysinfo.format;
             if (CheckMultiSupported(pcodec->video_type) == true) {
                 vcodec->dec_mode = STREAM_TYPE_STREAM;
             } else {
@@ -1355,8 +1356,8 @@ bool CTsPlayer::iStartPlay()
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
             }
 
-            LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d\n",
-            vcodec->video_type, vcodec->video_pid);
+            LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d, dec_mode=%d\n",
+            vcodec->video_type, vcodec->video_pid, vcodec->dec_mode);
         }
         if(pcodec->has_audio){
             acodec->has_audio = 1;
@@ -1420,6 +1421,7 @@ bool CTsPlayer::iStartPlay()
         if (debug_single_mode) {
             pcodec->dec_mode = STREAM_TYPE_SINGLE;
         }
+        LOGI("dec_mode:%d\n", pcodec->dec_mode);
         ret = codec_init(pcodec);
     } else{
 #ifdef USE_OPTEEOS
@@ -1663,7 +1665,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
             return -1;
         } else {
             lp_lock(&mutex);
-            if (timestamp >= 0 && timestamp != 0xFFFFFFFF) {
+            if (timestamp >= 0 && timestamp != 0xffffffffffffffff) {
                 codec_checkin_pts(pcodec,  timestamp);
             }
             lp_unlock(&mutex);
@@ -1754,11 +1756,20 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
             m_bWrFirstPkg = false;
             writecount = 0;
         }
+        if((m_fp != NULL) && (temp_size > 0) && type == PLAYER_STREAMTYPE_VIDEO) {
+            fwrite(pBuffer, 1, temp_size, m_fp);
+            LOGI("ret[%d] temp_size[%d] nSize[%d]\n", ret, temp_size, nSize);
+        }
 
         if(m_bWrFirstPkg == true) {
             writecount++;
         }
     } else {
+        if(temp_size > 0) {
+            if(m_fp != NULL && type == PLAYER_STREAMTYPE_VIDEO)
+                fwrite(pBuffer, 1, temp_size, m_fp);
+            return temp_size;
+        }
         return -1;
     }
     return ret;

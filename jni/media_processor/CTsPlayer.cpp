@@ -2635,31 +2635,36 @@ bool CTsPlayer::SetErrorRecovery(int mode)
 
 void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
 {
-	buf_status audio_buf;
-	buf_status video_buf;
+    buf_status audio_buf;
+    buf_status video_buf;
 
-	//LOGI( "This is CTsPlayer::GetAvbufStatus(). pstatus=%d.\n", pstatus);
+    //LOGI( "This is CTsPlayer::GetAvbufStatus(). pstatus=%d.\n", pstatus);
 
-	if(pstatus == NULL)
-	{
-		return;
-	}
+    if(pstatus == NULL)
+    {
+        return;
+    }
 
     if (prop_softdemux == 1) {
-	    codec_get_abuf_state(acodec,&audio_buf);
-	    codec_get_vbuf_state(vcodec,&video_buf);
+        if (acodec->has_audio == 1) {
+            codec_get_abuf_state(acodec,&audio_buf);
+        }
+        codec_get_vbuf_state(vcodec,&video_buf);
     } else {
-	    codec_get_abuf_state(pcodec,&audio_buf);
-	    codec_get_vbuf_state(pcodec,&video_buf);
+        codec_get_abuf_state(pcodec,&audio_buf);
+        codec_get_vbuf_state(pcodec,&video_buf);
     }
-	pstatus->abuf_size = audio_buf.size;
-	pstatus->abuf_data_len = audio_buf.data_len;
-	pstatus->abuf_free_len = audio_buf.free_len;
-	pstatus->vbuf_size = video_buf.size;
-	pstatus->vbuf_data_len = video_buf.data_len;
-	pstatus->vbuf_free_len = video_buf.free_len;
 
-	return;
+    if (acodec->has_audio == 1) {
+        pstatus->abuf_size = audio_buf.size;
+        pstatus->abuf_data_len = audio_buf.data_len;
+        pstatus->abuf_free_len = audio_buf.free_len;
+    }
+    pstatus->vbuf_size = video_buf.size;
+    pstatus->vbuf_data_len = video_buf.data_len;
+    pstatus->vbuf_free_len = video_buf.free_len;
+
+    return;
 }
 
 void CTsPlayer::SwitchSubtitle(int pid)
@@ -2882,7 +2887,9 @@ void CTsPlayer::checkAbend()
 
     if(!m_bWrFirstPkg){
         bool checkAudio = true;
-        codec_get_abuf_state(pcodec, &audio_buf);
+        if (pcodec->has_audio == 1) {
+            codec_get_abuf_state(pcodec, &audio_buf);
+        }
         if(prop_softdemux == 0)
             codec_get_vbuf_state(pcodec, &video_buf);
         else
@@ -3057,7 +3064,9 @@ void CTsPlayer::checkVdecstate()
         }
         //monitor buffer staus ,overflow more than 2s reset player,if support
         if (prop_playerwatchdog_support && !m_bIsPause){
-            codec_get_abuf_state(pcodec, &audio_buf);
+            if (pcodec->has_audio == 1) {
+                codec_get_abuf_state(pcodec, &audio_buf);
+            }
             if(prop_softdemux == 0)
                 codec_get_vbuf_state(pcodec, &video_buf);
             else

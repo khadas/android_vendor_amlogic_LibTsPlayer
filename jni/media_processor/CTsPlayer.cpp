@@ -1353,6 +1353,11 @@ bool CTsPlayer::iStartPlay()
             pcodec->video_pid, pcodec->audio_pid);
     pcodec->noblock = 0;
 
+    //close tsync when only has video;
+    if (pcodec->has_audio == 0) {
+        amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0);
+    }
+
     char value[PROPERTY_VALUE_MAX] = {0};
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.dumpfile", value, "0");
@@ -2445,6 +2450,7 @@ bool CTsPlayer::SetRatio(int nRatio)
         new_width = mode_width;
         new_height = mode_height;
         sprintf(writedata, "%d %d %d %d", new_x, new_y, new_x +new_width - 1, new_y+new_height - 1);
+
         amsysfs_set_sysfs_str("/sys/class/video/axis", writedata);
         return true;
     } else if(nRatio == 2) {	//Fit by width
@@ -2455,6 +2461,7 @@ bool CTsPlayer::SetRatio(int nRatio)
         LOGI("SetRatio new_x: %d, new_y: %d, new_width: %d, new_height: %d\n"
                 , new_x, new_y, new_width, new_height);
         sprintf(writedata, "%d %d %d %d", new_x, new_y, new_x+new_width-1, new_y+new_height-1);
+
         amsysfs_set_sysfs_str("/sys/class/video/axis",writedata);
         return true;
     } else if(nRatio == 3) {	//Fit by height

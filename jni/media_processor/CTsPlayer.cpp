@@ -664,7 +664,7 @@ CTsPlayer::~CTsPlayer()
     pthread_join(mThread, NULL);
     pthread_join(mInfoThread, NULL);
     pthread_join(readThread, NULL);
-    if(prop_softdemux == 1){
+    if(prop_softdemux == 1 || (prop_multi_play == 1)){
         if(acodec){
             free(acodec);
             acodec = NULL;
@@ -1194,6 +1194,15 @@ bool CTsPlayer::StartPlay(){
             pcodec->start_no_out = 0;
         }
 
+        // add for some write ts stream
+        if (prop_multi_play) {
+            char value[PROPERTY_VALUE_MAX] = {0};
+            memset(value, 0, PROPERTY_VALUE_MAX);
+            property_get("iptv.softdemux", value, "0");
+            prop_softdemux = atoi(value);
+            LOGI("StartPlay: multi play, prop_softdemux=%d\n", prop_softdemux);
+        }
+
         mLastVdecInfoNum = -1;
         memset(&m_sCtsplayerState, 0, sizeof(struct ctsplayer_state));
         m_sCtsplayerState.video_ratio = -1;
@@ -1392,6 +1401,10 @@ bool CTsPlayer::iStartPlay()
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
             }
 
+            if (prop_multi_play == 1 && vcodec->video_type == VFORMAT_MJPEG) {
+                vcodec->am_sysinfo.rate = vPara.nFrameRate;
+            }
+
             if (debug_single_mode) {
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
             }
@@ -1539,9 +1552,11 @@ bool CTsPlayer::iStartPlay()
         //setSubRatioAuto();// 1.this function in subtitleservice is do nothing;2.don't free thread resource
     }
     lp_unlock(&mutex);
-    for (int i = 0; i<4; i++) {
-        ALOGE("call update_nativewindow");
-        update_nativewindow();
+    if (prop_multi_play == 1) {
+        for (int i = 0; i<4; i++) {
+            LOGI("call update_nativewindow");
+            update_nativewindow();
+        }
     }
     return !ret;
 }

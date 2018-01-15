@@ -3378,24 +3378,54 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.video_height = av_param_info.av_info.height;
         m_sCtsplayerState.frame_rate = av_param_info.av_info.fps;
         m_sCtsplayerState.current_fps = av_param_info.av_info.current_fps;
-        if (( m_sCtsplayerState.video_width==640) &&
-            (m_sCtsplayerState.video_height==480)) {
-            m_sCtsplayerState.video_ratio = 0;
-        } else if (( m_sCtsplayerState.video_width==720) &&
-            (m_sCtsplayerState.video_height==576)) {
-            m_sCtsplayerState.video_ratio = 1;
-        } else if (( m_sCtsplayerState.video_width==1280) &&
-            (m_sCtsplayerState.video_height==720)) {
-            m_sCtsplayerState.video_ratio = 2;
-        } else if (( m_sCtsplayerState.video_width==1920) &&
-            (m_sCtsplayerState.video_height==1080)) {
-            m_sCtsplayerState.video_ratio = 3;
-        } else if (( m_sCtsplayerState.video_width==3840) &&
-            (m_sCtsplayerState.video_height==2160)) {
-            m_sCtsplayerState.video_ratio = 4;
-        } else {
-            m_sCtsplayerState.video_ratio = 5;
-        }
+        #ifdef TELECOM_VFORMAT_SUPPORT
+            if (( m_sCtsplayerState.video_width==720) &&
+                (m_sCtsplayerState.video_height==480)) {
+                m_sCtsplayerState.video_ratio = 1;
+            } else if (( m_sCtsplayerState.video_width==720) &&
+                (m_sCtsplayerState.video_height==576)) {
+                m_sCtsplayerState.video_ratio = 2;
+            } else if (( m_sCtsplayerState.video_width==1280) &&
+                (m_sCtsplayerState.video_height==720)) {
+                m_sCtsplayerState.video_ratio = 3;
+            } else if (( m_sCtsplayerState.video_width==1920) &&
+                (m_sCtsplayerState.video_height==960)) {
+                m_sCtsplayerState.video_ratio = 4;
+            } else if (( m_sCtsplayerState.video_width==1920) &&
+                (m_sCtsplayerState.video_height==1080)) {
+                m_sCtsplayerState.video_ratio = 5;
+            } else if (( m_sCtsplayerState.video_width==1920) &&
+                (m_sCtsplayerState.video_height==1080)) {
+                m_sCtsplayerState.video_ratio = 6;
+            } else if (( m_sCtsplayerState.video_width==3840) &&
+                (m_sCtsplayerState.video_height==2160)) {
+                m_sCtsplayerState.video_ratio = 7;
+            } else if (( m_sCtsplayerState.video_width==7680) &&
+                (m_sCtsplayerState.video_height==4320)) {
+                m_sCtsplayerState.video_ratio = 8;
+            } else {
+
+            }
+        #else
+            if (( m_sCtsplayerState.video_width==640) &&
+                (m_sCtsplayerState.video_height==480)) {
+                m_sCtsplayerState.video_ratio = 0;
+            } else if (( m_sCtsplayerState.video_width==720) &&
+                (m_sCtsplayerState.video_height==576)) {
+                m_sCtsplayerState.video_ratio = 1;
+            } else if (( m_sCtsplayerState.video_width==1280) &&
+                (m_sCtsplayerState.video_height==720)) {
+                m_sCtsplayerState.video_ratio = 2;
+            } else if (( m_sCtsplayerState.video_width==1920) &&
+                (m_sCtsplayerState.video_height==1080)) {
+                m_sCtsplayerState.video_ratio = 3;
+            } else if (( m_sCtsplayerState.video_width==3840) &&
+                (m_sCtsplayerState.video_height==2160)) {
+                m_sCtsplayerState.video_ratio = 4;
+            } else {
+                m_sCtsplayerState.video_ratio = 5;
+            }
+        #endif
         float videoWH = 0;
         if(m_sCtsplayerState.video_width  > 0 && m_sCtsplayerState.video_width  > 0)
             videoWH =(float)m_sCtsplayerState.video_width  / (float)m_sCtsplayerState.video_width ;

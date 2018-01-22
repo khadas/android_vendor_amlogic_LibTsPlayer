@@ -19,6 +19,15 @@ CTC_AmlPlayer::CTC_AmlPlayer()
     m_pTsPlayer = GetMediaProcessor();
 }
 
+CTC_AmlPlayer::CTC_AmlPlayer(int count)
+{
+    ALOGI("CTC_AmlPlayer construct, count=%d\n", count);
+    if (count == 0) {
+        m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_NORMAL);
+    } else {
+        m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_HWOMX);
+    }
+}
 CTC_AmlPlayer::~CTC_AmlPlayer()
 {
     ALOGI("CTC_AmlPlayer destroy\n");

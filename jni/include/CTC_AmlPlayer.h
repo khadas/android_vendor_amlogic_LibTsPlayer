@@ -14,6 +14,7 @@ class CTC_AmlPlayer
 {
     public:
         CTC_AmlPlayer();
+        CTC_AmlPlayer(int count);
         ~CTC_AmlPlayer();
         int  CTC_GetAmlPlayerVersion();//获取版本
         int  CTC_GetPlayMode();//取得播放模式

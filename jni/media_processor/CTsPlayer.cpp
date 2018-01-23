@@ -85,6 +85,7 @@ static unsigned int prev_vread = 0;
 static int arp_is_changed = 0;
 static int vrp_is_changed = 0;
 static int prop_start_no_out = 0;
+static int s_screen_mode = -1;
 //unsigned int am_sysinfo_param =0x08;
 
 /* soft demux related*/
@@ -505,26 +506,7 @@ CTsPlayer::CTsPlayer()
     }
     codec_audio_basic_init();
     lp_lock_init(&mutex, NULL);
-    //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
-    int screen_mode = 0;
-    property_get("ubootenv.var.screenmode",value,"normal");
-    if(!strcmp(value,"normal"))
-        screen_mode = 0;
-    else if(!strcmp(value,"full"))
-        screen_mode = 1;
-    else if(!strcmp(value,"4_3"))
-        screen_mode = 2;
-    else if(!strcmp(value,"16_9"))
-        screen_mode = 3;
-    else if(!strcmp(value,"4_3 letter box"))
-        screen_mode = 7;
-    else if(!strcmp(value,"16_9 letter box"))
-        screen_mode = 11;
-    else
-        screen_mode = 1;
 
-
-    amsysfs_set_sysfs_int("/sys/class/video/screen_mode", screen_mode);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
 
     //set overflow status when decode h264_4k use format h264 .
@@ -1175,6 +1157,7 @@ unsigned char mjpeg_addon_data[] = {
 };
 bool CTsPlayer::StartPlay(){
         int ret;
+        char value[PROPERTY_VALUE_MAX] = {0};
         if(prop_start_no_out){// start with no out  mode
             set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);	//keep last frame instead of show first frame
             pcodec->start_no_out = 1;
@@ -1184,7 +1167,6 @@ bool CTsPlayer::StartPlay(){
 
         // add for some write ts stream
         if (prop_multi_play) {
-            char value[PROPERTY_VALUE_MAX] = {0};
             memset(value, 0, PROPERTY_VALUE_MAX);
             property_get("iptv.softdemux", value, "0");
             prop_softdemux = atoi(value);
@@ -1194,6 +1176,28 @@ bool CTsPlayer::StartPlay(){
         mLastVdecInfoNum = -1;
         memset(&m_sCtsplayerState, 0, sizeof(struct ctsplayer_state));
         m_sCtsplayerState.video_ratio = -1;
+
+        if (s_screen_mode == -1) {
+            //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
+            memset(value, 0, PROPERTY_VALUE_MAX);
+            property_get("ubootenv.var.screenmode", value, "normal");
+            if (!strcmp(value, "normal"))
+                s_screen_mode = 0;
+            else if (!strcmp(value, "full"))
+                s_screen_mode = 1;
+            else if (!strcmp(value, "4_3"))
+                s_screen_mode = 2;
+            else if (!strcmp(value, "16_9"))
+                s_screen_mode = 3;
+            else if (!strcmp(value, "4_3 letter box"))
+                s_screen_mode = 7;
+            else if (!strcmp(value, "16_9 letter box"))
+                s_screen_mode = 11;
+            else
+                s_screen_mode = 1;
+            amsysfs_set_sysfs_int("/sys/class/video/screen_mode", s_screen_mode);
+            LOGI("set screen_mode = %d\n", s_screen_mode);
+        }
 
         ret = iStartPlay();
         codec_set_freerun_mode(pcodec, 0);

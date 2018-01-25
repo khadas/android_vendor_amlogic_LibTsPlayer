@@ -1180,7 +1180,7 @@ bool CTsPlayer::StartPlay(){
         if (s_screen_mode == -1) {
             //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
             memset(value, 0, PROPERTY_VALUE_MAX);
-            property_get("ubootenv.var.screenmode", value, "normal");
+            property_get("ubootenv.var.screenmode", value, "full");
             if (!strcmp(value, "normal"))
                 s_screen_mode = 0;
             else if (!strcmp(value, "full"))

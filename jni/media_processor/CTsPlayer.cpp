@@ -385,6 +385,10 @@ CTsPlayer::CTsPlayer()
         prop_softdemux = 1;
 #endif
 
+    if (prop_esdata == 1 && prop_multi_play == 1) {
+        prop_softdemux = 1;
+    }
+
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.buffer.time", value, "2300");
     prop_buffertime = atoi(value);
@@ -1168,7 +1172,7 @@ bool CTsPlayer::StartPlay(){
         // add for some write ts stream
         if (prop_multi_play) {
             memset(value, 0, PROPERTY_VALUE_MAX);
-            property_get("iptv.softdemux", value, "0");
+            property_get("iptv.middle.softdemux", value, "0");
             prop_softdemux = atoi(value);
             LOGI("StartPlay: multi play, prop_softdemux=%d\n", prop_softdemux);
         }

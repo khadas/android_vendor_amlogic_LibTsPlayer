@@ -14,18 +14,32 @@
 
 #define LOG_TAG "CTC_MediaProcessor"
 
-
-
 // need single instance?
 ITsPlayer* GetMediaProcessor()
 {
-    property_set("iptv.middle.softdemux", "0");
-    property_set("media.ctcplayer.enable", "0");
+    char value[PROPERTY_VALUE_MAX] = {0};
+    int middle_soft_demux = 0;
+    int multi_enable = 0;
+
+    amsysfs_write_prop_ctc_multi("iptv.middle.softdemux", "0");
+    amsysfs_write_prop_ctc_multi("media.ctcplayer.enable", "0");
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.middle.softdemux", value, "0");
+    middle_soft_demux = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("media.ctcplayer.enable", value, "0");
+    multi_enable = atoi(value);
+
+
+    ALOGI("GetMediaProcessor, middle_soft_demux=%d, multi_enable=%d\n", middle_soft_demux, multi_enable);
     return new CTsPlayer();
 }
 
 ITsPlayer* GetMediaProcessor(player_type_t type)
 {
+    ALOGI("GetMediaProcessor, type=%d\n", type);
     int mOmxDebug = 0;
     char value[PROPERTY_VALUE_MAX] = {0};
 

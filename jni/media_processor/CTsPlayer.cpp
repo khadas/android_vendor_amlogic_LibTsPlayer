@@ -385,6 +385,8 @@ CTsPlayer::CTsPlayer()
         prop_softdemux = 1;
 #endif
 
+    LOGI("prop_esdata=%d, prop_multi_play=%d\n", prop_esdata, prop_multi_play);
+
     if (prop_esdata == 1 && prop_multi_play == 1) {
         prop_softdemux = 1;
     }

@@ -113,6 +113,10 @@ int CTC_AmlPlayer::CTC_StartPlay()
 
     ret = m_pTsPlayer->StartPlay();
 
+    if (ret == 0) {
+        ret = -1;
+    }
+
     return ret;
 }
 

@@ -1238,6 +1238,7 @@ bool CTsPlayer::iStartPlay()
         lp_unlock(&mutex);
         return true;
     }
+
     amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,SCALING_MODE);
     perform_flag =1;
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
@@ -1267,6 +1268,13 @@ bool CTsPlayer::iStartPlay()
     property_get("iptv.hasvideo", vaule, "1");
     hasvideo = atoi(vaule);
 
+#if 0
+    if (prop_multi_play == 1 && CheckMultiSupported(pcodec->video_type) == false) {
+        LOGI("not support video file, return false");
+        //m_bIsPlay = true;
+        return false;
+    }
+#endif
 
     /*if(pcodec->audio_type == AFORMAT_AAC_LATM) {
         pcodec->audio_type = AFORMAT_EAC3;
@@ -1393,7 +1401,7 @@ bool CTsPlayer::iStartPlay()
             vcodec->video_pid  = pcodec->video_pid;
             vcodec->stream_type = STREAM_TYPE_ES_VIDEO;
             vcodec->am_sysinfo.format = pcodec->am_sysinfo.format;
-            if (CheckMultiSupported(pcodec->video_type) == true) {
+            if (prop_multi_play == 1/*CheckMultiSupported(pcodec->video_type) == true*/) {
                 vcodec->dec_mode = STREAM_TYPE_STREAM;
             } else {
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
@@ -1462,12 +1470,11 @@ bool CTsPlayer::iStartPlay()
 
     //check_remove_ppmgr();
     if(prop_softdemux == 0) {
-
-		if (CheckMultiSupported(pcodec->video_type) == true) {
-			pcodec->dec_mode = STREAM_TYPE_STREAM;
-		} else {
-			pcodec->dec_mode = STREAM_TYPE_SINGLE;
-		}
+        if (prop_multi_play == 1/*CheckMultiSupported(pcodec->video_type) == true*/) {
+            pcodec->dec_mode = STREAM_TYPE_STREAM;
+        } else {
+            pcodec->dec_mode = STREAM_TYPE_SINGLE;
+        }
 
         if (debug_single_mode) {
             pcodec->dec_mode = STREAM_TYPE_SINGLE;
@@ -1564,9 +1571,9 @@ bool CTsPlayer::CheckMultiSupported(int video_type){
     char value[92];
     if(property_get("media.ctcplayer.enable", value, NULL) > 0) {
         sscanf(value, "%d", &multi_dec_support);
-        ALOGD("media.ctcplayer.enable=%d", multi_dec_support);
+        ALOGD("media.ctcplayer.enable=%d, video_type=%d\n", multi_dec_support, video_type);
     } else
-        ALOGW("Can not read property media.ctcplayer.enable, using %d\n", multi_dec_support);
+        ALOGW("Can not read property media.ctcplayer.enable, using %d, video_type=%d\n", multi_dec_support, video_type);
     if ((video_type != VFORMAT_HEVC) && (video_type != VFORMAT_H264)
             && (video_type != VFORMAT_MPEG12) && (video_type != VFORMAT_MPEG4) && (video_type != VFORMAT_MJPEG)) {
 	    ALOGI("CheckMultiSupported --video_type:%d\n", video_type);

@@ -3178,8 +3178,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
         videoFrmInfo.nVidFrmPTS = pframe_qos[i].pts;
         videoFrmInfo.nVidFrmQP = pframe_qos[i].avg_qp;
         videoFrmInfo.nMaxMV = pframe_qos[i].max_mv;
-        videoFrmInfo.nMinMV= pframe_qos[i].min_mv;
-        videoFrmInfo.nMinMV = pframe_qos[i].avg_mv;
+        videoFrmInfo.nMinMV = pframe_qos[i].min_mv;
+        videoFrmInfo.nAvgMV = pframe_qos[i].avg_mv;
         videoFrmInfo.SkipRatio = pframe_qos[i].avg_skip;
 		//LOGD("GetVideoFrameInfo  info_num=%d (%d-%d)  %d\n",
 		//	info_num, curVdecInfoNum, tsplayer->mLastVdecInfoNum, frametype);

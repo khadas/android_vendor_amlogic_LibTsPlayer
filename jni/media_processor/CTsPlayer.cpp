@@ -1312,6 +1312,10 @@ bool CTsPlayer::iStartPlay()
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",0);
         pcodec->has_audio = 0;
         pcodec->audio_pid = -1;
+        if (pcodec->video_type == VFORMAT_H264) {
+            pcodec->am_sysinfo.param   = (void *)(0x08);
+             LOGI("no_poc_reorder\n");
+        }
     }
 
     pcodec->video_pid = (int)vPara.pid;

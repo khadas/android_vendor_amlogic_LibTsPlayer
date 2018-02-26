@@ -458,7 +458,7 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
     LOGI("/sys/class/cputype/cputype:%s\n", value);
-    if (value[0] != '\0' && (!strcasecmp(value, "905L") || !strcasecmp(value, "905M2")))
+    if (value[0] != '\0' && (strstr(value, "905L") || !strcasecmp(value, "905M2")))
         s_h264sameucode = true;
 
     LOGI("CTsPlayer, prop_shouldshowlog: %d, prop_buffertime: %d, prop_dumpfile: %d, audio bufferlevel: %f,video bufferlevel: %f, prop_softfit: %d,player_watchdog_support:%d, isDrm: %d prop_write_log:%d\n",

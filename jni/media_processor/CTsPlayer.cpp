@@ -2374,7 +2374,7 @@ int CTsPlayer::GetVolume()
 
 bool CTsPlayer::SetVolume(int volume)
 {
-    LOGI("SetVolume");
+    LOGI("SetVolume: volume=%d\n",volume);
     int ret = 0;
     if(volume<0 || volume>100){
         LOGI("SetVolume , value is invalid \n");

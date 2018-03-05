@@ -1314,10 +1314,6 @@ bool CTsPlayer::iStartPlay()
         amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_reserve",0);
         pcodec->has_audio = 0;
         pcodec->audio_pid = -1;
-        if (pcodec->video_type == VFORMAT_H264) {
-            pcodec->am_sysinfo.param   = (void *)(0x08);
-             LOGI("no_poc_reorder\n");
-        }
     }
 
     pcodec->video_pid = (int)vPara.pid;
@@ -1420,6 +1416,10 @@ bool CTsPlayer::iStartPlay()
             if (debug_single_mode) {
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
             }
+            if (m_bFast && vcodec->dec_mode == STREAM_TYPE_STREAM && vcodec->video_type == VFORMAT_H264) {
+                vcodec->am_sysinfo.param   = (void *)(0x08);
+                LOGI("STREAM_TYPE_STREAM fast no_poc_reorder\n");
+            }
 
             LOGI("Init the vcodec parameters:video_type:%d,video_pid:%d, dec_mode=%d\n",
             vcodec->video_type, vcodec->video_pid, vcodec->dec_mode);
@@ -1484,6 +1484,10 @@ bool CTsPlayer::iStartPlay()
 
         if (debug_single_mode) {
             pcodec->dec_mode = STREAM_TYPE_SINGLE;
+        }
+        if (m_bFast && pcodec->dec_mode == STREAM_TYPE_STREAM && pcodec->video_type == VFORMAT_H264) {
+            pcodec->am_sysinfo.param   = (void *)(0x08);
+            LOGI("STREAM_TYPE_STREAM fast no_poc_reorder\n");
         }
         LOGI("dec_mode:%d\n", pcodec->dec_mode);
         ret = codec_init(pcodec);

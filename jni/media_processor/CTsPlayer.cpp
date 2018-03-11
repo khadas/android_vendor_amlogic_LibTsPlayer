@@ -3445,8 +3445,8 @@ int CTsPlayer::updateCTCInfo()
             }
         #endif
         float videoWH = 0;
-        if(m_sCtsplayerState.video_width  > 0 && m_sCtsplayerState.video_width  > 0)
-            videoWH =(float)m_sCtsplayerState.video_width  / (float)m_sCtsplayerState.video_width ;
+        if (m_sCtsplayerState.video_width  > 0 && m_sCtsplayerState.video_height > 0)
+            videoWH = (float)m_sCtsplayerState.video_width  / (float)m_sCtsplayerState.video_height;
         if (videoWH < 1.34) {
             m_sCtsplayerState.video_rWH = 0;
         } else if(videoWH > 1.7) {

@@ -39,6 +39,8 @@ using namespace android;
 #define MAX_WRITE_VLEVEL 0.99
 #define READ_SIZE (64 * 1024)
 #define CTC_BUFFER_LOOP_NSIZE 1316
+#define AV_NOPTS_VALUE      (0x8000000000000000)
+
 
 static bool m_StopThread = false;
 
@@ -1730,7 +1732,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
             return -1;
         } else {
             lp_lock(&mutex);
-            if (timestamp >= 0 && timestamp != 0xffffffffffffffff) {
+            if (timestamp >= 0 && timestamp != 0xffffffffffffffff && timestamp != AV_NOPTS_VALUE) {
                 codec_checkin_pts(pcodec,  timestamp);
             }
             lp_unlock(&mutex);
@@ -1766,7 +1768,7 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
             return -1;
         } else {
          	lp_lock(&mutex);
-            if (timestamp >= 0) {
+            if (timestamp >= 0 && timestamp != AV_NOPTS_VALUE) {
                 codec_checkin_pts(pcodec,  timestamp);
             }
 	        lp_unlock(&mutex);

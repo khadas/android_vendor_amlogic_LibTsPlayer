@@ -2093,9 +2093,13 @@ bool CTsPlayer::Fast()
         else
             ret = codec_set_mode(vcodec, TRICKMODE_I_HEVC);
     } else {
-        if(prop_softdemux == 0)
+        if (prop_softdemux == 0) {
             ret = codec_set_mode(pcodec, TRICKMODE_I);
-        else
+            if (ret == 0) {
+                ret = codec_set_cntl_mode(pcodec, TRICKMODE_I);
+                LOGI("fast set video TRICKMODE_I ret:%d\n", ret);
+            }
+        } else
             ret = codec_set_mode(vcodec, TRICKMODE_I);
     }
     return !ret;
@@ -2126,9 +2130,13 @@ bool CTsPlayer::StopFast()
         LOGI("error stopfast set freerun_mode 0 fail\n");
     }
 
-    if(prop_softdemux == 0)
+    if (prop_softdemux == 0) {
         ret = codec_set_mode(pcodec, TRICKMODE_NONE);
-    else
+        if (ret == 0) {
+            ret = codec_set_cntl_mode(pcodec, TRICKMODE_NONE);
+            LOGI("stopfast set video TRICKMODE_NONE ret:%d\n", ret);
+        }
+    } else
         ret = codec_set_mode(vcodec, TRICKMODE_NONE);
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_all", 0);
     keep_vdec_mem = 1;

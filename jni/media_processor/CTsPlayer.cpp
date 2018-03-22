@@ -2177,6 +2177,9 @@ bool CTsPlayer::Stop(){
     }
 
     ret = iStop();
+    memset(a_aPara, 0 , sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
+    memset(&vPara, 0 , sizeof(VIDEO_PARA_T));
+    memset(sPara, 0 , sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
 
     adec_underflow = 0;
     vdec_underflow = 0;

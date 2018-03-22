@@ -2053,7 +2053,7 @@ static void Check_FirstPictur_Coming(void)
 bool CTsPlayer::Fast()
 {
     int ret;
-    char value[8] = {0};
+
     LOGI("Fast");
 
     //amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/chip_fast_flag", 1);
@@ -2071,11 +2071,6 @@ bool CTsPlayer::Fast()
     }
     iStop();
     m_bFast = true;
-
-    amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, sizeof(value));
-    LOGI("fast /sys/class/cputype/cputype:%s\n", value);
-    if (value[0] != '\0' && (strstr(value, "905L") || !strcasecmp(value, "905M2")))
-        s_h264sameucode = false;
 
     // remove di from vfm path
     //remove_di();
@@ -2113,19 +2108,15 @@ bool CTsPlayer::Fast()
 bool CTsPlayer::StopFast()
 {
     int ret;
-    char value[8] = {0};
+
     //amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/chip_fast_flag", 0);
-    amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, sizeof(value));
-    LOGI("stop fast /sys/class/cputype/cputype:%s\n", value);
-    if (value[0] != '\0' && (strstr(value, "905L") || !strcasecmp(value, "905M2")))
-        s_h264sameucode = true;
 
     if(!m_bFast){
       LOGI("Last is None fast");
       return true;
     }
-    LOGI("StopFast");
 
+    LOGI("StopFast");
     if (pcodec->has_sub == 1)
         subtitleResetForSeek();
     m_bFast = false;

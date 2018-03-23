@@ -3229,7 +3229,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
                 videoFrmInfo.nAvgMV,
                 videoFrmInfo.SkipRatio);
 
-        if (pfunc_player_param_evt != NULL) {
+        if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
             pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrmInfo);
         }
 

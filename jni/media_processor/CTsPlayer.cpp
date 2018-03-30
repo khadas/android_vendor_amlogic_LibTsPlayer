@@ -1181,7 +1181,7 @@ bool CTsPlayer::StartPlay(){
             LOGI("StartPlay: multi play, prop_softdemux=%d\n", prop_softdemux);
         }
 
-        mLastVdecInfoNum = -1;
+        mLastVdecInfoNum = 0;//modified first frame show will be 0
         memset(&m_sCtsplayerState, 0, sizeof(struct ctsplayer_state));
         m_sCtsplayerState.video_ratio = -1;
 

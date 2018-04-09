@@ -3191,6 +3191,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 
         return 1;
         for(i=0;i<QOS_FRAME_NUM;i++) {
+            if (pframe_qos[i].size == 0)
+                break;
 #if 0
                   LOGI("##kernel Info, LastNum=%d,curNum=%d, type %d size %d PTS %d QP %d MaxMV %d MinMV %d AvgMV %d AvgSkip %d\n",
                 mLastVdecInfoNum,  pframe_qos[i].num,
@@ -3234,7 +3236,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
         }
 
     }
-    mLastVdecInfoNum  = pframe_qos[0].num;
+    if ( i >= 1)
+        mLastVdecInfoNum  = pframe_qos[0].num;
     return 0;
 }
 #endif
@@ -3253,7 +3256,7 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                     tsplayer->m_sCtsplayerState.video_height);
                     max_count = 1;
                 }else
-                     max_count = 40;
+                     max_count = 5;
                 checkcount1++;
                 if(checkcount1 >= max_count) {
                     //tsplayer->Report_video_paramters();

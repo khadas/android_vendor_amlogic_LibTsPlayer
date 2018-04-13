@@ -469,6 +469,16 @@ private:
     int width_old,width_new;
     int height_old,height_new;
 
+    int frame_rate_ctc;
+    int threshold_value;
+    int threshold_ctl_flag;
+    int underflow_ctc;
+    int underflow_kernel;
+    int underflow_tmp;
+    int underflow_count;
+    int qos_count;
+    int prev_vread_buffer;
+    int vrp_is_buffer_changed;
 
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
@@ -488,6 +498,8 @@ private:
 
     pthread_t readThread;
     virtual void checkAbend();
+    virtual int checkunderflow();
+    virtual void checkunderflow_type();
     virtual void checkBuffLevel();
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);

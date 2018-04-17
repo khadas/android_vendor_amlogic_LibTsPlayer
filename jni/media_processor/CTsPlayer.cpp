@@ -3316,7 +3316,6 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nUnderflow = underflow_statistics[i];
         }
 
-        videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e) pframe_qos[i].type;
         if (pframe_qos[i].type == 4)
             videoFrmInfo.enVidFrmType = VID_FRAME_TYPE_I;
         LOGD("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",

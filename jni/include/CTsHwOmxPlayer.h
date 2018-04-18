@@ -48,7 +48,9 @@ public:
     virtual void resumeAudio();
     virtual void ExecuteCmd(const char* cmd_str);
     virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp);
-
+#ifdef IPTV_ZTE_SUPPORT
+    virtual int GetAVPTSDiff(int *avdiff);
+#endif
     int WriteData2();
 
     /*need to add an empty definition for these virtual functions*/
@@ -88,7 +90,7 @@ public:
     virtual int64_t GetCurrentPlayTime();
     virtual void leaveChannel();
     virtual void playerback_register_evt_cb(IPTV_PLAYER_EVT_CB pfunc, void *hander);
-#ifdef TELECOM_QOS_SUPPORT
+#if defined(TELECOM_QOS_SUPPORT) || defined(IPTV_ZTE_SUPPORT)
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
 #endif
     //ZTEDSP 20140905 闁告艾鐗嗛崣锟�760D 濞寸媴绲块悥婊堝储閻斿娼楅柟鎭掑劚瑜版盯宕氶崶銊ュ簥闂傚﹤鐤囧娲嫉婢舵劖锛栧Λ甯嫹
@@ -126,8 +128,13 @@ public:
 	virtual int GetVideoDropNumber();
 	virtual int GetVideoTotalNumber();
 	virtual int GetCurrentVidPTS(unsigned long long  *pPTS);
+#ifdef IPTV_ZTE_SUPPORT
+    virtual void GetVideoInfo (int *width,int *height ,int  *ratio,int *frame_format);
+#else
 	virtual void GetVideoInfo (int *width,int *height ,int  *ratio);
+#endif
     virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL);
+    void createBlackOverlay();
 
 private:
     FILE* mFp;
@@ -139,14 +146,19 @@ private:
     PLAYER_STREAMTYPE_E ctcStreamType;
 
     sp<SurfaceComposerClient> mSoftComposerClient;
+    sp<SurfaceControl> mSoftControl;
+    sp<Surface> mSoftSurface;
+    sp<SurfaceComposerClient> mSoftComposerClient2;
+    sp<SurfaceControl> mSoftControl2;
+    sp<Surface> mSoftSurface2;
+
     bool mIsPlaying;
     int mApkUiWidth;
     int mApkUiHeight;
     sp<LivePlayer> mLivePlayer;
     int pipe_fd[2];
 	int place_holder_fd[3];
-    sp<SurfaceControl> mSoftControl;
-    sp<Surface> mSoftSurface;
+    int mVolume;
     sp<ALooper> mLooper;
     int mDataWrited;
     char* mProbeBuffer;
@@ -170,8 +182,12 @@ private:
     int64_t mLastWriteTimeUs;
     int64_t mStartWriteTimeUs;
     uint64_t mLastWriteSize;
+    bool mSupportMutilDecoder;
+    bool mSupportVideoFormat;
+    bool mSupportAudioFormat;
 
 	size_t mSleepCount;
+    uint32_t mProbeMaxBufSize;
 
     class RunWorker: public Thread {
     public:
@@ -198,7 +214,8 @@ private:
 
     sp<RunWorker> mRunWorkerStartPlayer;
     sp<RunWorker> mRunWorkerDataFeeder;
-
+    //PAUDIO_PARA_T mAudioPara;
+    //PVIDEO_PARA_T mVideoPara;
 };
 
 #endif  //  _CTC_HWOMXPLAYER_H_

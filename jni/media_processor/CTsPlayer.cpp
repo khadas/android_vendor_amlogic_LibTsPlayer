@@ -3273,16 +3273,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     //if(pframe_qos[0].num == mLastVdecInfoNum)
         //return 1;
 
-    for (i=0;i<QOS_FRAME_NUM;i++) {
-        if ((0 != mLastVdecInfoNum) &&
-        (0 == pframe_qos[i].num) &&
-        (0 == underflow_statistics[i]) &&
-        (0 == pframe_qos[i].max_mv) &&
-        (0 == pframe_qos[i].max_qp))
-            return 1;  //net broke then resume
+    for (i=0;i<frame_rate_ctc;i++) {
 
-        if (pframe_qos[i].size == 0)
-            break;
         if (2 == underflow_statistics[i])
             underflow_tmp = 2;
         else if (3 == underflow_statistics[i])
@@ -3316,8 +3308,10 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nUnderflow = underflow_statistics[i];
         }
 
-        if (pframe_qos[i].type == 4)
+        if ((pframe_qos[i].type == 4) &&
+            (0 == underflow_statistics[i]))
             videoFrmInfo.enVidFrmType = VID_FRAME_TYPE_I;
+        if ((0 != videoFrmInfo.nVidFrmSize) || (0 != videoFrmInfo.nUnderflow))
         LOGD("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
                 mLastVdecInfoNum,
                 pframe_qos[i].num,
@@ -3450,12 +3444,12 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.first_picture_comming = 1;
         if (!threshold_ctl_flag) {
             if (av_param_info.av_info.width > 1920)
-                threshold_value = 500;
+                threshold_value = 700;
             else if (av_param_info.av_info.width <= 1920
                 && av_param_info.av_info.width > 720)
-                threshold_value = 250;
+                threshold_value = 300;
             else if (av_param_info.av_info.width <= 720)
-                threshold_value = 200;
+                threshold_value = 250;
             threshold_ctl_flag = 1;
         }
     } else {

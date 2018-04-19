@@ -226,19 +226,19 @@ typedef enum {
 typedef struct {
     VID_FRAME_TYPE_e enVidFrmType;
     int  nVidFrmSize;
-    int  nVidFrmQP;
-    int  nVidFrmPTS;
-    int  nMaxMV;
+    int  nMinQP;
+    int  nMaxQP;
+    int  nAvgQP;
     int  nMinMV;
+    int  nMaxMV;
     int  nAvgMV;
     int  SkipRatio;
-    int  nMaxQP;
-    int  nMinQP;
-    int  nAvgQP;
+    int  nUnderflow;
+    int  nVidFrmQP;
+    int  nVidFrmPTS;
     int  nMaxSkip;
     int  nMinSkip;
     int  nAvgSkip;
-    int  nUnderflow;
 }VIDEO_FRM_STATUS_INFO_T;
 
 #ifdef TELECOM_QOS_SUPPORT

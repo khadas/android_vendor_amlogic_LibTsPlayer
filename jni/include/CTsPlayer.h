@@ -229,8 +229,8 @@ typedef struct {
     int  nMinQP;
     int  nMaxQP;
     int  nAvgQP;
-    int  nMinMV;
     int  nMaxMV;
+    int  nMinMV;
     int  nAvgMV;
     int  SkipRatio;
     int  nUnderflow;

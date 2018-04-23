@@ -3315,7 +3315,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.SkipRatio = 0;
         }
         if ((0 != videoFrmInfo.nVidFrmSize) || (0 != videoFrmInfo.nUnderflow)) {
-            LOGD("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMinMV %d nMaxMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
+            LOGD("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
                     mLastVdecInfoNum,
                     pframe_qos[i].num,
                     videoFrmInfo.enVidFrmType,
@@ -3323,8 +3323,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
                     videoFrmInfo.nMinQP,
                     videoFrmInfo.nMaxQP,
                     videoFrmInfo.nAvgQP,
-                    videoFrmInfo.nMinMV,
                     videoFrmInfo.nMaxMV,
+                    videoFrmInfo.nMinMV,
                     videoFrmInfo.nAvgMV,
                     videoFrmInfo.SkipRatio,
                     videoFrmInfo.nUnderflow);

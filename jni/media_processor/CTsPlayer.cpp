@@ -3364,7 +3364,7 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                         max_count = 25;
                 }
                 checkcount1++;
-                if(checkcount1 >= max_count) {
+                if (checkcount1 >= max_count && tsplayer->m_sCtsplayerState.first_picture_comming == 1) {
                     //tsplayer->Report_video_paramters();
                     tsplayer->updateCTCInfo();
                     checkcount1 = 0;

@@ -3314,6 +3314,9 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.enVidFrmType = VID_FRAME_TYPE_I;
             videoFrmInfo.SkipRatio = 0;
         }
+        if (0 != underflow_statistics[i]) {
+            videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
+        }
         if ((0 != videoFrmInfo.nVidFrmSize) || (0 != videoFrmInfo.nUnderflow)) {
             LOGD("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
                     mLastVdecInfoNum,
@@ -3678,7 +3681,7 @@ int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
 	case IPTV_PLAYER_ATTR_BUTT :
 		LOGV("--IPTV_PLAYER_ATTR_BUTT\n");
 		break;
-	case IPTV_PLAYER_ATTR_V_FRAME_RATE:
+	case IPTV_PLAYER_ATTR_VID_FRAMERATE:
 		GetVideoFrameRate();
 		*value = m_sCtsplayerState.frame_rate;
 		break;

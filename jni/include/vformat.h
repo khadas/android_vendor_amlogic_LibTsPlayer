@@ -69,6 +69,7 @@ typedef enum {
     VFORMAT_H264_4K2K,
     VFORMAT_HEVC,
     VFORMAT_UNSUPPORT,
+    VFORMAT_AVS2 = 0xF210,
     VFORMAT_MAX
 } vformat_t;
 

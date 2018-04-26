@@ -52,6 +52,9 @@ int prop_softdemux = 0;
 int prop_esdata = 0;
 int prop_multi_play = 0;
 int debug_single_mode = 0;
+//#define MULTIMODE
+/*debug_multi_mode for  notify multi mode*/
+int debug_multi_mode = 1;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
 int prop_readffmpeg = 0;
@@ -358,6 +361,12 @@ CTsPlayer::CTsPlayer()
 {
     char value[PROPERTY_VALUE_MAX] = {0};
 
+    pthread_mutexattr_t mutexattr;
+    pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr,PTHREAD_MUTEX_RECURSIVE);
+    lp_lock_init(&mutex, &mutexattr);
+    lp_lock_init(&mutex_lp, &mutexattr);
+    pthread_mutexattr_destroy(&mutexattr);
     property_get("iptv.shouldshowlog", value, "0");//initial the log switch
     prop_shouldshowlog = atoi(value);
 
@@ -385,12 +394,14 @@ CTsPlayer::CTsPlayer()
     if (property_get("media.ctcplayer.singlemode", value, NULL) > 0)
         debug_single_mode = atoi(value);
 
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    if (property_get("media.ctcplayer.multimode", value, NULL) > 0)
+        debug_multi_mode = atoi(value);
 #ifdef USE_OPTEEOS
     if(DRMMode)
         prop_softdemux = 1;
 #endif
-
-    LOGI("prop_esdata=%d, prop_multi_play=%d\n", prop_esdata, prop_multi_play);
+    LOGI("prop_esdata=%d, prop_multi_play=%d,debug_multi_mode:%d\n", prop_esdata, prop_multi_play,debug_multi_mode);
 
     if (prop_esdata == 1 && prop_multi_play == 1) {
         prop_softdemux = 1;
@@ -668,6 +679,8 @@ CTsPlayer::~CTsPlayer()
         }
     }
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
+    lp_lock_deinit(&mutex);
+    lp_lock_deinit(&mutex_lp);
 }
 
 //取得播放模式,保留，暂不用
@@ -1334,6 +1347,7 @@ bool CTsPlayer::iStartPlay()
     pcodec->video_pid = (int)vPara.pid;
     if(pcodec->video_type == VFORMAT_H264 && !s_h264sameucode) {
         pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264;
+        lp_lock(&mutex_lp);
         lpbuffer_st.buffer = (unsigned char *)malloc(CTC_BUFFER_LOOP_NSIZE*buffersize);
         if(lpbuffer_st.buffer == NULL) {
             LOGI("malloc failed\n");
@@ -1342,16 +1356,14 @@ bool CTsPlayer::iStartPlay()
             lpbuffer_st.wp = NULL;
         } else{
             LOGI("malloc success\n");
-            lp_lock_init(&mutex_lp, NULL);
-            lp_lock(&mutex_lp);
             lpbuffer_st.enlpflag = true;
             lpbuffer_st.rp = lpbuffer_st.buffer;
             lpbuffer_st.wp = lpbuffer_st.buffer;
             lpbuffer_st.bufferend = lpbuffer_st.buffer + CTC_BUFFER_LOOP_NSIZE*buffersize;
             lpbuffer_st.valid_can_read = 0;
             memset(lpbuffer_st.buffer, 0, CTC_BUFFER_LOOP_NSIZE*buffersize);
-            lp_unlock(&mutex_lp);
         }
+        lp_unlock(&mutex_lp);
 
 		/*if(m_bFast){
 			pcodec->am_sysinfo.param=(void *)am_sysinfo_param;
@@ -1395,6 +1407,9 @@ bool CTsPlayer::iStartPlay()
     property_get("iptv.dumpfile", value, "0");
     prop_dumpfile = atoi(value);
 
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    if (property_get("media.ctcplayer.multimode", value, NULL) > 0)
+        debug_multi_mode = atoi(value);
     if(prop_dumpfile){
         if(m_fp == NULL) {
             char tmpfilename[1024] = "";
@@ -1430,6 +1445,10 @@ bool CTsPlayer::iStartPlay()
 
             if (debug_single_mode) {
                 vcodec->dec_mode = STREAM_TYPE_SINGLE;
+            }
+            if (debug_multi_mode == 1) {
+                vcodec->dec_mode = STREAM_TYPE_STREAM;
+                LOGI("media.ctcplayer.multimode:%d, use STREAM_TYPE_STREAM\n",debug_multi_mode);
             }
             if (m_bFast && vcodec->dec_mode == STREAM_TYPE_STREAM && vcodec->video_type == VFORMAT_H264) {
                 vcodec->am_sysinfo.param   = (void *)(0x08);
@@ -1499,6 +1518,10 @@ bool CTsPlayer::iStartPlay()
 
         if (debug_single_mode) {
             pcodec->dec_mode = STREAM_TYPE_SINGLE;
+        }
+        if (debug_multi_mode == 1) {
+            pcodec->dec_mode = STREAM_TYPE_STREAM;
+            LOGI("media.ctcplayer.multimode:%d, use STREAM_TYPE_STREAM\n",debug_multi_mode);
         }
         if (m_bFast && pcodec->dec_mode == STREAM_TYPE_STREAM && pcodec->video_type == VFORMAT_H264) {
             pcodec->am_sysinfo.param   = (void *)(0x08);
@@ -3194,6 +3217,24 @@ void CTsPlayer::checkVdecstate()
                 LOGI("fatal_error_reset=1,DECODER_FATAL_ERROR_UNKNOW happened force reset decoder\n ");
                 amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/decoder_force_reset", 1);
             }
+        }
+        char value[PROPERTY_VALUE_MAX] = {0};
+        int reset =0;
+        if (property_get("media.ctcplayer.reset", value, NULL) > 0) {
+            reset = atoi(value);
+        }
+        if (((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) ||
+            (video_status.status &DECODER_FATAL_ERROR_UNKNOW) ||
+           (video_status.status &DECODER_FATAL_ERROR_NO_MEM) ||
+           reset) &&
+            (pcodec->video_type == VFORMAT_HEVC)) {
+            LOGI("VFORMAT_HEVC error:%x ,reset  player\n ",video_status.status);
+            //lp_unlock(&mutex);
+            iStop();
+            usleep(500*1000);
+            iStartPlay();
+            //lp_lock(&mutex);
+            return;
         }
         //monitor buffer staus ,overflow more than 2s reset player,if support
         if (prop_playerwatchdog_support && !m_bIsPause){

@@ -29,6 +29,7 @@ extern "C" {
 
 #define lock_t          pthread_mutex_t
 #define lp_lock_init(x,v)   pthread_mutex_init(x,v)
+#define lp_lock_deinit(x)   pthread_mutex_destroy(x)
 #define lp_lock(x)      pthread_mutex_lock(x)
 #define lp_trylock(x)   pthread_mutex_trylock(x)
 #define lp_unlock(x)    pthread_mutex_unlock(x)

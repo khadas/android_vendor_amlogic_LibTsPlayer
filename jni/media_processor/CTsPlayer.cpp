@@ -43,6 +43,7 @@ using namespace android;
 
 
 static bool m_StopThread = false;
+int64_t first_frame=0;
 
 //log switch
 static int prop_shouldshowlog = 0;
@@ -65,9 +66,12 @@ int prop_audiobuftime = 1000;
 int prop_videobuftime = 1000;
 int prop_show_first_frame_nosync = 0;
 int keep_vdec_mem = 0;
+int prop_async_stop = 0;
+int async_flag = 0;
+int clearlastframe_flag = 0;
 int prop_write_log = 0;
 int prop_trickmode_debug = 0;
-
+int m_AStopPending = 0;
 char underflow_statistics[60] = {0};
 
 
@@ -225,6 +229,17 @@ aformat_t changeAformat(aformat_t index)
         return index;
 }
 #endif
+
+#define WAIT_EVENT(value) \
+do { \
+        LOGE("[%s:%d] WAIT_EVENT in \n",__FUNCTION__, __LINE__); \
+        lp_lock(&mutex); \
+        while (value) { \
+            pthread_cond_wait(&m_pthread_cond, &mutex); \
+        } \
+        lp_unlock(&mutex); \
+        LOGE("[%s:%d] WAIT_EVENT out \n",__FUNCTION__, __LINE__); \
+} while(0)
 
 void InitOsdScale(int width, int height)
 {
@@ -445,6 +460,10 @@ CTsPlayer::CTsPlayer()
     H264_error_skip_ff = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("media.async.stop.enable", value, NULL);
+    prop_async_stop = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.h264.error_skip_reserve", value, "20");
     H264_error_skip_reserve = atoi(value);
 
@@ -552,7 +571,7 @@ CTsPlayer::CTsPlayer()
     m_StopThread = false;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    pthread_create(&mThread, &attr, threadCheckAbend, this);
+    pthread_create(&mThread[0], &attr, threadCheckAbend, this);
     pthread_attr_destroy(&attr);
 
 #ifdef TELECOM_QOS_SUPPORT
@@ -582,6 +601,9 @@ CTsPlayer::CTsPlayer()
     }
     mIsOmxPlayer = false;
     memset(&m_sCtsplayerState, 0, sizeof(struct ctsplayer_state));
+    if (prop_async_stop) {
+        pthread_create(&mThread[1], NULL, init_thread, this);
+    }
 }
 
 #define AML_VFM_MAP "/sys/class/vfm/map"
@@ -654,7 +676,10 @@ CTsPlayer::~CTsPlayer()
         perform_flag =0;
     }
     m_StopThread = true;
-    pthread_join(mThread, NULL);
+    pthread_join(mThread[0], NULL);
+    if (prop_async_stop) {
+        pthread_join(mThread[1], NULL);
+    }
     pthread_join(mInfoThread, NULL);
     pthread_join(readThread, NULL);
     if(prop_softdemux == 1 || (prop_multi_play == 1)){
@@ -667,6 +692,10 @@ CTsPlayer::~CTsPlayer()
             vcodec = NULL;
         }
     }
+    if (prop_async_stop) {
+        WAIT_EVENT(m_AStopPending);
+    }
+
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
 }
 
@@ -1200,6 +1229,11 @@ bool CTsPlayer::StartPlay(){
         memset(&m_sCtsplayerState, 0, sizeof(struct ctsplayer_state));
         m_sCtsplayerState.video_ratio = -1;
 
+		if (prop_async_stop) {
+            WAIT_EVENT(m_AStopPending);
+        }
+        LOGI("CTC_KPI::Stage 1_2 stop_to_start,start_begin_time\n");
+        LOGI("CTC_KPI::Stage 2 start_time,start_begin_time\n");
         if (s_screen_mode == -1) {
             //0:normal£¬1:full stretch£¬2:4-3£¬3:16-9
             memset(value, 0, PROPERTY_VALUE_MAX);
@@ -1229,6 +1263,9 @@ bool CTsPlayer::StartPlay(){
             Fast();
             LOGI("debug leave fast mode\n");
         }
+        LOGI("CTC_KPI::Stage 2 start_time,start_end_time\n");
+        LOGI("CTC_KPI::Stage 3 start_to_first,start_end_time\n");
+        LOGI("CTC_KPI::Stage 3_1 init_firstcheckin_time cost,start_end_time\n");
         return ret;
 }
 
@@ -2170,13 +2207,13 @@ bool CTsPlayer::StopFast()
 
 bool CTsPlayer::Stop(){
     int ret;
-
     amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
     if (!m_bIsPlay) {
         LOGI("already is Stoped\n");
         return true;
     }
-
+    LOGI("CTC_KPI::Stage 0 press->stop cost,stop_begin_time\n");
+    LOGI("CTC_KPI::Stage 1_1 stop_time,stop_begin_time\n");
     codec_set_freerun_mode(pcodec, 0);
     if (pcodec->has_sub == 1) {
         memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
@@ -2185,19 +2222,74 @@ bool CTsPlayer::Stop(){
     if (pcodec->video_type == VFORMAT_HEVC) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 8);
     }
-
-    ret = iStop();
-    memset(a_aPara, 0 , sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
-    memset(&vPara, 0 , sizeof(VIDEO_PARA_T));
-    memset(sPara, 0 , sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
+    if (prop_async_stop) {
+        //make srue last async thread exit
+        if (prop_softdemux == 1) {
+            //close_pipe();
+        }
+        async_flag = 1;
+        lp_lock(&mutex);
+        LOGE("[%s:%d] async stop locked\n",__FUNCTION__, __LINE__);
+        if (m_AStopPending) {
+            LOGE("[%s:%d] async stop not release err\n",__FUNCTION__, __LINE__);
+            lp_unlock(&mutex);
+            return ret;
+        }
+        m_AStopPending = 1; //enter async stop
+        pthread_cond_signal(&m_pthread_cond);
+        lp_unlock(&mutex);
+        LOGI("stop  async out\n");
+    } else {
+        ret =  iStop();
+        LOGI("stop  sync ret:%d",ret);
+    }
 
     adec_underflow = 0;
     vdec_underflow = 0;
-    frame_rate_ctc = 0;
     underflow_tmp = 0;
     threshold_ctl_flag = 0;
-
+    LOGI("CTC_KPI::Stage 1_1 stop_time,stop_end_time\n");
+    LOGI("CTC_KPI::Stage 1_2 stop_to_start,stop_end_time\n");
     return ret;
+}
+
+void * CTsPlayer::stop_thread(void )
+{
+    do {
+        struct timeval now;
+        struct timespec pthread_ts;
+        LOGI("enter stop exit");
+        lp_lock(&mutex);
+        while (!m_AStopPending&&!m_StopThread) {
+            gettimeofday(&now, NULL);
+            pthread_ts.tv_sec = now.tv_sec + (20000 + now.tv_usec) / 1000000;
+            pthread_ts.tv_nsec = ((20000 + now.tv_usec) * 1000) % 1000000000;
+            pthread_cond_timedwait(&m_pthread_cond, &mutex, &pthread_ts);
+        }
+        lp_unlock(&mutex);
+        if (m_AStopPending) {
+            iStop();
+            lp_lock(&mutex);
+            if (clearlastframe_flag) {
+                clearlastframe_flag = 0;
+                async_flag = 0;
+                ClearLastFrame();
+            }
+            m_AStopPending = 0;
+            pthread_cond_signal(&m_pthread_cond);
+            lp_unlock(&mutex);
+            LOGI("stop real exit");
+        }
+    }while (!m_StopThread);
+    LOGI("stop_thread tid :%d exit",gettid());
+    return NULL;
+}
+void * CTsPlayer::init_thread(void *args)
+{
+    CTsPlayer *player = (CTsPlayer *)args;
+    LOGI("enter stop_thread");
+    return   player->stop_thread();
+
 }
 
 bool CTsPlayer::iStop()
@@ -2660,17 +2752,21 @@ void CTsPlayer::SwitchAudioTrack(int pid)
 void CTsPlayer::ClearLastFrame()
 {
     int ret = -1;
+    clearlastframe_flag = 1;
     LOGI( "Begin CTsPlayer::ClearLastFrame().\n");
-    amsysfs_set_sysfs_int( "/sys/class/video/disable_video", 1);
-    int fd_fb0 = open("/dev/amvideo", O_RDWR);
-    if (fd_fb0 >= 0)
-    {
-        ret = ioctl(fd_fb0, AMSTREAM_IOC_CLEAR_VBUF, NULL);
-        ret = ioctl(fd_fb0, AMSTREAM_IOC_CLEAR_VIDEO, NULL);
-        close(fd_fb0);
+    if (async_flag) {
+        async_flag = 0;
+    } else {
+        amsysfs_set_sysfs_int( "/sys/class/video/disable_video", 1);
+        int fd_fb0 = open("/dev/amvideo", O_RDWR);
+        if (fd_fb0 >= 0)
+        {
+            ret = ioctl(fd_fb0, AMSTREAM_IOC_CLEAR_VBUF, NULL);
+            ret = ioctl(fd_fb0, AMSTREAM_IOC_CLEAR_VIDEO, NULL);
+            close(fd_fb0);
+        }
+        amsysfs_set_sysfs_int( "/sys/class/video/disable_video", 0);
     }
-    amsysfs_set_sysfs_int( "/sys/class/video/disable_video", 0);
-
     LOGI( "End  CTsPlayer::ClearLastFrame().\n");
     return;
 }

@@ -3364,7 +3364,7 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                         max_count = 25;
                 }
                 checkcount1++;
-                if (checkcount1 >= max_count && tsplayer->m_sCtsplayerState.first_picture_comming == 1) {
+                if (checkcount1 >= max_count) {
                     //tsplayer->Report_video_paramters();
                     tsplayer->updateCTCInfo();
                     checkcount1 = 0;
@@ -3518,7 +3518,7 @@ int CTsPlayer::updateCTCInfo()
         LOGV("audio-2: abuf_used=%d, abuf_size=%dKB, adec_error=%d, adec_underflow=%d, apts_error=%d\n",m_sCtsplayerState.abuf_used,
             m_sCtsplayerState.abuf_size/1024,m_sCtsplayerState.adec_error,m_sCtsplayerState.adec_underflow,m_sCtsplayerState.apts_error);
     }
-    if (pcodec->has_video) {
+    if (pcodec->has_video && m_sCtsplayerState.first_picture_comming == 1) {
         unsigned long videopts;
         if(prop_softdemux == 0) {
             codec_get_vbuf_state(pcodec, &video_buf);

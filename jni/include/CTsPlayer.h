@@ -202,8 +202,8 @@ typedef enum {
     IPTV_PLAYER_ATTR_AUD_SAMPLERATE,     //音频缓冲区已使用大小
     IPTV_PLAYER_ATTR_AUD_BITRATE,     //音频缓冲区已使用大小
     IPTV_PLAYER_ATTR_AUD_CHANNEL_NUM,     //音频缓冲区已使用大小
+    IPTV_PLAYER_ATTR_VID_FRAMERATE = 18, //video frame rate
     IPTV_PLAYER_ATTR_BUTT,
-    IPTV_PLAYER_ATTR_V_FRAME_RATE = 0x100, //video frame rate
     IPTV_PLAYER_ATTR_V_HEIGHT, //video height
     IPTV_PLAYER_ATTR_V_WIDTH,  //video width
     IPTV_PLAYER_ATTR_STREAM_BITRATE,//stream bitrate

@@ -54,7 +54,7 @@ int prop_multi_play = 0;
 int debug_single_mode = 0;
 //#define MULTIMODE
 /*debug_multi_mode for  notify multi mode*/
-int debug_multi_mode = 1;
+int debug_multi_mode = 0;
 int prop_dumpfile = 0;
 int prop_buffertime = 0;
 int prop_readffmpeg = 0;

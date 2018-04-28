@@ -3314,7 +3314,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     //if(pframe_qos[0].num == mLastVdecInfoNum)
         //return 1;
 
-    for (i=0;i<frame_rate_ctc;i++) {
+    for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
 
         if (2 == underflow_statistics[i])
             underflow_tmp = 2;

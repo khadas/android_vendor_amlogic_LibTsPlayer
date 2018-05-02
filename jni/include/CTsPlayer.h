@@ -494,8 +494,8 @@ private:
     bool    m_isSoftFit;
     FILE*	  m_fp;
     lock_t  mutex;
-    pthread_t mThread;
-
+    pthread_t mThread[2];
+    pthread_cond_t m_pthread_cond;
 
     pthread_t readThread;
     virtual void checkAbend();
@@ -526,6 +526,8 @@ private:
     void update_caton_info(struct av_param_info_t * info);
     void update_stream_bitrate();
     bool CheckMultiSupported(int video_type);
+	void * stop_thread(void );
+    static void * init_thread(void *pthis);
 };
 
 #endif

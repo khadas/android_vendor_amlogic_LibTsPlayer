@@ -3405,7 +3405,11 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
 int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 {
     int i;
+    char value[256] = {0};
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
+
+    property_get("iptv.shouldshowlog", value, "0");
+    prop_shouldshowlog = atoi(value);
 
     //if(pframe_qos[0].num == mLastVdecInfoNum)
         //return 1;
@@ -3455,20 +3459,21 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
         }
         if ((0 != videoFrmInfo.nVidFrmSize) || (0 != videoFrmInfo.nUnderflow)) {
-            LOGD("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
-                    mLastVdecInfoNum,
-                    pframe_qos[i].num,
-                    videoFrmInfo.enVidFrmType,
-                    videoFrmInfo.nVidFrmSize,
-                    videoFrmInfo.nMinQP,
-                    videoFrmInfo.nMaxQP,
-                    videoFrmInfo.nAvgQP,
-                    videoFrmInfo.nMaxMV,
-                    videoFrmInfo.nMinMV,
-                    videoFrmInfo.nAvgMV,
-                    videoFrmInfo.SkipRatio,
-                    videoFrmInfo.nUnderflow);
-
+            if (prop_shouldshowlog) {
+                LOGI("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
+                        mLastVdecInfoNum,
+                        pframe_qos[i].num,
+                        videoFrmInfo.enVidFrmType,
+                        videoFrmInfo.nVidFrmSize,
+                        videoFrmInfo.nMinQP,
+                        videoFrmInfo.nMaxQP,
+                        videoFrmInfo.nAvgQP,
+                        videoFrmInfo.nMaxMV,
+                        videoFrmInfo.nMinMV,
+                        videoFrmInfo.nAvgMV,
+                        videoFrmInfo.SkipRatio,
+                        videoFrmInfo.nUnderflow);
+            }
             if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
                 pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrmInfo);
             }

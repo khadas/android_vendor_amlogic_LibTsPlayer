@@ -1524,7 +1524,7 @@ bool CTsPlayer::iStartPlay()
     if (prop_multi_play == 0) {
         do{
     		get_vfm_map_info(vfm_map);
-    		s = strstr(vfm_map,"(1)");
+    		s = strstr(vfm_map,"decoder(1)");
     		p = strstr(vfm_map,"ionvideo}");
     		video_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/videobufused");
     		audio_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/audiobufused");

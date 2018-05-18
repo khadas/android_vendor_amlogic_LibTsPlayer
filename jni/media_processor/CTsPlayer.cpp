@@ -738,7 +738,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     int x2 = 0, y2 = 0, width2 = 0, height2 = 0;
     int ret = 0;
     //const char *path_mode = "/sys/class/video/screen_mode";
-    const char *path_axis = "/sys/class/video/axis";
+    //const char *path_axis = "/sys/class/video/axis";
     char bcmd[32];
     char buffer[15];
     int mode_w = 0, mode_h = 0;
@@ -778,7 +778,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 
         sprintf(bcmd, "%d %d %d %d", x_b, y_b, w_b, h_b);
         subtitleSetSurfaceViewParam(x, y, width, height);
-        ret = amsysfs_set_sysfs_str(path_axis, bcmd);
+        ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
         LOGI("setvideoaxis: %s\n", bcmd);
         return ret;
     }
@@ -815,7 +815,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
             new_videowindow_certre_x+int(new_videowindow_width/2)+1,
             new_videowindow_certre_y+int(new_videowindow_height/2)+1);
 
-    ret = amsysfs_set_sysfs_str(path_axis, bcmd);
+    ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
     LOGI("setvideoaxis: %s\n", bcmd);
 
     if((width2 > 0)&&(height2 > 0)&&((width2 < (mode_w -10))||(height2< (mode_h -10))))

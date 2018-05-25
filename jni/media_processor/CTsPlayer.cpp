@@ -3508,7 +3508,7 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                 }
                 tsplayer->checkunderflow_type();
             }
-            if (max_count > 0)
+            if (max_count > 1)
                 usleep(1000 / max_count * 1000);
             else
                 usleep(40 * 1000);

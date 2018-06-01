@@ -1626,7 +1626,8 @@ bool CTsPlayer::iStartPlay()
     m_bchangeH264to4k = false;
     writecount = 0;
 #ifdef USE_OPTEEOS
-   if(pcodec->has_video && pcodec->video_type == VFORMAT_HEVC&&tvpdrm==1&&prop_softdemux == 1) {
+   /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+   if (pcodec->has_video && ((pcodec->video_type == VFORMAT_HEVC) || (pcodec->video_type == VFORMAT_AVS2)) && tvpdrm == 1 && prop_softdemux == 1) {
        amsysfs_set_sysfs_int("/sys/class/video/blackout_policy",1);
     }
 #endif
@@ -1659,8 +1660,10 @@ bool CTsPlayer::CheckMultiSupported(int video_type){
         ALOGD("media.ctcplayer.enable=%d, video_type=%d\n", multi_dec_support, video_type);
     } else
         ALOGW("Can not read property media.ctcplayer.enable, using %d, video_type=%d\n", multi_dec_support, video_type);
+    /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
     if ((video_type != VFORMAT_HEVC) && (video_type != VFORMAT_H264)
-            && (video_type != VFORMAT_MPEG12) && (video_type != VFORMAT_MPEG4) && (video_type != VFORMAT_MJPEG)) {
+            && (video_type != VFORMAT_MPEG12) && (video_type != VFORMAT_MPEG4)
+            && (video_type != VFORMAT_MJPEG) && (video_type != VFORMAT_AVS2)) {
 	    ALOGI("CheckMultiSupported --video_type:%d\n", video_type);
 		multi_dec_support = 0;
 	}
@@ -2141,7 +2144,8 @@ bool CTsPlayer::Fast()
     if(ret)
         return false;
     keep_vdec_mem = 1;
-    if(pcodec->video_type == VFORMAT_HEVC) {
+    /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+    if (pcodec->video_type == VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
     }
     iStop();
@@ -2161,7 +2165,8 @@ bool CTsPlayer::Fast()
     LOGI("Fast: codec_set_mode: %d\n", pcodec->handle);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0);
     codec_set_freerun_mode(pcodec, 1);
-    if(pcodec->video_type == VFORMAT_HEVC){
+    /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+    if (pcodec->video_type == VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2) {
         if(prop_softdemux == 0)
             ret = codec_set_mode(pcodec, TRICKMODE_I_HEVC);
         else
@@ -2234,7 +2239,8 @@ bool CTsPlayer::Stop(){
         memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
     }
 
-    if (pcodec->video_type == VFORMAT_HEVC) {
+    /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+    if (pcodec->video_type == VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 8);
     }
     if (prop_async_stop) {
@@ -2423,7 +2429,8 @@ bool CTsPlayer::Seek()
 {
     LOGI("Seek");
     int ret = 0;
-    if(pcodec->video_type == VFORMAT_HEVC) {
+    /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+    if (pcodec->video_type == VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2) {
         amsysfs_set_sysfs_int("/sys/module/amvdec_h265/parameters/buffer_mode", 1);
     }
     ret = codec_set_freerun_mode(pcodec, 0);
@@ -2910,7 +2917,8 @@ int64_t CTsPlayer::GetCurrentPlayTime()
 
     unsigned int tmppts = 0;
     if (m_bIsPlay){
-    	if ((pcodec->video_type == VFORMAT_HEVC) &&(m_bFast == true)) {
+        /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+        if (((pcodec->video_type == VFORMAT_HEVC) || (pcodec->video_type == VFORMAT_AVS2)) && (m_bFast == true)) {
             tmppts = amsysfs_get_sysfs_int("/sys/module/amvdec_h265/parameters/h265_lookup_vpts");
             //LOGI("Fast: i only getvpts by h265_lookup_vpts :%d\n",tmppts);
     	}
@@ -2919,7 +2927,8 @@ int64_t CTsPlayer::GetCurrentPlayTime()
     	}
     }
     video_pts = tmppts;
-    if(m_bFast && (pcodec->video_type != VFORMAT_HEVC)){
+    /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
+    if (m_bFast && (pcodec->video_type != VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2)) {
         sysfs_get_long("/sys/class/tsync/pts_audio",&audiopts);
         sysfs_get_long("/sys/class/tsync/pts_video",&videopts);
         sysfs_get_long("/sys/class/tsync/pts_pcrscr",&pcrscr);
@@ -3311,12 +3320,13 @@ void CTsPlayer::checkVdecstate()
         if (property_get("media.ctcplayer.reset", value, NULL) > 0) {
             reset = atoi(value);
         }
+        /* +[SE] [REQ][BUG-167256][wuti] LibTsPlayer : porting avs2 function . */
         if (((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) ||
             (video_status.status &DECODER_FATAL_ERROR_UNKNOW) ||
            (video_status.status &DECODER_FATAL_ERROR_NO_MEM) ||
            reset) &&
-            (pcodec->video_type == VFORMAT_HEVC)) {
-            LOGI("VFORMAT_HEVC error:%x ,reset  player\n ",video_status.status);
+            (pcodec->video_type == VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2)) {
+            LOGI("VFORMAT: %d error:%x ,reset  player\n ",pcodec->video_type,video_status.status);
             //lp_unlock(&mutex);
             iStop();
             usleep(500*1000);

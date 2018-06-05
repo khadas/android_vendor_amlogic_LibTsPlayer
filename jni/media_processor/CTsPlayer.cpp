@@ -147,6 +147,11 @@ static int read_cb(void *opaque, uint8_t *buf, int size) {
 #define SCALING_MODE  "1"
 #define DEFAULT_MODE  "0"
 #define CPU_SCALING_MODE_NODE  "/sys/devices/system/cpu/cpufreq/interactive/boost"
+
+/* +[SE] [BUG][BUG-165863][yinli.xia] added: some live broadcast will
+        be shake at the bottom when resolution ratio is under 720 * 576 */
+#define CROP_VALUE "0 0 2 0"
+#define CROP_SET_FOR_START "/sys/class/video/crop"
 int perform_flag =0;
 
 #ifdef TELECOM_VFORMAT_SUPPORT
@@ -3580,6 +3585,7 @@ int CTsPlayer::GetVideoTotalNumber()
 int CTsPlayer::updateCTCInfo()
 {
     int i = 0;
+    int frame_height_t = 0;
     struct av_param_info_t av_param_info;
     memset(&av_param_info , 0 ,sizeof(av_param_info));
     if (pcodec->has_video) {
@@ -3606,6 +3612,12 @@ int CTsPlayer::updateCTCInfo()
     } else {
         return 0;
     }
+    /* +[SE] [BUG][BUG-165863][yinli.xia] added: some live broadcast will
+        be shake at the bottom when resolution ratio is under 720 * 576 */
+    frame_height_t = av_param_info.av_info.height;
+
+    if (frame_height_t <= 576)
+        amsysfs_set_sysfs_str(CROP_SET_FOR_START,CROP_VALUE);
 
 #ifdef TELECOM_QOS_SUPPORT
     if ((!m_bIsPause) && (!m_bFast))

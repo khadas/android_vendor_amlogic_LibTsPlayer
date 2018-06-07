@@ -208,6 +208,7 @@ typedef enum {
 #define CT_AFORMAT_UNKNOWN2 -2
 #define CT_AFORMAT_DDPlUS 19
 #define CT_AFORMAT_UNSUPPORT 20
+#define CT_VFORMAT_AVS2 0xF210
 
 vformat_t changeVformat(vformat_t index)
 {
@@ -216,6 +217,9 @@ vformat_t changeVformat(vformat_t index)
         return VFORMAT_HEVC;
     else if(index == CT_VFORMAT_SW)
         return VFORMAT_SW;
+    if (index == CT_VFORMAT_AVS2) {
+        return VFORMAT_AVS2;
+    }
 
     if(index >= CT_VFORMAT_UNSUPPORT)
         return VFORMAT_UNSUPPORT;

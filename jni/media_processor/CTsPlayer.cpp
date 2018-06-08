@@ -379,6 +379,9 @@ CTsPlayer::CTsPlayer(bool DRMMode)
 CTsPlayer::CTsPlayer()
 #endif
 {
+    /*+[SE][REQ][BUG 167437][wenjie.chen]
+    KPI: APK: modify the print position to solve the error of the calculation KPI.*/
+    LOGI("CTC_KPI::Stage 1_5 create player,start_createplayer_time\n");
     char value[PROPERTY_VALUE_MAX] = {0};
 
     pthread_mutexattr_t mutexattr;
@@ -620,6 +623,9 @@ CTsPlayer::CTsPlayer()
     if (prop_async_stop) {
         pthread_create(&mThread[1], NULL, init_thread, this);
     }
+    /*+[SE][REQ][BUG 167437][wenjie.chen]
+    KPI: APK: modify the print position to solve the error of the calculation KPI.*/
+    LOGI("CTC_KPI::Stage 1_5 create player,start_createplayer_time\n");
 }
 
 #define AML_VFM_MAP "/sys/class/vfm/map"
@@ -680,6 +686,9 @@ CTsPlayer::CTsPlayer(bool omx_player)
 CTsPlayer::~CTsPlayer()
 {
     LOGI("~CTsPlayer()\n");
+    /*+[SE][REQ][BUG 167437][wenjie.chen]
+    KPI: APK: modify the print position to solve the error of the calculation KPI.*/
+    LOGI("CTC_KPI::Stage 1_4 player destructor,start_destructor_time\n");
     if (mIsOmxPlayer) {
         LOGI("Is omx player, return!!!");
         return;
@@ -715,6 +724,9 @@ CTsPlayer::~CTsPlayer()
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
     lp_lock_deinit(&mutex);
     lp_lock_deinit(&mutex_lp);
+    /*+[SE][REQ][BUG 167437][wenjie.chen]
+    KPI: APK: modify the print position to solve the error of the calculation KPI.*/
+    LOGI("CTC_KPI::Stage 1_4 player destructor,end_destructor_time\n");
 }
 
 //取得播放模式,保留，暂不用

@@ -3434,7 +3434,6 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
         //return 1;
 
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
-
         if (2 == underflow_statistics[i])
             underflow_tmp = 2;
         else if (3 == underflow_statistics[i])
@@ -3466,6 +3465,21 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nAvgMV = pframe_qos[i].avg_mv;
             videoFrmInfo.SkipRatio = pframe_qos[i].avg_skip;
             videoFrmInfo.nUnderflow = underflow_statistics[i];
+        }
+
+        /*[SE] [BUG][BUG-166595][yinli.xia] sometimes net broken have no frame info*/
+        if ((0 == videoFrmInfo.nVidFrmSize) &&
+            (0 == videoFrmInfo.nUnderflow)) {
+            videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
+            videoFrmInfo.nVidFrmSize = 0;
+            videoFrmInfo.nMinQP = 0;
+            videoFrmInfo.nMaxQP = 0;
+            videoFrmInfo.nAvgQP = 0;
+            videoFrmInfo.nMaxMV = 0;
+            videoFrmInfo.nMinMV = 0;
+            videoFrmInfo.nAvgMV = 0;
+            videoFrmInfo.SkipRatio = 0;
+            videoFrmInfo.nUnderflow = 2;
         }
 
         if (((pframe_qos[i].type == 4) &&

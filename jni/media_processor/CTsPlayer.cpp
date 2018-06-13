@@ -3178,6 +3178,7 @@ int CTsPlayer::checkunderflow()
     return ret;
 }
 
+/*[SE] [BUG][BUG-168164][yinli.xia] the underflow value often turn to 3 abnormality when play*/
 void CTsPlayer::checkunderflow_type() {
     if ((!m_bIsPause) &&
         (!m_bFast)) {
@@ -3195,6 +3196,7 @@ void CTsPlayer::checkunderflow_type() {
         underflow_tmp = 0;
         underflow_ctc = 0;
         underflow_kernel = 0;
+        amsysfs_set_sysfs_int("/sys/module/amports/parameters/decode_underflow", 0);
     }
 }
 

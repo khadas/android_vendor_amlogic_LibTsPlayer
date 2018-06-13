@@ -794,7 +794,8 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 		if(h_b >= (mode_height + mode_y -1)) h_b = mode_height + mode_y -1 ;
 
         sprintf(bcmd, "%d %d %d %d", x_b, y_b, w_b, h_b);
-        subtitleSetSurfaceViewParam(x, y, width, height);
+        /*[SE] [BUG][BUG-167862][yinli.xia] change the channel too quickly cause crash*/
+        //subtitleSetSurfaceViewParam(x, y, width, height);
         ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
         LOGI("setvideoaxis: %s\n", bcmd);
         return ret;

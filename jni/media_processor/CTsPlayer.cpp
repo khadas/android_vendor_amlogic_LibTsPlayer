@@ -3193,6 +3193,10 @@ void CTsPlayer::checkunderflow_type() {
             underflow_tmp = 3;
         else if ((2 == underflow_ctc) && (3 == underflow_kernel))
             underflow_tmp = 2;
+
+        /*[SE] [BUG][BUG-168587][chuanqi.wang] avoid the array bounds"*/
+        if (qos_count >= 60 )
+            qos_count  = 0;
         underflow_statistics[qos_count++] = underflow_tmp;
         underflow_tmp = 0;
         underflow_ctc = 0;

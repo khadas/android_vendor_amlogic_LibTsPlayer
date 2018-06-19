@@ -31,7 +31,8 @@ ITsPlayer* GetMediaProcessor()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("media.ctcplayer.enable", value, "0");
     multi_enable = atoi(value);
-
+    /* +[SE] [BUG][BUG-167372][yanan.wang] added:increase the keep_mode_threshold from 85 to 110 when multi-instances*/
+    amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 85);
 
     ALOGI("GetMediaProcessor, middle_soft_demux=%d, multi_enable=%d\n", middle_soft_demux, multi_enable);
     return new CTsPlayer();

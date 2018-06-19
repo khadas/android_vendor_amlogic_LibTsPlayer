@@ -1241,6 +1241,8 @@ unsigned char mjpeg_addon_data[] = {
 bool CTsPlayer::StartPlay(){
         int ret;
         char value[PROPERTY_VALUE_MAX] = {0};
+        /* +[SE] [BUG][BUG-167598][yanan.wang] added:fix the first channel is out of sync when playing four channels of 720P sources*/
+        set_sysfs_int("/sys/class/tsync/av_threshold_min", 90000*3);
         if(prop_start_no_out){// start with no out  mode
             set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);	//keep last frame instead of show first frame
             pcodec->start_no_out = 1;

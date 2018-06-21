@@ -7,6 +7,7 @@
 #include "CTC_AmlPlayer.h"
 #include <android/log.h>
 #include "CTC_MediaProcessor.h"
+#include "Amsysfsutils.h"
 
 using namespace android;
 
@@ -25,6 +26,9 @@ CTC_AmlPlayer::CTC_AmlPlayer(int count)
     if (count == 0) {
         m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_NORMAL);
     } else {
+        /* +[SE] [BUG][BUG-167372][yanan.wang] added:increase the keep_mode_threshold from 85 to 110 when multi-instances*/
+        amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 110);
+        ALOGI("CTC_AmlPlayer keep_mode_threshold is 110\n");
         m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_HWOMX);
     }
 }
@@ -35,6 +39,8 @@ CTC_AmlPlayer::~CTC_AmlPlayer()
         delete m_pTsPlayer;
         m_pTsPlayer = NULL;
     }
+    /* +[SE] [BUG][BUG-167372][yanan.wang] added:increase the keep_mode_threshold from 85 to 110 when multi-instances*/
+    amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 85);
 }
 
 int CTC_AmlPlayer::CTC_GetAmlPlayerVersion()

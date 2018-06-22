@@ -627,9 +627,9 @@ CTsPlayer::CTsPlayer()
     if (prop_async_stop) {
         pthread_create(&mThread[1], NULL, init_thread, this);
     }
-    /*+[SE][REQ][BUG 167437][wenjie.chen]
-    KPI: APK: modify the print position to solve the error of the calculation KPI.*/
-    LOGI("CTC_KPI::Stage 1_5 create player,start_createplayer_time\n");
+    /*+[SE][REQ][BUG 168918][wenjie.chen]
+    KPI: APK: Add KPI print information for H265 and MPEG2 formats.*/
+    LOGI("CTC_KPI::Stage 1_5 create player,end_createplayer_time\n");
 }
 
 #define AML_VFM_MAP "/sys/class/vfm/map"

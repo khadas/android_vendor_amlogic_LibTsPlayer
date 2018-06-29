@@ -393,6 +393,10 @@ CTsPlayer::CTsPlayer()
     pthread_mutexattr_settype(&mutexattr,PTHREAD_MUTEX_RECURSIVE);
     lp_lock_init(&mutex, &mutexattr);
     lp_lock_init(&mutex_lp, &mutexattr);
+    /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: init mutex_session,m_pthread_cond and s_pthread_cond.*/
+    lp_lock_init(&mutex_session, &mutexattr);
+    pthread_cond_init(&m_pthread_cond, NULL);
+    pthread_cond_init(&s_pthread_cond, NULL);
     pthread_mutexattr_destroy(&mutexattr);
     property_get("iptv.shouldshowlog", value, "0");//initial the log switch
     prop_shouldshowlog = atoi(value);
@@ -705,12 +709,16 @@ CTsPlayer::~CTsPlayer()
         perform_flag =0;
     }
     m_StopThread = true;
+    /*+[SE][BUG][BUG-167013][zhizhong.zhang] KPI: wakeup thread sleep function to quick quit.*/
+    thread_wake_up();
     pthread_join(mThread[0], NULL);
     if (prop_async_stop) {
         pthread_join(mThread[1], NULL);
     }
     pthread_join(mInfoThread, NULL);
-    pthread_join(readThread, NULL);
+    /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: add condition check to join readThread.*/
+    if (prop_softdemux == 1 && prop_esdata != 1)
+        pthread_join(readThread, NULL);
     if(prop_softdemux == 1 || (prop_multi_play == 1)){
         if(acodec){
             free(acodec);
@@ -728,6 +736,10 @@ CTsPlayer::~CTsPlayer()
     QuitIptv(m_isSoftFit, m_isBlackoutPolicy);
     lp_lock_deinit(&mutex);
     lp_lock_deinit(&mutex_lp);
+    /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: destroy mutex_session,m_pthread_cond and s_pthread_cond.*/
+    lp_lock_deinit(&mutex_session);
+    pthread_cond_destroy(&m_pthread_cond);
+    pthread_cond_destroy(&s_pthread_cond);
     /*+[SE][REQ][BUG 167437][wenjie.chen]
     KPI: APK: modify the print position to solve the error of the calculation KPI.*/
     LOGI("CTC_KPI::Stage 1_4 player destructor,end_destructor_time\n");
@@ -3410,7 +3422,8 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
     LOGV("threadCheckAbend start pthis: %p\n", pthis);
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
     do {
-        usleep(50 * 1000);
+        /*+[SE][BUG][BUG-167013][zhizhong.zhang] Modify: use thread sleep instead of usleep.*/
+        tsplayer->thread_wait_timeUs(50 * 1000);
         //sleep(2);
         //tsplayer->checkBuffLevel();
         if (tsplayer->m_bIsPlay) {
@@ -3421,6 +3434,11 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
 
             tsplayer->checkVdecstate();
             if(checkcount >= 40) {
+                /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: add stopThread check to break quickly.*/
+                if (m_StopThread) {
+                    LOGI("StopThread is true,break\n");
+                    break;
+                }
                 tsplayer->checkAbend();
                 //tsplayer->Report_Audio_paramters();
                 checkcount = 0;
@@ -3562,10 +3580,11 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                 }
                 tsplayer->checkunderflow_type();
             }
+            /*+[SE][BUG][BUG-167013][zhizhong.zhang] Modify: use thread sleep instead of usleep.*/
             if (max_count > 1)
-                usleep(1000 / max_count * 1000);
+                tsplayer->thread_wait_timeUs(1000 / max_count * 1000);
             else
-                usleep(40 * 1000);
+                tsplayer->thread_wait_timeUs(40 * 1000);
     }while(!m_StopThread);
     LOGI("threadGetVideoInfo end\n");
     return NULL;
@@ -3832,6 +3851,40 @@ int CTsPlayer::updateCTCInfo()
     return 0;
 }
 
+/*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: add thread usleep function which can be waked up.*/
+void CTsPlayer::thread_wait_timeUs(int microseconds)
+{
+    int ret = -1;
+    struct timespec outtime;
+    if (m_StopThread) {
+        LOGI("receive close flag,direct return\n");
+        return;
+    }
+    if (microseconds > 0) {
+        int64_t time = av_gettime() + microseconds;
+        ret =  lp_trylock(&mutex_session);
+        if (ret != 0) {
+            LOGI("can't get lock, use usleep,microseconds = %d\n", microseconds);
+            usleep(microseconds);
+            return;
+        }
+        outtime.tv_sec = time/1000000;
+        outtime.tv_nsec = (time % 1000000) * 1000;
+        ret = pthread_cond_timedwait(&s_pthread_cond,  &mutex_session, &outtime);
+        if (ret != ETIMEDOUT) {
+            LOGI("break by untimeout ret=%d\n", ret);
+        }
+        lp_unlock(&mutex_session);
+    }
+}
+
+/*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: add thread wake up function.*/
+void CTsPlayer::thread_wake_up()
+{
+    lp_lock(&mutex_session);
+    pthread_cond_broadcast(&s_pthread_cond);
+    lp_unlock(&mutex_session);
+}
 
 int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
 {

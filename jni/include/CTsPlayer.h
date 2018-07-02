@@ -496,6 +496,7 @@ private:
     lock_t  mutex;
     pthread_t mThread[2];
     pthread_cond_t m_pthread_cond;
+    pthread_cond_t s_pthread_cond;
 
     pthread_t readThread;
     virtual void checkAbend();
@@ -513,6 +514,7 @@ private:
     bool    m_isBlackoutPolicy;
     bool    m_bchangeH264to4k;
     lock_t  mutex_lp;
+    lock_t  mutex_session;
     void checkVdecstate();
     bool    m_bIsPause;
     virtual bool iStartPlay( );
@@ -528,6 +530,8 @@ private:
     bool CheckMultiSupported(int video_type);
 	void * stop_thread(void );
     static void * init_thread(void *pthis);
+    void thread_wait_timeUs(int microseconds);
+    void thread_wake_up();
 };
 
 #endif

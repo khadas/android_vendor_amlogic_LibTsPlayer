@@ -3643,7 +3643,9 @@ int CTsPlayer::GetVideoTotalNumber()
 int CTsPlayer::updateCTCInfo()
 {
     int i = 0;
+    int crop_value = 0;
     int frame_height_t = 0;
+    char value[PROPERTY_VALUE_MAX] = {0};
     struct av_param_info_t av_param_info;
     memset(&av_param_info , 0 ,sizeof(av_param_info));
     if (pcodec->has_video) {
@@ -3673,8 +3675,10 @@ int CTsPlayer::updateCTCInfo()
     /* +[SE] [BUG][BUG-165863][yinli.xia] added: some live broadcast will
         be shake at the bottom when resolution ratio is under 720 * 576 */
     frame_height_t = av_param_info.av_info.height;
-
-    if (frame_height_t <= 576)
+    if (property_get("media.ctcplayer.crop", value, NULL) > 0) {
+        crop_value = atoi(value);
+    }
+    if ((frame_height_t <= 576) && crop_value)
         amsysfs_set_sysfs_str(CROP_SET_FOR_START,CROP_VALUE);
 
 #ifdef TELECOM_QOS_SUPPORT

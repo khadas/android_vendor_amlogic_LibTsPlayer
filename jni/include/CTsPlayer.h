@@ -550,6 +550,9 @@ private:
     static void * init_thread(void *pthis);
     void thread_wait_timeUs(int microseconds);
     void thread_wake_up();
+    int is_use_double_write();
+    void check_use_double_write();
+    void stop_double_write();
 };
 
 #endif

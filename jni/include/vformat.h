@@ -69,6 +69,9 @@ typedef enum {
     VFORMAT_H264MVC,
     VFORMAT_H264_4K2K,
     VFORMAT_HEVC,
+    VFORMAT_H264_ENC,
+    VFORMAT_JPEG_ENC,
+    VFORMAT_VP9,
     VFORMAT_AVS2,
     VFORMAT_UNSUPPORT,
     VFORMAT_MAX
@@ -122,5 +125,6 @@ typedef enum {
 #define CODEC_TAG_FMP4      (0x34504d46)
 #define CODEC_TAG_FVFW      (0x57465646)
 #define CODEC_TAG_VC_1      (0x312d4356)
+#define CODEC_TAG_vc_1      (0x312d6376)
 
 #endif /* VFORMAT_H */

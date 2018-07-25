@@ -2271,6 +2271,8 @@ bool CTsPlayer::Stop(){
     LOGI("CTC_KPI::Stage 0 press->stop cost,stop_begin_time\n");
     LOGI("CTC_KPI::Stage 1_1 stop_time,stop_begin_time\n");
     codec_set_freerun_mode(pcodec, 0);
+    /* +[SE] [BUG][BUG-170507][yanan.wang] added:fix after fast the picture will be stuck 3s then start to play*/
+    memset(a_aPara, 0, sizeof(AUDIO_PARA_T)*MAX_AUDIO_PARAM_SIZE);
     if (pcodec->has_sub == 1) {
         memset(sPara,0,sizeof(SUBTITLE_PARA_T)*MAX_SUBTITLE_PARAM_SIZE);
     }

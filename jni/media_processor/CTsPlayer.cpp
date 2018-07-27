@@ -579,7 +579,11 @@ CTsPlayer::CTsPlayer()
     m_bFast = false;
     m_bSetEPGSize = false;
     m_bWrFirstPkg = true;
+    /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
+        to statistics video frame when start to play*/
     m_StartPlayTimePoint = 0;
+    m_Frame_StartTime_Ctl = 1;
+    m_Frame_StartPlayTimePoint = 0;
     m_PreviousOverflowTime = 0;
     m_isSoftFit = (prop_softfit == 1) ? true : false;
     m_isBlackoutPolicy = (prop_blackout_policy == 1) ? true : false;
@@ -2393,6 +2397,8 @@ bool CTsPlayer::iStop()
         m_bIsPlay = false;
         m_bIsPause = false;
         m_StartPlayTimePoint = 0;
+        m_Frame_StartTime_Ctl = 1;
+        m_Frame_StartPlayTimePoint = 0;
         m_PreviousOverflowTime = 0;
         if (prop_softdemux == 0) {
             ret = codec_set_mode(pcodec, TRICKMODE_NONE);
@@ -3659,6 +3665,8 @@ int CTsPlayer::updateCTCInfo()
     }
     // check first frame comming
     frame_rate_ctc = av_param_info.av_info.fps;
+    /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
+        to statistics video frame when start to play*/
     if (av_param_info.av_info.first_pic_coming) {
         m_sCtsplayerState.first_picture_comming = 1;
         if (!threshold_ctl_flag) {
@@ -3669,6 +3677,7 @@ int CTsPlayer::updateCTCInfo()
                 threshold_value = 300;
             else if (av_param_info.av_info.width <= 720)
                 threshold_value = 250;
+            m_StartPlayTimePoint = av_gettime();
             threshold_ctl_flag = 1;
         }
     } else {
@@ -3684,8 +3693,19 @@ int CTsPlayer::updateCTCInfo()
         amsysfs_set_sysfs_str(CROP_SET_FOR_START,CROP_VALUE);
 
 #ifdef TELECOM_QOS_SUPPORT
-    if ((!m_bIsPause) && (!m_bFast))
-    ReportVideoFrameInfo(av_param_info.vframe_qos);
+    /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
+        to statistics video frame when start to play*/
+    if (property_get("media.ctcplayer.2timelater", value, NULL) > 0) {
+        m_Frame_StartTime_Ctl = atoi(value);
+    }
+    if ((!m_bIsPause) && (!m_bFast)) {
+        if (m_Frame_StartTime_Ctl) {
+            if ((av_gettime() - m_StartPlayTimePoint) > 2000000)
+                ReportVideoFrameInfo(av_param_info.vframe_qos);
+        } else {
+            ReportVideoFrameInfo(av_param_info.vframe_qos);
+        }
+    }
 #endif
     update_caton_info(&av_param_info);
 #ifdef DEBUG_INFO

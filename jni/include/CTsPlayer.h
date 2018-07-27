@@ -491,6 +491,10 @@ private:
 
     unsigned int writecount ;
     int64_t m_StartPlayTimePoint;
+    /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
+        to statistics video frame when start to play*/
+    int m_Frame_StartTime_Ctl;
+    int64_t m_Frame_StartPlayTimePoint;
     bool    m_isSoftFit;
     FILE*	  m_fp;
     lock_t  mutex;

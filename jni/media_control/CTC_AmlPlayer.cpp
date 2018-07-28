@@ -12,7 +12,7 @@
 using namespace android;
 
 #define LOG_TAG "CTC_AmlPlayer"
-
+static int aml_instance = 0;
 
 CTC_AmlPlayer::CTC_AmlPlayer()
 {
@@ -22,7 +22,7 @@ CTC_AmlPlayer::CTC_AmlPlayer()
 
 CTC_AmlPlayer::CTC_AmlPlayer(int count)
 {
-    ALOGI("CTC_AmlPlayer construct, count=%d\n", count);
+    ALOGI("CTC_AmlPlayer construct, test count=%d,aml_instance:%d\n", count,aml_instance);
     if (count == 0) {
         m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_NORMAL);
     } else {
@@ -30,6 +30,12 @@ CTC_AmlPlayer::CTC_AmlPlayer(int count)
         amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 110);
         ALOGI("CTC_AmlPlayer keep_mode_threshold is 110\n");
         m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_HWOMX);
+    }
+    /* +[SE] [BUG][BUG-170572[chuanqi.wang] added:keep 900M freq in 90% load when more than three-instances*/
+    aml_instance++;
+    if (aml_instance>=3) {
+        amsysfs_set_sysfs_str("/sys/devices/system/cpu/cpufreq/interactive/target_loads", "90 900000:100");
+        ALOGI("CTC_AmlPlayer target_loads is 90  900000:100\n");
     }
 }
 CTC_AmlPlayer::~CTC_AmlPlayer()
@@ -39,8 +45,14 @@ CTC_AmlPlayer::~CTC_AmlPlayer()
         delete m_pTsPlayer;
         m_pTsPlayer = NULL;
     }
+    aml_instance--;
     /* +[SE] [BUG][BUG-167372][yanan.wang] added:increase the keep_mode_threshold from 85 to 110 when multi-instances*/
     amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 85);
+   if (aml_instance <= 0){
+        amsysfs_set_sysfs_str("/sys/devices/system/cpu/cpufreq/interactive/target_loads", "50 900000:70");
+         ALOGI("CTC_AmlPlayer target_loads is 50 900000:70\n");
+    }
+
 }
 
 int CTC_AmlPlayer::CTC_GetAmlPlayerVersion()

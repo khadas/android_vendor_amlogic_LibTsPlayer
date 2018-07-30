@@ -3292,19 +3292,22 @@ void CTsPlayer::checkVdecstate()
     float audio_buf_level = 0.00f, video_buf_level = 0.00f;
     buf_status audio_buf;
     buf_status video_buf;
+    codec_para_t  *cur_codec;
     struct vdec_status video_status;
     int64_t  last_time, now_time;
+
     if(m_bIsPlay) {
         Check_FirstPictur_Coming();
         if(prop_softdemux == 0)
-            codec_get_vdec_state(pcodec, &video_status);
+            cur_codec = pcodec;
         else
-            codec_get_vdec_state(vcodec, &video_status);
+            cur_codec = vcodec;
+        codec_get_vdec_state(cur_codec, &video_status);
         if (!s_h264sameucode && video_status.status & DECODER_ERROR_MASK) {
             LOGI("decoder vdec.status: %x width : %d height: %d\n", video_status.status, video_status.width, video_status.height);
 
             if((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) &&
-               (pcodec->video_type == VFORMAT_H264) &&
+               (cur_codec->video_type == VFORMAT_H264) &&
                (video_status.width > 1920 || video_status.height > 1080)) {
                 now_time = av_gettime();
                 m_bchangeH264to4k = true;
@@ -3314,18 +3317,18 @@ void CTsPlayer::checkVdecstate()
 
                 LOGI("Begin start!!!! before rp:0x%x  wp:0x%x start:0x%x end:0x%x\n",
                       lpbuffer_st.rp, lpbuffer_st.wp, lpbuffer_st.buffer, lpbuffer_st.bufferend);
-                codec_close(pcodec);
+                codec_close(cur_codec);
                 vPara.vFmt = VFORMAT_H264_4K2K;
-                pcodec->video_type = VFORMAT_H264_4K2K;
-                pcodec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264_4K2K;
-                codec_init(pcodec);
+                cur_codec->video_type = VFORMAT_H264_4K2K;
+                cur_codec->am_sysinfo.format = VIDEO_DEC_FORMAT_H264_4K2K;
+                codec_init(cur_codec);
                 while(lpbuffer_st.valid_can_read > 0 && lpbuffer_st.enlpflag) {
                     int ret, temp_size = 0, can_write = READ_SIZE;
                     if(lpbuffer_st.valid_can_read < can_write) {
                         can_write = lpbuffer_st.valid_can_read;
                     }
                     for(int retry_count=0; retry_count<10; retry_count++) {
-                        ret = codec_write(pcodec, lpbuffer_st.rp + temp_size, can_write - temp_size);
+                        ret = codec_write(cur_codec, lpbuffer_st.rp + temp_size, can_write - temp_size);
                         if((ret < 0) || (ret > can_write)) {
                             if(ret == EAGAIN) {
                                 usleep(10);
@@ -3358,7 +3361,7 @@ void CTsPlayer::checkVdecstate()
         }
 
         if((video_status.status & DECODER_FATAL_ERROR_UNKNOW) &&
-            (pcodec->video_type == VFORMAT_H264) ) {
+            (cur_codec->video_type == VFORMAT_H264) ) {
             int app_reset_support  = amsysfs_get_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset");
             if(app_reset_support){
                 LOGI("fatal_error_reset=1,DECODER_FATAL_ERROR_UNKNOW happened force reset decoder\n ");
@@ -3374,9 +3377,9 @@ void CTsPlayer::checkVdecstate()
         if (((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) ||
             (video_status.status &DECODER_FATAL_ERROR_UNKNOW) ||
            (video_status.status &DECODER_FATAL_ERROR_NO_MEM) ||
-           reset) &&
-            (pcodec->video_type == VFORMAT_HEVC || pcodec->video_type == VFORMAT_AVS2)) {
-            LOGI("VFORMAT: %d error:%x ,reset  player\n ",pcodec->video_type,video_status.status);
+           reset) && ((cur_codec->video_type == VFORMAT_HEVC && cur_codec->dec_mode == STREAM_TYPE_SINGLE) ||
+            (cur_codec->video_type == VFORMAT_AVS2))) {
+            LOGI("VFORMAT: %d error:%x ,reset  player\n ",cur_codec->video_type,video_status.status);
             //lp_unlock(&mutex);
             iStop();
             usleep(500*1000);
@@ -3386,13 +3389,10 @@ void CTsPlayer::checkVdecstate()
         }
         //monitor buffer staus ,overflow more than 2s reset player,if support
         if (prop_playerwatchdog_support && !m_bIsPause){
-            if (pcodec->has_audio == 1) {
-                codec_get_abuf_state(pcodec, &audio_buf);
+            if (cur_codec->has_audio == 1) {
+                codec_get_abuf_state(cur_codec, &audio_buf);
             }
-            if(prop_softdemux == 0)
-                codec_get_vbuf_state(pcodec, &video_buf);
-            else
-                codec_get_vbuf_state(vcodec, &video_buf);
+            codec_get_vbuf_state(cur_codec, &video_buf);
             if (audio_buf.size != 0)
                 audio_buf_level = (float)audio_buf.data_len / audio_buf.size;
             if (video_buf.size != 0)

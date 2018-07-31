@@ -582,7 +582,7 @@ CTsPlayer::CTsPlayer()
     /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
         to statistics video frame when start to play*/
     m_StartPlayTimePoint = 0;
-    m_Frame_StartTime_Ctl = 1;
+    m_Frame_StartTime_Ctl = 0;
     m_Frame_StartPlayTimePoint = 0;
     m_PreviousOverflowTime = 0;
     m_isSoftFit = (prop_softfit == 1) ? true : false;
@@ -2397,7 +2397,7 @@ bool CTsPlayer::iStop()
         m_bIsPlay = false;
         m_bIsPause = false;
         m_StartPlayTimePoint = 0;
-        m_Frame_StartTime_Ctl = 1;
+        m_Frame_StartTime_Ctl = 0;
         m_Frame_StartPlayTimePoint = 0;
         m_PreviousOverflowTime = 0;
         if (prop_softdemux == 0) {
@@ -3677,7 +3677,7 @@ int CTsPlayer::updateCTCInfo()
                 threshold_value = 300;
             else if (av_param_info.av_info.width <= 720)
                 threshold_value = 250;
-            m_StartPlayTimePoint = av_gettime();
+            m_Frame_StartPlayTimePoint= av_gettime();
             threshold_ctl_flag = 1;
         }
     } else {
@@ -3700,7 +3700,7 @@ int CTsPlayer::updateCTCInfo()
     }
     if ((!m_bIsPause) && (!m_bFast)) {
         if (m_Frame_StartTime_Ctl) {
-            if ((av_gettime() - m_StartPlayTimePoint) > 2000000)
+            if ((av_gettime() - m_Frame_StartPlayTimePoint) > 2000000)
                 ReportVideoFrameInfo(av_param_info.vframe_qos);
         } else {
             ReportVideoFrameInfo(av_param_info.vframe_qos);

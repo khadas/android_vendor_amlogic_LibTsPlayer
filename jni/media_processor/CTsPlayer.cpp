@@ -3460,9 +3460,11 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
 }
 
 #ifdef TELECOM_QOS_SUPPORT
+/*+[SE] [REQ][BUG-170126][yinli.xia] added: Optimize frame information statistics*/
 int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 {
     int i;
+    int caton_num = 0,show_num = 0;
     char value[256] = {0};
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
 
@@ -3471,16 +3473,19 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 
     //if(pframe_qos[0].num == mLastVdecInfoNum)
         //return 1;
+    for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
+        if (0 != underflow_statistics[i])
+            caton_num++;
+        if (0 != pframe_qos[i].size)
+            show_num++;
+    }
+    if (caton_num < 5) {
+        for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
+            underflow_statistics[i] = 0;
+        }
+    }
 
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
-        if (2 == underflow_statistics[i])
-            underflow_tmp = 2;
-        else if (3 == underflow_statistics[i])
-            underflow_tmp = 3;
-        else if ((3 == underflow_statistics[i]) &&
-            (2 == underflow_statistics[i]))
-            underflow_tmp = 2;
-
         if (0 != underflow_statistics[i]) {
             videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
             videoFrmInfo.nVidFrmSize = 0;
@@ -3491,8 +3496,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nMinMV = 0;
             videoFrmInfo.nAvgMV = 0;
             videoFrmInfo.SkipRatio = 0;
-            videoFrmInfo.nUnderflow = underflow_tmp;
-            underflow_tmp = 0;
+            videoFrmInfo.nUnderflow = underflow_statistics[i];
         } else {
             videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e) pframe_qos[i].type;
             videoFrmInfo.nVidFrmSize = pframe_qos[i].size;
@@ -3503,7 +3507,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nMinMV = pframe_qos[i].min_mv;
             videoFrmInfo.nAvgMV = pframe_qos[i].avg_mv;
             videoFrmInfo.SkipRatio = pframe_qos[i].avg_skip;
-            videoFrmInfo.nUnderflow = underflow_statistics[i];
+            videoFrmInfo.nUnderflow = 0;
         }
 
         /*[SE] [BUG][BUG-166595][yinli.xia] sometimes net broken have no frame info*/
@@ -3518,7 +3522,10 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nMinMV = 0;
             videoFrmInfo.nAvgMV = 0;
             videoFrmInfo.SkipRatio = 0;
-            videoFrmInfo.nUnderflow = 2;
+            if ((show_num < 10) || (caton_num > 15))
+                videoFrmInfo.nUnderflow = 2;
+            else
+                videoFrmInfo.nUnderflow = 0;
         }
 
         if (((pframe_qos[i].type == 4) &&
@@ -3530,25 +3537,23 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
         if (0 != underflow_statistics[i]) {
             videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
         }
-        if ((0 != videoFrmInfo.nVidFrmSize) || (0 != videoFrmInfo.nUnderflow)) {
-            if (prop_shouldshowlog) {
-                LOGI("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
-                        mLastVdecInfoNum,
-                        pframe_qos[i].num,
-                        videoFrmInfo.enVidFrmType,
-                        videoFrmInfo.nVidFrmSize,
-                        videoFrmInfo.nMinQP,
-                        videoFrmInfo.nMaxQP,
-                        videoFrmInfo.nAvgQP,
-                        videoFrmInfo.nMaxMV,
-                        videoFrmInfo.nMinMV,
-                        videoFrmInfo.nAvgMV,
-                        videoFrmInfo.SkipRatio,
-                        videoFrmInfo.nUnderflow);
-            }
-            if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
-                pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrmInfo);
-            }
+        if (prop_shouldshowlog) {
+            LOGI("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
+                    mLastVdecInfoNum,
+                    pframe_qos[i].num,
+                    videoFrmInfo.enVidFrmType,
+                    videoFrmInfo.nVidFrmSize,
+                    videoFrmInfo.nMinQP,
+                    videoFrmInfo.nMaxQP,
+                    videoFrmInfo.nAvgQP,
+                    videoFrmInfo.nMaxMV,
+                    videoFrmInfo.nMinMV,
+                    videoFrmInfo.nAvgMV,
+                    videoFrmInfo.SkipRatio,
+                    videoFrmInfo.nUnderflow);
+        }
+        if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
+            pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrmInfo);
         }
     }
     //if ( i >= 1)

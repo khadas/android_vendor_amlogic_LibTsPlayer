@@ -1604,6 +1604,11 @@ bool CTsPlayer::iStartPlay()
             pcodec->am_sysinfo.param   = (void *)(0x08);
             LOGI("STREAM_TYPE_STREAM fast no_poc_reorder\n");
         }
+        /*+[SE][BUG][BUG-170509][zhizhong.zhang] Modify:force 265 fast use stream mode.*/
+        if (m_bFast && pcodec->video_type == VFORMAT_HEVC) {
+            pcodec->dec_mode = STREAM_TYPE_STREAM;
+            LOGI("hevc fast force set stream mode\n");
+        }
         LOGI("dec_mode:%d\n", pcodec->dec_mode);
         ret = codec_init(pcodec);
     } else{

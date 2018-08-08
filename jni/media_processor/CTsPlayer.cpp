@@ -3382,7 +3382,7 @@ void CTsPlayer::checkVdecstate()
         if (((video_status.status & DECODER_FATAL_ERROR_SIZE_OVERFLOW) ||
             (video_status.status &DECODER_FATAL_ERROR_UNKNOW) ||
            (video_status.status &DECODER_FATAL_ERROR_NO_MEM) ||
-           reset) && ((cur_codec->video_type == VFORMAT_HEVC && cur_codec->dec_mode == STREAM_TYPE_SINGLE) ||
+           reset) && ((cur_codec->video_type == VFORMAT_HEVC && cur_codec->dec_mode != STREAM_TYPE_SINGLE) ||
             (cur_codec->video_type == VFORMAT_AVS2))) {
             LOGI("VFORMAT: %d error:%x ,reset  player\n ",cur_codec->video_type,video_status.status);
             //lp_unlock(&mutex);
@@ -3420,6 +3420,12 @@ void CTsPlayer::checkVdecstate()
                 if (m_PreviousOverflowTime == 0)
                     m_PreviousOverflowTime  = av_gettime();
                 if ((av_gettime()-m_PreviousOverflowTime) >= 2000000){
+                    /* +[SE][BUG][BUG-170468][hang.huang] fix:4k h265 playing by ctc use reset proc cause of system crash */
+                    if (cur_codec->video_type == VFORMAT_HEVC & cur_codec->dec_mode != STREAM_TYPE_SINGLE)
+                    {
+                        LOGI("buffer overflow more than 2s,but single hevc not reset.\n ");
+                        return;
+                    }
                     LOGI("buffer  overflow more than 2s ,reset  player\n ");
                     iStop();
                     usleep(500*1000);

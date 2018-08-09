@@ -100,6 +100,11 @@ static int prop_start_no_out = 0;
 static int s_screen_mode = -1;
 //unsigned int am_sysinfo_param =0x08;
 
+static int collect_write_total;
+static int collect_write_start;
+static int prop_collect_write_enable;
+static int prop_collect_write_expire;
+
 /* soft demux related*/
 #define _GNU_SOURCE
 #define F_SETPIPE_SZ        (F_LINUX_SPECIFIC_BASE + 7)
@@ -505,6 +510,14 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.trickmode.debug", value, "0");
     prop_trickmode_debug = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.write_collect.enable", value, "1");
+    prop_collect_write_enable = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.write_collect.expire", value, "3000");
+    prop_collect_write_expire = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
@@ -2141,6 +2154,21 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 		}
         return -1;
     }
+
+    if (prop_collect_write_enable == 1) {
+		collect_write_total += ret;
+		if (collect_write_start == 0) {
+			collect_write_start = (int)(av_gettime()/1000);
+		}
+		int expire = (av_gettime()/1000 - collect_write_start);
+		if (expire >= prop_collect_write_expire) {
+			LOGI("write_collection. total:%d expire:%d rate:%d KB/s once:%d  \n",
+				collect_write_total, expire, (int)(collect_write_total/expire), ret);
+			collect_write_start = 0;
+			collect_write_total = 0;
+		}
+    }
+
     return ret;
 }
 

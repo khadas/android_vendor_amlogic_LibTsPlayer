@@ -235,11 +235,13 @@ typedef struct {
     int  nAvgMV;
     int  SkipRatio;
     int  nUnderflow;
+    #if 0
     int  nVidFrmQP;
     int  nVidFrmPTS;
     int  nMaxSkip;
     int  nMinSkip;
     int  nAvgSkip;
+    #endif
 }VIDEO_FRM_STATUS_INFO_T;
 
 #ifdef TELECOM_QOS_SUPPORT

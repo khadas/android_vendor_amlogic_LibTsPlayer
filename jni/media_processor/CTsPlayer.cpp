@@ -3668,6 +3668,11 @@ int CTsPlayer::updateCTCInfo()
     /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
         to statistics video frame when start to play*/
     if (av_param_info.av_info.first_pic_coming) {
+        /*+[SE] [BUG][BUG-171423][jiwei.sun] send first pts event once. */
+        if (m_sCtsplayerState.first_picture_comming == 0) {
+                m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
+                pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
+        }
         m_sCtsplayerState.first_picture_comming = 1;
         if (!threshold_ctl_flag) {
             if (av_param_info.av_info.width > 1920)
@@ -3867,10 +3872,6 @@ int CTsPlayer::updateCTCInfo()
     m_sCtsplayerState.valid = 1;
 
     LOGV("player: avdiff=%lld,ff_mode=%d,ts_error=%d\n",m_sCtsplayerState.avdiff,m_sCtsplayerState.ff_mode,m_sCtsplayerState.ts_error);
-    if (m_sCtsplayerState.first_picture_comming == 1) {
-        m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
-        pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
-    }
     for (i = 0;i < 60;i++)
         underflow_statistics[i] = 0;
     qos_count = 0;

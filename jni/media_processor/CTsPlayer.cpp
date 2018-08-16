@@ -3503,7 +3503,8 @@ void *CTsPlayer::threadCheckAbend(void *pthis) {
 int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 {
     int i;
-    int caton_num = 0,show_num = 0;
+    int caton_num = 0,show_num = 0,num_set = 0;
+    int igmp_num = 0,igmp_numset = 0;
     char value[256] = {0};
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
 
@@ -3515,10 +3516,13 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
         if (0 != underflow_statistics[i])
             caton_num++;
-        if (0 != pframe_qos[i].size)
-            show_num++;
     }
-    if (caton_num < 5) {
+    /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.frameinfo.num", value, "5");
+    num_set = atoi(value);
+
+    if (caton_num <= num_set) {
         for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
             underflow_statistics[i] = 0;
         }
@@ -3561,10 +3565,18 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nMinMV = 0;
             videoFrmInfo.nAvgMV = 0;
             videoFrmInfo.SkipRatio = 0;
-            if ((show_num < 10) || (caton_num > 15))
+            if (caton_num >= num_set) {
                 videoFrmInfo.nUnderflow = 2;
-            else
+            } else {
                 videoFrmInfo.nUnderflow = 0;
+                igmp_num++;
+            }
+            /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
+            memset(value, 0, PROPERTY_VALUE_MAX);
+            property_get("iptv.frameinfo.igmpnum", value, "5");
+            igmp_numset = atoi(value);
+            if (igmp_num > igmp_numset)
+                videoFrmInfo.nUnderflow = 2;
         }
 
         if (((pframe_qos[i].type == 4) &&
@@ -3901,7 +3913,7 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.vdec_drop = av_param_info.av_info.dec_drop_frame_count;
         m_sCtsplayerState.vdec_underflow = vdec_underflow;
         m_sCtsplayerState.vpts_error = av_param_info.av_info.vpts_err;
-	LOGV("video: vpts=0x%llx, width=%d, height=%d, ratio=%d, rWh=%d, frame_format=%d\n",m_sCtsplayerState.vpts,m_sCtsplayerState.video_width,
+        LOGV("video: vpts=0x%llx, width=%d, height=%d, ratio=%d, rWh=%d, frame_format=%d\n",m_sCtsplayerState.vpts,m_sCtsplayerState.video_width,
             m_sCtsplayerState.video_height,m_sCtsplayerState.video_ratio,m_sCtsplayerState.video_rWH,m_sCtsplayerState.Video_frame_format);
         LOGV("video-2:  vbuf_used=%d, vbuf_size=%dKB, vdec_error=%d, vdec_underflow=%d, vpts_err=%d\n",
 		m_sCtsplayerState.vbuf_used,m_sCtsplayerState.vbuf_size/1024,m_sCtsplayerState.vdec_error,m_sCtsplayerState.vdec_underflow,m_sCtsplayerState.vpts_error);
@@ -3916,9 +3928,6 @@ int CTsPlayer::updateCTCInfo()
     m_sCtsplayerState.valid = 1;
 
     LOGV("player: avdiff=%lld,ff_mode=%d,ts_error=%d\n",m_sCtsplayerState.avdiff,m_sCtsplayerState.ff_mode,m_sCtsplayerState.ts_error);
-    for (i = 0;i < 60;i++)
-        underflow_statistics[i] = 0;
-    qos_count = 0;
     return 0;
 }
 

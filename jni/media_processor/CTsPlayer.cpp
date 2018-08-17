@@ -3835,7 +3835,10 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.video_height = av_param_info.av_info.height;
         m_sCtsplayerState.frame_rate = av_param_info.av_info.fps;
         m_sCtsplayerState.current_fps = av_param_info.av_info.current_fps;
-        #ifdef TELECOM_VFORMAT_SUPPORT
+
+        /* +[SE] [BUG][BUG-171963][yinli.xia] added: modify video resolution for video play*/
+        if (m_sCtsplayerState.video_width > 0 &&
+            m_sCtsplayerState.video_height > 0) {
             if (( m_sCtsplayerState.video_width==720) &&
                 (m_sCtsplayerState.video_height==480)) {
                 m_sCtsplayerState.video_ratio = 1;
@@ -3861,28 +3864,10 @@ int CTsPlayer::updateCTCInfo()
                 (m_sCtsplayerState.video_height==4320)) {
                 m_sCtsplayerState.video_ratio = 8;
             } else {
-
-            }
-        #else
-            if (( m_sCtsplayerState.video_width==640) &&
-                (m_sCtsplayerState.video_height==480)) {
                 m_sCtsplayerState.video_ratio = 0;
-            } else if (( m_sCtsplayerState.video_width==720) &&
-                (m_sCtsplayerState.video_height==576)) {
-                m_sCtsplayerState.video_ratio = 1;
-            } else if (( m_sCtsplayerState.video_width==1280) &&
-                (m_sCtsplayerState.video_height==720)) {
-                m_sCtsplayerState.video_ratio = 2;
-            } else if (( m_sCtsplayerState.video_width==1920) &&
-                (m_sCtsplayerState.video_height==1080)) {
-                m_sCtsplayerState.video_ratio = 3;
-            } else if (( m_sCtsplayerState.video_width==3840) &&
-                (m_sCtsplayerState.video_height==2160)) {
-                m_sCtsplayerState.video_ratio = 4;
-            } else {
-                m_sCtsplayerState.video_ratio = 5;
             }
-        #endif
+        }
+
         float videoWH = 0;
         if (m_sCtsplayerState.video_width  > 0 && m_sCtsplayerState.video_height > 0)
             videoWH = (float)m_sCtsplayerState.video_width  / (float)m_sCtsplayerState.video_height;

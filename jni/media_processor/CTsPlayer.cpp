@@ -585,7 +585,8 @@ CTsPlayer::CTsPlayer()
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
 
     //set overflow status when decode h264_4k use format h264 .
-    amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 1);
+    /* +[SE] [BUG][BUG-170394][chuanqi.wang]: TsPlayer:don't use app reset*/
+    //amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 1);
 
     m_bIsPlay = false;
     m_bIsPause = false;

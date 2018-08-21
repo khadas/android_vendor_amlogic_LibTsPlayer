@@ -1495,6 +1495,8 @@ bool CTsPlayer::iStartPlay()
     //close tsync when only has video;
     if (pcodec->has_audio == 0) {
         amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0);
+	if(m_bFast == 0)
+		amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctc_fix_dur", 1);
         if (video_delay_start != 0)
             amsysfs_set_sysfs_int("/sys/class/tsync/start_video_delay", video_delay_start);
     }
@@ -2403,6 +2405,7 @@ bool CTsPlayer::iStop()
     amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", keep_vdec_mem);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctc_fix_dur", 0);
     if (video_delay_start != 0)
         amsysfs_set_sysfs_int("/sys/class/tsync/start_video_delay", 0);
     if (perform_flag) {

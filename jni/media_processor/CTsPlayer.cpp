@@ -3514,6 +3514,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     int i;
     int caton_num = 0,show_num = 0,num_set = 0;
     int igmp_num = 0,igmp_numset = 0;
+    int tmp_mv = 0;
     char value[256] = {0};
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
 
@@ -3538,6 +3539,17 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     }
 
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
+        /* +[SE] [BUG][BUG-171958][yinli.xia] added: modify mv value statitics error*/
+        if ((pframe_qos[i].avg_mv > pframe_qos[i].max_mv) &&
+            (pframe_qos[i].avg_mv > pframe_qos[i].min_mv)) {
+            pframe_qos[i].avg_mv = (pframe_qos[i].max_mv + pframe_qos[i].min_mv) / 2;
+         } else if (pframe_qos[i].max_mv < pframe_qos[i].min_mv) {
+            tmp_mv = pframe_qos[i].max_mv;
+            pframe_qos[i].max_mv = pframe_qos[i].min_mv;
+            pframe_qos[i].min_mv = tmp_mv;
+            pframe_qos[i].avg_mv = (pframe_qos[i].max_mv + pframe_qos[i].min_mv) / 2;
+        }
+
         if (0 != underflow_statistics[i]) {
             videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
             videoFrmInfo.nVidFrmSize = 0;

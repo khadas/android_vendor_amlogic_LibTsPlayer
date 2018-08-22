@@ -335,6 +335,7 @@ public:
     virtual int GetVideoFrameRate() = 0;
     virtual int GetVideoDropNumber() = 0;
     virtual int GetVideoTotalNumber() = 0;
+    virtual void GetVideoResolution() = 0;
 	virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara)=0;
     virtual bool SubtitleShowHide(bool bShow) = 0;
     virtual void SetVideoHole(int x,int y,int w,int h) = 0;
@@ -434,6 +435,7 @@ public:
     virtual int GetVideoDropNumber();
     //virtual void Report_Audio_paramters();
     virtual int GetVideoTotalNumber();
+    virtual void GetVideoResolution();
 	virtual int GetCurrentVidPTS(unsigned long long *pPTS);
 	virtual void GetVideoInfo(int *width, int *height, int *ratio);
 	virtual int GetPlayerInstanceNo();

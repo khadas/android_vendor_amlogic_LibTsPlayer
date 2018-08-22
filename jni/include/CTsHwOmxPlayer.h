@@ -127,6 +127,7 @@ public:
 	virtual void writeScaleValue();
 	virtual int GetVideoDropNumber();
 	virtual int GetVideoTotalNumber();
+	virtual void GetVideoResolution();
 	virtual int GetCurrentVidPTS(unsigned long long  *pPTS);
 #ifdef IPTV_ZTE_SUPPORT
     virtual void GetVideoInfo (int *width,int *height ,int  *ratio,int *frame_format);

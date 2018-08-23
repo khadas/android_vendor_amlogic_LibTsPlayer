@@ -616,6 +616,8 @@ CTsPlayer::CTsPlayer()
     qos_count = 0;
     prev_vread_buffer = 0;
     vrp_is_buffer_changed = 0;
+    last_data_len = 0;
+    last_data_len_statistics = 0;
 
     m_StopThread = false;
     pthread_attr_t attr;
@@ -3201,6 +3203,7 @@ void CTsPlayer::checkAbend()
     }
 }
 
+/* +[SE] [BUG][BUG-172261][yinli.xia] added: Optimize net broken frame information*/
 int CTsPlayer::checkunderflow()
 {
     int ret = 0;
@@ -3240,6 +3243,9 @@ int CTsPlayer::checkunderflow()
                 } else {
                     ret = 0;
                 }
+                if (video_buf.data_len == last_data_len)
+                    last_data_len_statistics++;
+                last_data_len = video_buf.data_len;
             }
         }
     }
@@ -3535,10 +3541,12 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.frameinfo.num", value, "5");
     num_set = atoi(value);
-
     if (caton_num <= num_set) {
         for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
-            underflow_statistics[i] = 0;
+            if (last_data_len_statistics == (frame_rate_ctc - 1))
+                underflow_statistics[i] = 2;
+            else
+                underflow_statistics[i] = 0;
         }
     }
 
@@ -3598,7 +3606,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             }
             /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
             memset(value, 0, PROPERTY_VALUE_MAX);
-            property_get("iptv.frameinfo.igmpnum", value, "5");
+            property_get("iptv.frameinfo.igmpnum", value, "0");
             igmp_numset = atoi(value);
             if (igmp_num > igmp_numset)
                 videoFrmInfo.nUnderflow = 2;
@@ -3638,6 +3646,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
         underflow_statistics[i] = 0;
     }
     qos_count = 0;
+    last_data_len = 0;
+    last_data_len_statistics = 0;
     return 0;
 }
 #endif

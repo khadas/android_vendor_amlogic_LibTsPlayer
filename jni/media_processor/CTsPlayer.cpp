@@ -617,6 +617,8 @@ CTsPlayer::CTsPlayer()
     qos_count = 0;
     prev_vread_buffer = 0;
     vrp_is_buffer_changed = 0;
+    last_data_len = 0;
+    last_data_len_statistics = 0;
 
     m_StopThread = false;
     pthread_attr_t attr;
@@ -3205,6 +3207,7 @@ void CTsPlayer::checkAbend()
     }
 }
 
+/* +[SE] [BUG][BUG-172261][yinli.xia] added: Optimize net broken frame information*/
 int CTsPlayer::checkunderflow()
 {
     int ret = 0;
@@ -3244,6 +3247,9 @@ int CTsPlayer::checkunderflow()
                 } else {
                     ret = 0;
                 }
+                if (video_buf.data_len == last_data_len)
+                    last_data_len_statistics++;
+                last_data_len = video_buf.data_len;
             }
         }
     }
@@ -3330,6 +3336,10 @@ void CTsPlayer::update_stream_bitrate()
 			m_sCtsplayerState.bytes_record_start = m_sCtsplayerState.bytes_record_cur;
 			m_sCtsplayerState.bytes_record_starttime_ms = curtime_ms;
 			LOGI("TsPlayer update writedata bitrate:%dbps\n", m_sCtsplayerState.stream_bitrate);
+		} else if (m_sCtsplayerState.stream_bitrate == 0) {
+			int size = (m_sCtsplayerState.bytes_record_cur - m_sCtsplayerState.bytes_record_start)* 8;
+			int64_t diff = curtime_ms - m_sCtsplayerState.bytes_record_starttime_ms;
+			m_sCtsplayerState.stream_bitrate = size *1000/diff;
 		}
 	}
 }
@@ -3535,10 +3545,12 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.frameinfo.num", value, "5");
     num_set = atoi(value);
-
     if (caton_num <= num_set) {
         for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
-            underflow_statistics[i] = 0;
+            if (last_data_len_statistics == (frame_rate_ctc - 1))
+                underflow_statistics[i] = 2;
+            else
+                underflow_statistics[i] = 0;
         }
     }
 
@@ -3598,7 +3610,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             }
             /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
             memset(value, 0, PROPERTY_VALUE_MAX);
-            property_get("iptv.frameinfo.igmpnum", value, "5");
+            property_get("iptv.frameinfo.igmpnum", value, "0");
             igmp_numset = atoi(value);
             if (igmp_num > igmp_numset)
                 videoFrmInfo.nUnderflow = 2;
@@ -3638,6 +3650,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
         underflow_statistics[i] = 0;
     }
     qos_count = 0;
+    last_data_len = 0;
+    last_data_len_statistics = 0;
     return 0;
 }
 #endif
@@ -3729,6 +3743,74 @@ int CTsPlayer::GetVideoTotalNumber()
 	return total_number;
 }
 
+const int ratio_list[8][2] = {{720,480},{720,576},{1280,720},{1920,960},{1920,1080},{1920,1080},{3840,2160},{7680,4320}};
+
+/* +[SE] [REQ][BUG-172264][yinli.xia] added: modify video resolution*/
+void CTsPlayer::GetVideoResolution()
+{
+	struct av_param_info_t av_param_info;
+	memset(&av_param_info , 0 ,sizeof(av_param_info));
+	if (pcodec->has_video) {
+		if (prop_softdemux == 0) {
+			codec_get_av_param_info(pcodec, &av_param_info);
+		} else {
+			codec_get_av_param_info(vcodec, &av_param_info);
+		}
+	}
+	m_sCtsplayerState.video_width = av_param_info.av_info.width;
+	m_sCtsplayerState.video_height = av_param_info.av_info.height;
+	/* +[SE] [BUG][BUG-171963][yinli.xia] added: modify video resolution for video play*/
+	if (m_sCtsplayerState.video_width > 0 &&
+		m_sCtsplayerState.video_height > 0) {
+		if (( m_sCtsplayerState.video_width == 720) &&
+			(m_sCtsplayerState.video_height == 480)) {
+			m_sCtsplayerState.video_ratio = 1;
+		} else if (( m_sCtsplayerState.video_width == 720) &&
+			(m_sCtsplayerState.video_height == 576)) {
+			m_sCtsplayerState.video_ratio = 2;
+		} else if (( m_sCtsplayerState.video_width == 1280) &&
+			(m_sCtsplayerState.video_height == 720)) {
+			m_sCtsplayerState.video_ratio = 3;
+		} else if (( m_sCtsplayerState.video_width == 1920) &&
+			(m_sCtsplayerState.video_height == 960)) {
+			m_sCtsplayerState.video_ratio = 4;
+		} else if (( m_sCtsplayerState.video_width == 1920) &&
+			(m_sCtsplayerState.video_height == 1080)) {
+			m_sCtsplayerState.video_ratio = 5;
+		} else if (( m_sCtsplayerState.video_width == 1920) &&
+			(m_sCtsplayerState.video_height==1080)) {
+			m_sCtsplayerState.video_ratio = 6;
+		} else if (( m_sCtsplayerState.video_width == 3840) &&
+			(m_sCtsplayerState.video_height==2160)) {
+			m_sCtsplayerState.video_ratio = 7;
+		} else if (( m_sCtsplayerState.video_width == 7680) &&
+			(m_sCtsplayerState.video_height == 4320)) {
+			m_sCtsplayerState.video_ratio = 8;
+		} else {
+			for (int j = 0;j < 8;j++) {
+				for (int k = 0;k < 2;k++) {
+					if ((m_sCtsplayerState.video_width == ratio_list[j][k]) ||
+						(m_sCtsplayerState.video_height == ratio_list[j][k])) {
+						m_sCtsplayerState.video_ratio = j + 1;
+					} else if ((m_sCtsplayerState.video_width != ratio_list[j][k]) &&
+						(m_sCtsplayerState.video_height != ratio_list[j][k])) {
+						LOGI("video_ratio is not a standard resolution, m_sCtsplayerState.video_width = %d,m_sCtsplayerState.video_height = %d\n",
+							m_sCtsplayerState.video_width,m_sCtsplayerState.video_height);
+						int min_ratio = abs(ratio_list[0][1] - m_sCtsplayerState.video_height);
+						if ((abs(ratio_list[j][1] - m_sCtsplayerState.video_height)) <	min_ratio) {
+							min_ratio = abs(ratio_list[j][1] - m_sCtsplayerState.video_height);
+							m_sCtsplayerState.video_ratio = j + 1;
+							LOGI("xia abnormal m_sCtsplayerState.video_ratio = %d\n",m_sCtsplayerState.video_ratio);
+						}
+					}
+				}
+			}
+		}
+	}
+	LOGI("xia m_sCtsplayerState.video_ratio = %d, m_sCtsplayerState.video_width = %d,m_sCtsplayerState.video_height = %d\n",
+		m_sCtsplayerState.video_ratio,m_sCtsplayerState.video_width,m_sCtsplayerState.video_height);
+}
+
 int CTsPlayer::updateCTCInfo()
 {
     int i = 0;
@@ -3751,8 +3833,9 @@ int CTsPlayer::updateCTCInfo()
     if (av_param_info.av_info.first_pic_coming) {
         /*+[SE] [BUG][BUG-171423][jiwei.sun] send first pts event once. */
         if (m_sCtsplayerState.first_picture_comming == 0) {
-                m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
-                pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
+            GetVideoResolution();
+            m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
+            pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
         }
         m_sCtsplayerState.first_picture_comming = 1;
         if (!threshold_ctl_flag) {
@@ -3860,38 +3943,7 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.video_height = av_param_info.av_info.height;
         m_sCtsplayerState.frame_rate = av_param_info.av_info.fps;
         m_sCtsplayerState.current_fps = av_param_info.av_info.current_fps;
-
-        /* +[SE] [BUG][BUG-171963][yinli.xia] added: modify video resolution for video play*/
-        if (m_sCtsplayerState.video_width > 0 &&
-            m_sCtsplayerState.video_height > 0) {
-            if (( m_sCtsplayerState.video_width==720) &&
-                (m_sCtsplayerState.video_height==480)) {
-                m_sCtsplayerState.video_ratio = 1;
-            } else if (( m_sCtsplayerState.video_width==720) &&
-                (m_sCtsplayerState.video_height==576)) {
-                m_sCtsplayerState.video_ratio = 2;
-            } else if (( m_sCtsplayerState.video_width==1280) &&
-                (m_sCtsplayerState.video_height==720)) {
-                m_sCtsplayerState.video_ratio = 3;
-            } else if (( m_sCtsplayerState.video_width==1920) &&
-                (m_sCtsplayerState.video_height==960)) {
-                m_sCtsplayerState.video_ratio = 4;
-            } else if (( m_sCtsplayerState.video_width==1920) &&
-                (m_sCtsplayerState.video_height==1080)) {
-                m_sCtsplayerState.video_ratio = 5;
-            } else if (( m_sCtsplayerState.video_width==1920) &&
-                (m_sCtsplayerState.video_height==1080)) {
-                m_sCtsplayerState.video_ratio = 6;
-            } else if (( m_sCtsplayerState.video_width==3840) &&
-                (m_sCtsplayerState.video_height==2160)) {
-                m_sCtsplayerState.video_ratio = 7;
-            } else if (( m_sCtsplayerState.video_width==7680) &&
-                (m_sCtsplayerState.video_height==4320)) {
-                m_sCtsplayerState.video_ratio = 8;
-            } else {
-                m_sCtsplayerState.video_ratio = 0;
-            }
-        }
+        GetVideoResolution();
 
         float videoWH = 0;
         if (m_sCtsplayerState.video_width  > 0 && m_sCtsplayerState.video_height > 0)

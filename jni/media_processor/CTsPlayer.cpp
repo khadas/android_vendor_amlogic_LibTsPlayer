@@ -424,7 +424,7 @@ CTsPlayer::CTsPlayer()
     prop_esdata = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.middle.video_delay_start", value, "0");
+    property_get("iptv.middle.video_delay_start", value, "45000");
     video_delay_start = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -1498,10 +1498,9 @@ bool CTsPlayer::iStartPlay()
     //close tsync when only has video;
     if (pcodec->has_audio == 0) {
         amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0);
-	if(m_bFast == 0)
-		amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctc_fix_dur", 1);
-        if (video_delay_start != 0)
-            amsysfs_set_sysfs_int("/sys/class/tsync/start_video_delay", video_delay_start);
+        if (m_bFast == 0)
+            amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctc_fix_dur", 1);
+        amsysfs_set_sysfs_int("/sys/class/tsync/start_video_delay", video_delay_start);
     }
 
     char value[PROPERTY_VALUE_MAX] = {0};
@@ -2409,8 +2408,7 @@ bool CTsPlayer::iStop()
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",2);
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/error_skip_divisor", 0);
     amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctc_fix_dur", 0);
-    if (video_delay_start != 0)
-        amsysfs_set_sysfs_int("/sys/class/tsync/start_video_delay", 0);
+    amsysfs_set_sysfs_int("/sys/class/tsync/start_video_delay", 0);
     if (perform_flag) {
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;

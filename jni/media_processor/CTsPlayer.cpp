@@ -3523,7 +3523,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 {
     int i;
     int caton_num = 0,show_num = 0,num_set = 0;
-    int igmp_num = 0,igmp_numset = 0;
+    int igmp_num = 0,igmp_numset = 0,net_broke_num = 0;
     int tmp_mv = 0;
     char value[256] = {0};
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
@@ -3536,6 +3536,8 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
         if (0 != underflow_statistics[i])
             caton_num++;
+        if (0 == pframe_qos[i].size)
+            net_broke_num++;
     }
     /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -3608,6 +3610,11 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             memset(value, 0, PROPERTY_VALUE_MAX);
             property_get("iptv.frameinfo.igmpnum", value, "0");
             igmp_numset = atoi(value);
+            if ((pframe_qos[0].size == 0) &&
+                (net_broke_num >= 20))
+                igmp_numset = 0;
+            else
+                igmp_numset = 5;
             if (igmp_num > igmp_numset)
                 videoFrmInfo.nUnderflow = 2;
         }

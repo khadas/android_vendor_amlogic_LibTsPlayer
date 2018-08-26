@@ -2032,6 +2032,12 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 
     //LOGI("--WriteData, nSize=%d, prop_softdemux=%d--\n", nSize, prop_softdemux);
 
+    /*+[SE][BUG][BUG-172553][chengshun] record start time in first writedata.*/
+    if (m_sCtsplayerState.bytes_record_starttime_ms == 0) {
+        int64_t curtime_ms = 0;
+        curtime_ms = (int64_t)(av_gettime()/1000);
+        m_sCtsplayerState.bytes_record_starttime_ms = curtime_ms;
+    }
     //checkBuffstate();
     if(prop_softdemux == 0){
         codec_get_abuf_state(pcodec, &audio_buf);
@@ -3325,20 +3331,12 @@ void CTsPlayer::update_stream_bitrate()
 
 	curtime_ms = (int64_t)(av_gettime()/1000);
 
-	if (m_sCtsplayerState.bytes_record_starttime_ms == 0) {
-		m_sCtsplayerState.bytes_record_starttime_ms = curtime_ms;
-	} else {
-		if (curtime_ms - m_sCtsplayerState.bytes_record_starttime_ms >= 1000) {
-			m_sCtsplayerState.stream_bitrate =
-				(m_sCtsplayerState.bytes_record_cur - m_sCtsplayerState.bytes_record_start)* 8;
+	if (curtime_ms != m_sCtsplayerState.bytes_record_starttime_ms) {
+		int64_t size = (m_sCtsplayerState.bytes_record_cur - m_sCtsplayerState.bytes_record_start)* 8;
+		int64_t diff = curtime_ms - m_sCtsplayerState.bytes_record_starttime_ms;
+		m_sCtsplayerState.stream_bitrate = size *1000/diff;
 			m_sCtsplayerState.bytes_record_start = m_sCtsplayerState.bytes_record_cur;
 			m_sCtsplayerState.bytes_record_starttime_ms = curtime_ms;
-			LOGI("TsPlayer update writedata bitrate:%dbps\n", m_sCtsplayerState.stream_bitrate);
-		} else if (m_sCtsplayerState.stream_bitrate == 0) {
-			int size = (m_sCtsplayerState.bytes_record_cur - m_sCtsplayerState.bytes_record_start)* 8;
-			int64_t diff = curtime_ms - m_sCtsplayerState.bytes_record_starttime_ms;
-			m_sCtsplayerState.stream_bitrate = size *1000/diff;
-		}
 	}
 }
 void CTsPlayer::checkVdecstate()
@@ -3668,13 +3666,13 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
     int max_count = 0;
     do {
             if (tsplayer->m_bIsPlay) {
-                tsplayer->update_stream_bitrate();
                 if (tsplayer->m_sCtsplayerState.first_picture_comming== 0) {
                     LOGI("first updateCTCInfo,width :%d,height:%d\n",
                     tsplayer->m_sCtsplayerState.video_width,
                     tsplayer->m_sCtsplayerState.video_height);
                     max_count = 1;
                 }else {
+                     tsplayer->update_stream_bitrate();
                      if (tsplayer->frame_rate_ctc > 0)
                         max_count = tsplayer->frame_rate_ctc;
                      else
@@ -3684,6 +3682,9 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                 if (checkcount1 >= max_count) {
                     //tsplayer->Report_video_paramters();
                     tsplayer->updateCTCInfo();
+                    if (max_count > 1) {
+                        LOGI("TsPlayer update writedata bitrate:%dbps\n", tsplayer->m_sCtsplayerState.stream_bitrate);
+                    }
                     checkcount1 = 0;
                 }
                 tsplayer->checkunderflow_type();
@@ -3836,9 +3837,19 @@ int CTsPlayer::updateCTCInfo()
     /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
         to statistics video frame when start to play*/
     if (av_param_info.av_info.first_pic_coming) {
+        /*+[SE][BUG][BUG-172553][chengshun] in sometimes, get first_picture,but cur_dispbuf not get value.*/
+        if (av_param_info.av_info.width == 0) {
+            LOGI("updateCTCInfo:get first picture, width not get\n");
+            return 0;
+        }
         /*+[SE] [BUG][BUG-171423][jiwei.sun] send first pts event once. */
         if (m_sCtsplayerState.first_picture_comming == 0) {
             GetVideoResolution();
+            /*+[SE][BUG][BUG-172553][chengshun] cal first bitrate after get first picture.*/
+            if (m_sCtsplayerState.stream_bitrate == 0) {
+                update_stream_bitrate();
+                LOGI("updateCTCInfo update writedata bitrate:%dbps\n", m_sCtsplayerState.stream_bitrate);
+            }
             m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
             pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
         }

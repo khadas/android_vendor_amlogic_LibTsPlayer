@@ -3523,7 +3523,7 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
 {
     int i;
     int caton_num = 0,show_num = 0,num_set = 0;
-    int igmp_num = 0,igmp_numset = 0,net_broke_num = 0;
+    int igmp_num = 0,igmp_numset = 0,invalid_num = 0;
     int tmp_mv = 0;
     char value[256] = {0};
     VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
@@ -3531,25 +3531,25 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
     property_get("iptv.shouldshowlog", value, "0");
     prop_shouldshowlog = atoi(value);
 
+    /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.frameinfo.igmpnum", value, "5");
+    igmp_numset = atoi(value);
+
     //if(pframe_qos[0].num == mLastVdecInfoNum)
         //return 1;
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
         if (0 != underflow_statistics[i])
             caton_num++;
         if (0 == pframe_qos[i].size)
-            net_broke_num++;
-    }
-    /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
-    memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.frameinfo.num", value, "5");
-    num_set = atoi(value);
-    if (caton_num <= num_set) {
-        for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
-            if (last_data_len_statistics == (frame_rate_ctc - 1))
-                underflow_statistics[i] = 2;
-            else
-                underflow_statistics[i] = 0;
-        }
+            invalid_num++;
+        if (last_data_len_statistics == (frame_rate_ctc - 1))
+            underflow_statistics[i] = 2;
+        else
+            underflow_statistics[i] = 0;
+
+        if (pframe_qos[i].size == 0)
+            underflow_statistics[i] = 2;
     }
 
     for (i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
@@ -3585,38 +3585,14 @@ int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
             videoFrmInfo.nMinMV = pframe_qos[i].min_mv;
             videoFrmInfo.nAvgMV = pframe_qos[i].avg_mv;
             videoFrmInfo.SkipRatio = pframe_qos[i].avg_skip;
-            videoFrmInfo.nUnderflow = 0;
+            videoFrmInfo.nUnderflow = underflow_statistics[i];
         }
 
-        /*[SE] [BUG][BUG-166595][yinli.xia] sometimes net broken have no frame info*/
-        if ((0 == videoFrmInfo.nVidFrmSize) &&
-            (0 == videoFrmInfo.nUnderflow)) {
-            videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
-            videoFrmInfo.nVidFrmSize = 0;
-            videoFrmInfo.nMinQP = 0;
-            videoFrmInfo.nMaxQP = 0;
-            videoFrmInfo.nAvgQP = 0;
-            videoFrmInfo.nMaxMV = 0;
-            videoFrmInfo.nMinMV = 0;
-            videoFrmInfo.nAvgMV = 0;
-            videoFrmInfo.SkipRatio = 0;
-            if (caton_num >= num_set) {
-                videoFrmInfo.nUnderflow = 2;
-            } else {
+        if (0 == videoFrmInfo.nVidFrmSize) {
+            if ((pframe_qos[frame_rate_ctc - 1].size == 0) &&
+                (pframe_qos[0].size != 0) &&
+                (invalid_num <= igmp_numset))
                 videoFrmInfo.nUnderflow = 0;
-                igmp_num++;
-            }
-            /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
-            memset(value, 0, PROPERTY_VALUE_MAX);
-            property_get("iptv.frameinfo.igmpnum", value, "0");
-            igmp_numset = atoi(value);
-            if ((pframe_qos[0].size == 0) &&
-                (net_broke_num >= 20))
-                igmp_numset = 0;
-            else
-                igmp_numset = 5;
-            if (igmp_num > igmp_numset)
-                videoFrmInfo.nUnderflow = 2;
         }
 
         if (((pframe_qos[i].type == 4) &&

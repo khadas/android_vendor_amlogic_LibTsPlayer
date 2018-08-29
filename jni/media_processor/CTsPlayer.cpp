@@ -1352,6 +1352,7 @@ bool CTsPlayer::iStartPlay()
     char *s = NULL;
     char *p = NULL;
     char *mjpeg = NULL; // Encoder
+    char *mh264 = NULL; // Encoder
     int sleep_number = 0;
     int video_buf_used = 0;
     int audio_buf_used = 0;
@@ -1591,7 +1592,8 @@ bool CTsPlayer::iStartPlay()
     		get_vfm_map_info(vfm_map);
     		s = strstr(vfm_map,"decoder(1)");
     		p = strstr(vfm_map,"ionvideo}");
-		mjpeg = strstr(vfm_map,"vdec.mjpeg.00(1)");
+    		mh264 = strstr(vfm_map,"vdec.h264.0");
+    		mjpeg = strstr(vfm_map,"vdec.mjpeg.0");
     		video_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/videobufused");
     		audio_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/audiobufused");
     		subtitle_buf_used=amsysfs_get_sysfs_int("/sys/class/amstream/subtitlebufused");
@@ -1599,7 +1601,7 @@ bool CTsPlayer::iStartPlay()
     		LOGI("s=%s,p=%s\n",s,p);
     		LOGI("buf used video:%d,audio:%d,subtitle:%d,userdata:%d\n",
     			video_buf_used,audio_buf_used,subtitle_buf_used,userdata_buf_used);
-    		if((s == NULL)&&(p == NULL)&&(mjpeg == NULL)&&(video_buf_used==0)&&(audio_buf_used==0)&&
+    		if((s == NULL)&&(p == NULL)&&(mh264 == NULL)&&(mjpeg == NULL)&&(video_buf_used==0)&&(audio_buf_used==0)&&
     	   		(subtitle_buf_used==0)&&(userdata_buf_used==0))
         		LOGI("not find valid,begin init\n");
     		else{
@@ -1607,7 +1609,7 @@ bool CTsPlayer::iStartPlay()
     			usleep(50*1000);
         		LOGI("find find find,sleep_number=%d\n",sleep_number);
     		}
-        }while((s != NULL)||(p != NULL)||(video_buf_used != 0)||(audio_buf_used != 0) ||
+        }while((s != NULL)||(p != NULL)||(mh264 != 0)||(mjpeg != 0)||(video_buf_used != 0)||(audio_buf_used != 0) ||
                 (subtitle_buf_used != 0)||(userdata_buf_used != 0));
     }
 

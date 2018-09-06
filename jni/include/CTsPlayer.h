@@ -247,11 +247,19 @@ typedef struct {
 #ifdef TELECOM_QOS_SUPPORT
 typedef enum {
     IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT = 0,
+    IPTV_PLAYER_PARAM_EVT_FIRSTFRM_REPORT,
     IPTV_PLAYER_PARAM_EVT_BUTT
 }IPTV_PLAYER_PARAM_Evt_e;
 
 typedef void (*IPTV_PLAYER_PARAM_EVENT_CB)( void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, void *pParam);
 #endif
+
+typedef struct {
+    int instanceNo;
+    int video_width;
+    int video_height;
+    int64_t mFirstVideoPTSUs;
+}VIDEO_FRM_INFO_T;
 
 typedef struct {
     int abuf_size;

@@ -1637,6 +1637,11 @@ bool CTsPlayer::iStartPlay()
             pcodec->dec_mode = STREAM_TYPE_STREAM;
             LOGI("hevc fast force set stream mode\n");
         }
+        /*+[SE][BUG][BUG-173407][hang.huang] Modify:force avs use single mode.*/
+        if (pcodec->video_type == VFORMAT_AVS) {
+            pcodec->dec_mode = STREAM_TYPE_SINGLE;
+            LOGI("avs force set single mode\n");
+        }
         LOGI("dec_mode:%d\n", pcodec->dec_mode);
         ret = codec_init(pcodec);
     } else{
@@ -1653,6 +1658,10 @@ bool CTsPlayer::iStartPlay()
             amsysfs_set_sysfs_str( "/sys/class/vfm/map", "add default decoder deinterlace  amvideo");
         }
 #endif
+        if (pcodec->video_type == VFORMAT_AVS) {
+            pcodec->dec_mode = STREAM_TYPE_SINGLE;
+            LOGI("avs force set single mode\n");
+        }
         if (pcodec->has_video) {
             ret = codec_init(vcodec);
         }

@@ -1592,9 +1592,15 @@ bool CTsPlayer::iStartPlay()
             LOGI("buf used video:%d,audio:%d,subtitle:%d,userdata:%d\n",
             video_buf_used,audio_buf_used,subtitle_buf_used,userdata_buf_used);
             if ((s == NULL) && (p == NULL) && (mh264 == NULL) && (mjpeg == NULL) && (video_buf_used == 0) && (audio_buf_used == 0) &&
-                (subtitle_buf_used == 0) && (userdata_buf_used == 0))
+                (subtitle_buf_used == 0) && (userdata_buf_used == 0)) {
                 LOGI("not find valid,begin init\n");
-            else{
+		/* +[SE] [BUG][BUG-171926][zhizhong.zhang] added:add sleep to wait decoder quit*/
+		if (sleep_number > 0) {
+			LOGI("wait decoder quit\n");
+			usleep(50*1000);
+			break;
+		}
+            } else{
                  sleep_number++;
                  usleep(50*1000);
                  LOGI("find find find,sleep_number=%d\n",sleep_number);

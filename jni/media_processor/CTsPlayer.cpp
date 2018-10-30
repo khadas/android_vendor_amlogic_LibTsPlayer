@@ -40,7 +40,9 @@ using namespace android;
 #define READ_SIZE (64 * 1024)
 #define CTC_BUFFER_LOOP_NSIZE 1316
 #define AV_NOPTS_VALUE      (0x8000000000000000)
-
+#define AV_RB16(x)                           \
+    ((((const uint8_t*)(x))[0] << 8) |          \
+      ((const uint8_t*)(x))[1])
 
 static bool m_StopThread = false;
 int64_t first_frame=0;
@@ -74,10 +76,13 @@ int async_flag = 0;
 int clearlastframe_flag = 0;
 int prop_write_log = 0;
 int prop_trickmode_debug = 0;
+int prop_add_tsheader = 0;
+int prop_dump_tsheader = 0;
 int m_AStopPending = 0;
 char underflow_statistics[60] = {0};
-
-
+int header_backup = 0;
+int first_header_write = -1;
+unsigned char* tsbuffer = NULL;
 static int vdec_underflow = 0;
 static int adec_underflow = 0;
 int video_delay_start = 0;
@@ -398,6 +403,7 @@ CTsPlayer::CTsPlayer()
     pthread_mutexattr_settype(&mutexattr,PTHREAD_MUTEX_RECURSIVE);
     lp_lock_init(&mutex, &mutexattr);
     lp_lock_init(&mutex_lp, &mutexattr);
+    lp_lock_init(&mutex_header, &mutexattr);
     /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: init mutex_session,m_pthread_cond and s_pthread_cond.*/
     lp_lock_init(&mutex_session, &mutexattr);
     pthread_cond_init(&m_pthread_cond, NULL);
@@ -524,6 +530,14 @@ CTsPlayer::CTsPlayer()
     prop_collect_write_expire = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.add.tsheader", value, "0");
+    prop_add_tsheader = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.dump.tsheader", value, "0");
+    prop_dump_tsheader = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
     amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
     LOGI("/sys/class/cputype/cputype:%s\n", value);
     if (value[0] != '\0' && (strstr(value, "905L") || !strcasecmp(value, "905M2")))
@@ -589,6 +603,7 @@ CTsPlayer::CTsPlayer()
 
     m_bIsPlay = false;
     m_bIsPause = false;
+    m_bIsSeek = false;
     pfunc_player_evt = test_player_evt_func;
     m_nOsdBpp = 16;//SYS_get_osdbpp();
     m_nAudioBalance = 3;
@@ -1279,6 +1294,28 @@ bool CTsPlayer::StartPlay(){
             pcodec->start_no_out = 1;
         } else {
             pcodec->start_no_out = 0;
+        }
+        if (prop_add_tsheader && vPara.vFmt == VFORMAT_HEVC) {
+            m_bIsSeek = false;
+            first_header_write = 0;
+            header_backup = 0;
+            LOGI("start malloc tsheader\n");
+            tsheader = (PV_HEADER_T)malloc(sizeof(V_HEADER_T));
+            if (!tsheader)  {
+                LOGI("Error tsheader malloc failed\n");
+            }
+            INIT_LIST_HEAD(&tsheader->list);
+            tsbuffer = (unsigned char *) malloc(6*1024*1024);
+            if (tsbuffer == NULL) {
+                LOGI("Error malloc tmp buffer failed\n");
+            }
+            memset(tsbuffer, 0, 6*1024*1024);
+            memset(header_buffer, 0, TS_PACKET_SIZE);
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            pthread_create(&tsheaderThread, &attr, Get_TsHeader_thread, this);
+            pthread_attr_destroy(&attr);
+            LOGI("create tsheaderThread end\n");
         }
 
         // add for some write ts stream
@@ -2022,17 +2059,191 @@ int CTsPlayer::SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_
     return ret;
 }
 
+int CTsPlayer::get_hevc_csd_packet(unsigned char* buf, int size, unsigned char *buffer)
+{
+    uint8_t * p = buf;
+    uint8_t * b;
+    uint8_t * e;
+    int i, ps_count = 0, len = 0, ps_start = 0, end = 0,cpy_len = 0;
+    uint8_t *pes_stream;
+    uint8_t  pes_pts_dts;
+    for (i = 0; i < size - 4; i++) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) {
+            p += 4;
+            i += 4;
+            LOGI("found start code\n");
+            break;
+        }
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) {
+            p += 3;
+            i += 3;
+            LOGI("find start code\n");
+            break;
+        }
+        p++;
+    }
+    pes_stream = p;
+    for (; i < size - 4; i++) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1) {
+            if (ps_count == 3) { // got vps/sps/pps
+                e = p - 1;
+                end = 1;
+                LOGI("found vps/sps/pps\n");
+                break;
+            }
+            if (((p[4]>>1) & 0x3f) == 32) { // vps
+                if (!ps_start) {
+                    b = p;
+                    ps_start = 1;
+                }
+                LOGI("found vps\n");
+                ps_count++;
+            }
+            if (((p[4]>>1) & 0x3f) == 33) { // sps
+                ps_count++;
+                LOGI("found sps\n");
+            }
+            if (((p[4]>>1) & 0x3f) == 34) { // pps
+                ps_count++;
+                LOGI("found pps\n");
+            }
+            p += 4;
+            i += 4;
+            continue;
+        }
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1) {
+            if (ps_count == 3) { // got vps/sps/pps
+                e = p - 1;
+                end = 1;
+                LOGI("find vps/sps/pps\n");
+                break;
+            }
+            if (((p[3]>>1) & 0x3f) == 32) { // vps
+                if (!ps_start) {
+                    b = p;
+                    ps_start = 1;
+                }
+                LOGI("find vps\n");
+                ps_count++;
+            }
+            if (((p[3]>>1) & 0x3f) == 33) { // sps
+                LOGI("find sps\n");
+                ps_count++;
+            }
+            if (((p[3]>>1) & 0x3f) == 34) { // pps
+                LOGI("find pps\n");
+                ps_count++;
+            }
+            p += 3;
+            i += 3;
+            continue;
+        }
+        p++;
+    }
+
+    if (!end) {
+        LOGI("Could not get hevc csd data from ts packet!\n");
+        return -1;
+    }
+
+    len = e-b+1;
+    cpy_len = e-buf+1;
+    LOGI("cpy_len=%d\n",cpy_len);
+    if (cpy_len <= TS_PACKET_SIZE) {
+        memcpy(buffer, buf, cpy_len);
+        LOGI("pes_stream:0x%x\n", buffer[pes_stream - buf]);
+        if (buffer[pes_stream - buf] == 0xE0) {
+            LOGI("Video stream set pts_dts 00\n");
+            pes_pts_dts = buffer[pes_stream - buf + 4];
+            LOGI("pts_dts flag:0x%x\n", pes_pts_dts);
+            if (((pes_pts_dts & 0xC0) == 0x80) || (pes_pts_dts & 0xC0) == 0xC0) {
+                buffer[pes_stream - buf + 4] &= 0x3F;
+                LOGI("force pts_dts header :0x%x\n", buffer[pes_stream - buf + 4]);
+            }
+        }
+    }
+    if (prop_dump_tsheader) {
+            FILE * fp = fopen("data/tmp/header.dat", "wb+");
+            if (fp) {
+                LOGI("dump hevc header.dat\n");
+                fwrite(buffer, 1, size, fp);
+                fflush(fp);
+                fclose(fp);
+            }
+    }
+    LOGI("extardata_size=%d\n", len);
+    return 0;
+}
+
+int CTsPlayer::parser_header(unsigned char* pBuffer, unsigned int size, unsigned char *buffer)
+{
+    int i = 0;
+    uint8_t *src = pBuffer;
+    int pid = 0;
+    int afc, has_payload;
+    int ret = -1;
+    unsigned char buf[TS_PACKET_SIZE] = {0};
+    for (i = 0; i < size; i++) {
+        memcpy (buf, src+i, TS_PACKET_SIZE);
+        if (buf[0] != 0x47) {
+            LOGI("not ts packet\n");
+            continue;
+        }
+        pid =  AV_RB16(buf + 1) & 0x1fff;
+        LOGI("pid = 0x%x\n", pid);
+        if (pid != vPara.pid) {
+            continue;
+        }
+        afc = (buf[3] >> 4) & 3;
+        LOGI("afc=%d\n", afc);
+        if (afc == 0)  {
+            continue;
+        }
+        has_payload = afc & 1;
+        LOGI("has_plyload = %d\n", has_payload);
+        if (!has_payload) {
+            continue;
+        }
+        LOGI("get video ts\n");
+        i += TS_PACKET_SIZE-1;
+        ret = get_hevc_csd_packet(buf, TS_PACKET_SIZE, buffer);
+        if (ret == 0) {
+            LOGI("found vps/pps/sps header\n");
+            break;
+        }
+    }
+
+    return ret;
+}
+
+
+int CTsPlayer::Add_Packet_ToList(unsigned char* pBuffer, unsigned int nSize)
+{
+    PV_HEADER_T pnow = (PV_HEADER_T)malloc(sizeof(V_HEADER_T));
+    unsigned char* tmpbuffer = (unsigned char *)malloc(nSize);
+    if (tmpbuffer == NULL || pnow == NULL) {
+        LOGI("warning tmpbuffer malloc failed\n");
+        return -1;
+    }
+    memcpy(tmpbuffer, pBuffer, nSize);
+    pnow->tmpbuffer = tmpbuffer;
+    pnow->size = nSize;
+    LOGI("Add node:%p\n", pnow);
+    LOGI("Add packet:%p,size:%d\n",tmpbuffer, nSize);
+    list_add_tail(&pnow->list, &tsheader->list);
+    return 0;
+}
 
 int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
 {
     int ret = -1;
     int temp_size = 0;
+    int tmp_size = 0;
     static int retry_count = 0;
     buf_status audio_buf;
     buf_status video_buf;
     float audio_buf_level = 0.00f;
     float video_buf_level = 0.00f;
-
     if (!m_bIsPlay || (m_bchangeH264to4k && !s_h264sameucode))
         return -1;
 
@@ -2071,6 +2282,40 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         else
             m_sCtsplayerState.bytes_record_cur += ret;
         return ret;
+    }
+    if (prop_add_tsheader && header_backup == 0 && vPara.vFmt == VFORMAT_HEVC) {
+        lp_lock(&mutex_header);
+        if (tsheader)
+            ret = Add_Packet_ToList(pBuffer, nSize);
+        if (ret < 0)
+            LOGI("Error add packet to list failed\n");
+        lp_unlock(&mutex_header);
+    }
+    if (prop_add_tsheader && m_bIsSeek == true && header_backup == 1 && first_header_write == 0) {
+        lp_lock(&mutex);
+        for (int retry_number = 0; retry_number < 50; retry_number++) {
+            ret = codec_write(pcodec, header_buffer, TS_PACKET_SIZE);
+            if ((ret < 0) || (ret > TS_PACKET_SIZE)) {
+                if (ret < 0 && errno == EAGAIN) {
+                    usleep(10);
+                    LOGI("WriteData: codec_write header return EAGAIN!\n");
+                    continue;
+                }
+            } else {
+                tmp_size += ret;
+                LOGI("WriteData: codec_write header tmp_size=%d\n", tmp_size);
+                if (tmp_size > 0) {
+                    if (m_fp != NULL)
+                        fwrite(header_buffer, 1, tmp_size, m_fp);
+                }
+                if (tmp_size >= TS_PACKET_SIZE) {
+                    tmp_size = TS_PACKET_SIZE;
+                    break;
+                }
+            }
+        }
+        first_header_write = 1;
+        lp_unlock(&mutex);
     }
     lp_lock(&mutex);
 
@@ -2323,6 +2568,9 @@ bool CTsPlayer::StopFast()
 
 bool CTsPlayer::Stop(){
     int ret;
+    PV_HEADER_T header_tmp = NULL;
+    PV_HEADER_T p;
+    struct list_head *pos = NULL, *n = NULL;
     amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
     if (!m_bIsPlay) {
         LOGI("already is Stoped\n");
@@ -2362,7 +2610,31 @@ bool CTsPlayer::Stop(){
         ret =  iStop();
         LOGI("stop  sync ret:%d",ret);
     }
+    if (prop_add_tsheader && vPara.vFmt == VFORMAT_HEVC) {
+            lp_lock(&mutex_header);
+            list_for_each_entry(p, &(tsheader->list), list) {
+                if (p && p->tmpbuffer) {
+                    LOGI("free tmpbuffer p->tmpbuffer=%p\n",p->tmpbuffer);
+                    free(p->tmpbuffer);
+                    p->tmpbuffer = NULL;
+                }
+            }
+            header_tmp = tsheader;
+            tsheader = NULL;
+            lp_unlock(&mutex_header);
 
+            list_for_each_safe(pos, n, &header_tmp->list)
+            {
+                list_del(pos);
+                free(list_entry(pos, V_HEADER_T, list));
+            }
+            free(header_tmp);
+            header_tmp = NULL;
+            LOGI("free tsheadder success\n");
+            thread_wake_up();
+            pthread_join(tsheaderThread, NULL);
+
+    }
     adec_underflow = 0;
     vdec_underflow = 0;
     underflow_tmp = 0;
@@ -2613,6 +2885,10 @@ bool CTsPlayer::Seek()
     iStop();
     //usleep(500*1000);
     iStartPlay();
+    if (prop_add_tsheader && vPara.vFmt == VFORMAT_HEVC) {
+        m_bIsSeek = true;
+        first_header_write = 0;
+    }
     return true;
 }
 static float last_vol = 1.0;
@@ -3546,6 +3822,59 @@ void CTsPlayer::checkVdecstate()
         }
     }
 }
+void *CTsPlayer::Get_TsHeader_thread(void *pthis)
+{
+    PV_HEADER_T pfirst;
+    int ret1 = 0;
+    int size = 0;
+    struct list_head *head;
+    LOGI("Get_TsHeader pthis: %p\n", pthis);
+    CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
+    while (true) {
+            memset(tsbuffer, 0, 6*1024*1024);
+            lp_lock(&tsplayer->mutex_header);
+            size = 0;
+            if (tsplayer->tsheader != NULL) {
+                head = &(tsplayer->tsheader->list);
+                    if (!list_empty(head)) {
+                        pfirst = list_first_entry(head, V_HEADER_T, list);
+                        LOGI("pfirst = %p, size=%d\n", pfirst, pfirst->size);
+                        size = (pfirst->size > 6*1024*1024) ? 6*1024*1024 : pfirst->size;
+                        memcpy(tsbuffer, pfirst->tmpbuffer, size);
+                        free(pfirst->tmpbuffer);
+                        pfirst->tmpbuffer = NULL;
+                        list_del(&pfirst->list);
+                        free(pfirst);
+                        pfirst = NULL;
+                    }
+            } else {
+                LOGI("ts header is null,receive stop\n");
+                lp_unlock(&tsplayer->mutex_header);
+                break;
+            }
+            lp_unlock(&tsplayer->mutex_header);
+
+            if (size > 0)
+                ret1 = tsplayer->parser_header(tsbuffer, size, tsplayer->header_buffer);
+            else {
+                tsplayer->thread_wait_timeUs(5000);
+                continue;
+            }
+            if (ret1 == 0) {
+                LOGI("Success parser header, break\n");
+                header_backup = 1;
+                break;
+            } else {
+                LOGI("parser header failed\n");
+                tsplayer->thread_wait_timeUs(5000);
+                continue;
+            }
+
+    }
+    LOGI("Have got ts header or quit get ts header thread\n");
+    return 0;
+}
+
 void *CTsPlayer::threadCheckAbend(void *pthis)
 {
     LOGV("threadCheckAbend start pthis: %p\n", pthis);

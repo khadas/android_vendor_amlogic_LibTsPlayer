@@ -15,6 +15,7 @@ endif
 LOCAL_C_INCLUDES := \
 	$(LIBPLAYER_PATH)/amcodec/include \
 	$(LIBPLAYER_PATH)/amcodec/amsub_ctl \
+	$(LIBPLAYER_PATH)/amavutils/include \
 	$(JNI_H_INCLUDE)/ \
 	$(LOCAL_PATH)/../include \
 	$(TOP)/frameworks/av/ \
@@ -47,6 +48,7 @@ endif
 LOCAL_C_INCLUDES := \
 	$(LIBPLAYER_PATH)/amcodec/include \
 	$(LIBPLAYER_PATH)/amcodec/amsub_ctl \
+	$(LIBPLAYER_PATH)/amavutils/include \
 	$(JNI_H_INCLUDE)/ \
 	$(LOCAL_PATH)/../include \
 	$(TOP)/frameworks/av/ \

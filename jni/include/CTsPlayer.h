@@ -21,8 +21,8 @@ extern "C" {
 #include <amports/amstream.h>
 #include <codec.h>
 #include <codec_info.h>
+#include <list.h>
 }
-
 #include <string.h>
 #include <utils/Timers.h>
 
@@ -38,6 +38,8 @@ extern "C" {
 
 #define IN
 #define OUT
+
+#define TS_PACKET_SIZE 188
 
 typedef struct{
 	void *(*init)(IN int flags);
@@ -81,6 +83,12 @@ typedef struct{
 	int				nExtraSize;
 	unsigned char*	pExtraData;
 }AUDIO_PARA_T, *PAUDIO_PARA_T;
+
+typedef struct {
+    struct list_head list;
+    unsigned char* tmpbuffer;
+    unsigned int size;
+}V_HEADER_T, *PV_HEADER_T;
 
 #ifndef AVCODEC_AVCODEC_H
 typedef enum {
@@ -462,6 +470,7 @@ private:
     AUDIO_PARA_T a_aPara[MAX_AUDIO_PARAM_SIZE];
     SUBTITLE_PARA_T sPara[MAX_SUBTITLE_PARAM_SIZE];
     VIDEO_PARA_T vPara;
+    PV_HEADER_T tsheader;
     int player_pid;
     codec_para_t  codec;
     codec_para_t  *pcodec;
@@ -469,6 +478,7 @@ private:
     codec_para_t  *acodec;
     codec_para_t  *scodec;
     bool		  m_bIsPlay;
+    bool          m_bIsSeek;
     int			  m_nOsdBpp;
     int			  m_nAudioBalance;
     int			  m_nVolume;
@@ -517,6 +527,8 @@ private:
     pthread_cond_t s_pthread_cond;
 
     pthread_t readThread;
+    pthread_t tsheaderThread;
+    unsigned char header_buffer[TS_PACKET_SIZE];
     virtual void checkAbend();
     virtual int checkunderflow();
     virtual void checkunderflow_type();
@@ -524,6 +536,7 @@ private:
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
     static void *threadReadPacket(void *pthis);
+    static void *Get_TsHeader_thread(void *pthis);
 
 #ifdef TELECOM_QOS_SUPPORT
     virtual int ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos);
@@ -533,6 +546,7 @@ private:
     bool    m_bchangeH264to4k;
     lock_t  mutex_lp;
     lock_t  mutex_session;
+    lock_t  mutex_header;
     void checkVdecstate();
     bool    m_bIsPause;
     virtual bool iStartPlay( );
@@ -553,6 +567,9 @@ private:
     int is_use_double_write();
     void check_use_double_write();
     void stop_double_write();
+    int parser_header(unsigned char* pBuffer, unsigned int size, unsigned char *buffer);
+    int get_hevc_csd_packet(unsigned char* buf, int size, unsigned char *buffer);
+    int Add_Packet_ToList(unsigned char* pBuffer, unsigned int nSize);
 };
 
 #endif

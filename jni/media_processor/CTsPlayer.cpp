@@ -578,20 +578,24 @@ CTsPlayer::CTsPlayer()
     memset(&codec, 0, sizeof(codec));
     player_pid = -1;
     pcodec = &codec;
-    if (prop_softdemux != 0) {
-        vcodec = (codec_para_t *)malloc(sizeof(codec_para_t));
-        if (vcodec == NULL) {
-            LOGI("vcodec alloc fail\n");
-        }
-        memset(vcodec, 0, sizeof(codec_para_t));
-
-        acodec = (codec_para_t *)malloc(sizeof(codec_para_t));
-        if (acodec == NULL) {
-            LOGI("acodec alloc fail\n");
-        }
-        memset(acodec, 0, sizeof(codec_para_t));
-        LOGI("prop_readffmpeg = %d\n",prop_readffmpeg);
+    vcodec = NULL;
+    acodec = NULL;
+    /*[SE][BUG][IPTV-268][chengshun.wang]: malloc vcodec and acodec default,
+     *because we know whether write es data after initvideo in sometimes
+     */
+    vcodec = (codec_para_t *)malloc(sizeof(codec_para_t));
+    if (vcodec == NULL) {
+        LOGI("vcodec alloc fail\n");
     }
+    memset(vcodec, 0, sizeof(codec_para_t));
+
+    acodec = (codec_para_t *)malloc(sizeof(codec_para_t));
+    if (acodec == NULL) {
+        LOGI("acodec alloc fail\n");
+    }
+    memset(acodec, 0, sizeof(codec_para_t));
+    LOGI("prop_readffmpeg = %d\n", prop_readffmpeg);
+
     codec_audio_basic_init();
     lp_lock_init(&mutex, NULL);
 
@@ -758,16 +762,16 @@ CTsPlayer::~CTsPlayer()
     /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: add condition check to join readThread.*/
     if (prop_softdemux == 1 && prop_esdata != 1)
         pthread_join(readThread, NULL);
-    if (prop_softdemux == 1 || (prop_multi_play == 1)) {
-        if (acodec) {
-            free(acodec);
-            acodec = NULL;
-        }
-        if (vcodec) {
-            free(vcodec);
-            vcodec = NULL;
-        }
+
+    if (acodec) {
+        free(acodec);
+        acodec = NULL;
     }
+    if (vcodec) {
+        free(vcodec);
+        vcodec = NULL;
+    }
+
     if (prop_async_stop) {
         WAIT_EVENT(m_AStopPending);
     }
@@ -1324,6 +1328,13 @@ bool CTsPlayer::StartPlay(){
             property_get("iptv.middle.softdemux", value, "0");
             prop_softdemux = atoi(value);
             LOGI("StartPlay: multi play, prop_softdemux=%d\n", prop_softdemux);
+        }
+
+        if (vcodec != NULL) {
+            memset(vcodec, 0, sizeof(codec_para_t));
+        }
+        if (acodec != NULL) {
+            memset(acodec, 0, sizeof(codec_para_t));
         }
 
         mLastVdecInfoNum = 0;//modified first frame show will be 0

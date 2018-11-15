@@ -160,7 +160,7 @@ void Proxy_MediaProcessor::Proxy_SetEPGSize(int w, int h)
 
 void Proxy_MediaProcessor::Proxy_SetSurface(Surface* pSurface)
 {
-	//ctc_MediaControl->SetSurface(pSurface);
+	ctc_MediaControl->SetSurface(pSurface);
 	return;
 }
 

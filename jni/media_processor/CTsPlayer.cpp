@@ -854,8 +854,11 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         sprintf(bcmd, "%d %d %d %d", x_b, y_b, w_b, h_b);
         /*[SE] [BUG][BUG-167862][yinli.xia] change the channel too quickly cause crash*/
         //subtitleSetSurfaceViewParam(x, y, width, height);
-        ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
-        LOGI("setvideoaxis: %s\n", bcmd);
+
+        //[SE][BUG][IPTV-204][houren.wang] don't set video axis, let hwcomposer to do it.
+        LOGI("SetVideoWindow parameters is deprecated !!!");
+//        ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
+//        LOGI("setvideoaxis: %s\n", bcmd);
         return ret;
     }
 
@@ -891,8 +894,10 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
             new_videowindow_certre_x+int(new_videowindow_width/2)+1,
             new_videowindow_certre_y+int(new_videowindow_height/2)+1);
 
-    ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
-    LOGI("setvideoaxis: %s\n", bcmd);
+    //[SE][BUG][IPTV-204][houren.wang] don't set video axis, let hwcomposer to do it.
+    LOGI("SetVideoWindow parameters is deprecated !!!");
+//    ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
+//    LOGI("setvideoaxis: %s\n", bcmd);
 
     if ((width2 > 0) && (height2 > 0) && ((width2 < (mode_w - 10)) || (height2 < (mode_h - 10))))
         amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",1);
@@ -1774,7 +1779,10 @@ bool CTsPlayer::iStartPlay()
             LOGI("call update_nativewindow");
             update_nativewindow();
         }
+    } else  {
+        update_nativewindow();
     }
+
     return !ret;
 }
 

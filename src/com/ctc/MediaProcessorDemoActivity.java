@@ -149,37 +149,6 @@ public class MediaProcessorDemoActivity extends Activity {
 
 	@Override
 	public void onResume() {
-            if (nativeInit(url, 0) == 0)
-              Log.i("Init:", "success");
-            else {
-              Log.i("Init:", "error");
-            }
-            Log.d(getClass().getName(), "onResume()");
-            
-            Log.i("create surface:", "next");  
-            if (nativeCreateSurface(mySurface, 1280, 720, 0) == 0) 
-            	Log.i("create surface:", "success");  
-
-            nativeSetEPGSize(1280, 720, 0);
-            nativeSetVideoWindow(420, 100, 640, 480, 0);
-            
-            nativeStartPlay(0);
-            Log.i("play", "success"); 
-
-		drawSurface playData = new drawSurface();  
-		playData.url = url;
-		Thread player = new Thread(playData);
-		player.start();
-
-		MainHandler = new Handler() {
-			@Override
-			public void handleMessage(Message msg) {
-				Log.d(TAG, "get msg "+msg.what);
-				super.handleMessage(msg);
-			}
-		};
-
-		player_status = PLAYER_PALY;
 		super.onResume();
 	}
 
@@ -202,6 +171,52 @@ public class MediaProcessorDemoActivity extends Activity {
 		myHolder = mySurfaceView.getHolder();
 		myHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		mySurface = myHolder.getSurface(); 
+
+		mySurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+			@Override
+			public void surfaceCreated(SurfaceHolder holder) {
+				if (nativeInit(url, 0) == 0)
+					Log.i("Init:", "success");
+				else {
+					Log.i("Init:", "error");
+				}
+
+				mySurface = holder.getSurface();
+				Log.i("create surface:", "next " + mySurface.isValid());
+				if (nativeCreateSurface(mySurface, 1280, 720, 0) == 0)
+					Log.i("create surface:", "success");
+
+				nativeSetEPGSize(1280, 720, 0);
+				nativeSetVideoWindow(420, 100, 640, 480, 0);
+				nativeStartPlay(0);
+				Log.i("play", "success");
+
+				drawSurface playData = new drawSurface();
+				playData.url = url;
+				Thread player = new Thread(playData);
+				player.start();
+
+				MainHandler = new Handler() {
+					@Override
+					public void handleMessage(Message msg) {
+						Log.d(TAG, "get msg "+msg.what);
+						super.handleMessage(msg);
+					}
+				};
+
+				player_status = PLAYER_PALY;
+			}
+
+			@Override
+			public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+			}
+
+			@Override
+			public void surfaceDestroyed(SurfaceHolder holder) {
+
+			}
+		});
 
 		Function = (TextView)findViewById(R.id.Function);
 		Return_t = (TextView)findViewById(R.id.Return_t);

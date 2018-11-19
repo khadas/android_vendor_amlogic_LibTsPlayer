@@ -22,6 +22,7 @@ extern "C" {
 #include <codec.h>
 #include <codec_info.h>
 #include <list.h>
+#include <codec_videoinfo.h>
 }
 #include <string.h>
 #include <utils/Timers.h>
@@ -224,15 +225,15 @@ typedef void (*IPTV_PLAYER_EVT_CB)(IPTV_PLAYER_EVT_e evt, void *handler);
 
 
 typedef enum {
-    VID_FRAME_TYPE_UNKNOWN = 0,
-    VID_FRAME_TYPE_I,
-    VID_FRAME_TYPE_P,
-    VID_FRAME_TYPE_B,
-    VID_FRAME_TYPE_IDR,
-    VID_FRAME_TYPE_BUTT,
+    VIDEO_FRAME_TYPE_UNKNOWN = 0,
+    VIDEO_FRAME_TYPE_I,
+    VIDEO_FRAME_TYPE_P,
+    VIDEO_FRAME_TYPE_B,
+    VIDEO_FRAME_TYPE_IDR,
+    VIDEO_FRAME_TYPE_BUTT,
 }VID_FRAME_TYPE_e;
 
-typedef struct {
+typedef struct VIDEO_FRM_STATUS_INFO {
     VID_FRAME_TYPE_e enVidFrmType;
     int  nVidFrmSize;
     int  nMinQP;
@@ -243,14 +244,7 @@ typedef struct {
     int  nAvgMV;
     int  SkipRatio;
     int  nUnderflow;
-    #if 0
-    int  nVidFrmQP;
-    int  nVidFrmPTS;
-    int  nMaxSkip;
-    int  nMinSkip;
-    int  nAvgSkip;
-    #endif
-}VIDEO_FRM_STATUS_INFO_T;
+} VIDEO_FRM_STATUS_INFO_T;
 
 #ifdef TELECOM_QOS_SUPPORT
 typedef enum {
@@ -458,6 +452,8 @@ public:
 	virtual void ExecuteCmd(const char* cmd_str);
     virtual void readExtractor();
     virtual int updateCTCInfo();
+    virtual void ShowFrameInfo(struct vid_frame_info* frameinfo);
+    virtual void updateinfo_to_middleware(struct av_param_info_t av_param_info,struct av_param_qosinfo_t av_param_qosinfo);
     virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp);
     virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL) {return 0;}
     /*end add*/
@@ -530,17 +526,11 @@ private:
     pthread_t tsheaderThread;
     unsigned char header_buffer[TS_PACKET_SIZE];
     virtual void checkAbend();
-    virtual int checkunderflow();
-    virtual void checkunderflow_type();
     virtual void checkBuffLevel();
     virtual void checkBuffstate();
     static void *threadCheckAbend(void *pthis);
     static void *threadReadPacket(void *pthis);
     static void *Get_TsHeader_thread(void *pthis);
-
-#ifdef TELECOM_QOS_SUPPORT
-    virtual int ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos);
-#endif
 
     bool    m_isBlackoutPolicy;
     bool    m_bchangeH264to4k;

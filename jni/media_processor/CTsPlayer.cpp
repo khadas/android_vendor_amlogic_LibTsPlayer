@@ -79,7 +79,6 @@ int prop_trickmode_debug = 0;
 int prop_add_tsheader = 0;
 int prop_dump_tsheader = 0;
 int m_AStopPending = 0;
-char underflow_statistics[60] = {0};
 int header_backup = 0;
 int first_header_write = -1;
 unsigned char* tsbuffer = NULL;
@@ -1406,6 +1405,7 @@ bool CTsPlayer::iStartPlay()
         lp_unlock(&mutex);
         return true;
     }
+    m_Frame_StartTime_Ctl = 0;
 
     amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,SCALING_MODE);
     perform_flag =1;
@@ -3565,81 +3565,6 @@ void CTsPlayer::checkAbend()
     }
 }
 
-/* +[SE] [BUG][BUG-172261][yinli.xia] added: Optimize net broken frame information*/
-int CTsPlayer::checkunderflow()
-{
-    int ret = 0;
-    buf_status video_buf;
-
-    if (!m_bWrFirstPkg) {
-
-        if (prop_softdemux == 0)
-            codec_get_vbuf_state(pcodec, &video_buf);
-        else
-            codec_get_vbuf_state(vcodec, &video_buf);
-
-        #if 1
-        if (prev_vread_buffer != video_buf.read_pointer)
-            vrp_is_buffer_changed = 1;
-        else
-            vrp_is_buffer_changed = 0;
-        prev_vread_buffer = video_buf.read_pointer;
-        #endif
-
-        LOGD("checkunderflow pcodec->video_type is %d, video_buf.data_len is %d\n", pcodec->video_type, video_buf.data_len);
-        if (pcodec->has_video) {
-            if (pcodec->video_type == VFORMAT_MJPEG) {
-                if (!vrp_is_buffer_changed &&
-                    (video_buf.data_len < (threshold_value >> 2))) {
-                    ret = 2;//underflow
-                    LOGW("checkunderflow video mjpeg is low level now\n");
-                } else {
-                    ret = 0;
-                }
-            } else {
-                if (!vrp_is_buffer_changed &&
-                    (video_buf.data_len < threshold_value)) {
-                    ret = 2;
-                    LOGW("checkunderflow video is low level now\n");
-                } else {
-                    ret = 0;
-                }
-                if (video_buf.data_len == last_data_len)
-                    last_data_len_statistics++;
-                last_data_len = video_buf.data_len;
-            }
-        }
-    }
-    vrp_is_buffer_changed = 1;
-    return ret;
-}
-
-/*[SE] [BUG][BUG-168164][yinli.xia] the underflow value often turn to 3 abnormality when play*/
-void CTsPlayer::checkunderflow_type()
-{
-    if ((!m_bIsPause) && (!m_bFast)) {
-        underflow_ctc = checkunderflow();
-        underflow_kernel = amsysfs_get_sysfs_int("/sys/module/amports/parameters/decode_underflow");
-        LOGD("report underflow_ctc = %d,underflow_kernel = %d,frame_rate_ctc = %d",
-            underflow_ctc,underflow_kernel,frame_rate_ctc);
-        if (2 == underflow_ctc)
-            underflow_tmp = 2;
-        else if (3 == underflow_kernel)
-            underflow_tmp = 3;
-        else if ((2 == underflow_ctc) && (3 == underflow_kernel))
-            underflow_tmp = 2;
-
-        /*[SE] [BUG][BUG-168587][chuanqi.wang] avoid the array bounds"*/
-        if (qos_count >= 60)
-            qos_count  = 0;
-        underflow_statistics[qos_count++] = underflow_tmp;
-        underflow_tmp = 0;
-        underflow_ctc = 0;
-        underflow_kernel = 0;
-        amsysfs_set_sysfs_int("/sys/module/amports/parameters/decode_underflow", 0);
-    }
-}
-
 void CTsPlayer::update_caton_info(struct av_param_info_t * info)
 {
     struct codec_quality_info *pquality_info = &m_sCtsplayerState.quality_info;
@@ -3919,126 +3844,7 @@ void *CTsPlayer::threadCheckAbend(void *pthis)
     return NULL;
 }
 
-#ifdef TELECOM_QOS_SUPPORT
-/*+[SE] [REQ][BUG-170126][yinli.xia] added: Optimize frame information statistics*/
-int CTsPlayer::ReportVideoFrameInfo(struct vframe_qos_s * pframe_qos)
-{
-    int i;
-    int caton_num = 0,show_num = 0,num_set = 0;
-    int igmp_num = 0,igmp_numset = 0,invalid_num = 0;
-    int tmp_mv = 0;
-    char value[256] = {0};
-    VIDEO_FRM_STATUS_INFO_T videoFrmInfo;
-
-    property_get("iptv.shouldshowlog", value, "0");
-    prop_shouldshowlog = atoi(value);
-
-    /* +[SE] [REQ][BUG-171714][yinli.xia] add prop for frame sensitivity adjust*/
-    memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("iptv.frameinfo.igmpnum", value, "5");
-    igmp_numset = atoi(value);
-
-    //if(pframe_qos[0].num == mLastVdecInfoNum)
-    //return 1;
-    for (i = 0;(i < frame_rate_ctc) && (i < QOS_FRAME_NUM); i++) {
-        if (0 != underflow_statistics[i])
-            caton_num++;
-        if (0 == pframe_qos[i].size)
-            invalid_num++;
-        if (last_data_len_statistics == (frame_rate_ctc - 1))
-            underflow_statistics[i] = 2;
-        else
-            underflow_statistics[i] = 0;
-
-        if (pframe_qos[i].size == 0)
-            underflow_statistics[i] = 2;
-    }
-
-    for (i = 0;(i < frame_rate_ctc) && (i < QOS_FRAME_NUM); i++) {
-        /* +[SE] [BUG][BUG-171958][yinli.xia] added: modify mv value statitics error*/
-        if ((pframe_qos[i].avg_mv > pframe_qos[i].max_mv) &&
-            (pframe_qos[i].avg_mv > pframe_qos[i].min_mv)) {
-            pframe_qos[i].avg_mv = (pframe_qos[i].max_mv + pframe_qos[i].min_mv) / 2;
-         } else if (pframe_qos[i].max_mv < pframe_qos[i].min_mv) {
-            tmp_mv = pframe_qos[i].max_mv;
-            pframe_qos[i].max_mv = pframe_qos[i].min_mv;
-            pframe_qos[i].min_mv = tmp_mv;
-            pframe_qos[i].avg_mv = (pframe_qos[i].max_mv + pframe_qos[i].min_mv) / 2;
-        }
-
-        if (0 != underflow_statistics[i]) {
-            videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
-            videoFrmInfo.nVidFrmSize = 0;
-            videoFrmInfo.nMinQP = 0;
-            videoFrmInfo.nMaxQP = 0;
-            videoFrmInfo.nAvgQP = 0;
-            videoFrmInfo.nMaxMV = 0;
-            videoFrmInfo.nMinMV = 0;
-            videoFrmInfo.nAvgMV = 0;
-            videoFrmInfo.SkipRatio = 0;
-            videoFrmInfo.nUnderflow = underflow_statistics[i];
-        } else {
-            videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e) pframe_qos[i].type;
-            videoFrmInfo.nVidFrmSize = pframe_qos[i].size;
-            videoFrmInfo.nMinQP = pframe_qos[i].min_qp;
-            videoFrmInfo.nMaxQP = pframe_qos[i].max_qp;
-            videoFrmInfo.nAvgQP = pframe_qos[i].avg_qp;
-            videoFrmInfo.nMaxMV = pframe_qos[i].max_mv;
-            videoFrmInfo.nMinMV = pframe_qos[i].min_mv;
-            videoFrmInfo.nAvgMV = pframe_qos[i].avg_mv;
-            videoFrmInfo.SkipRatio = pframe_qos[i].avg_skip;
-            videoFrmInfo.nUnderflow = underflow_statistics[i];
-        }
-
-        if (0 == videoFrmInfo.nVidFrmSize) {
-            if ((pframe_qos[frame_rate_ctc - 1].size == 0) &&
-                (pframe_qos[0].size != 0) &&
-                (invalid_num <= igmp_numset))
-                videoFrmInfo.nUnderflow = 0;
-        }
-
-        if (((pframe_qos[i].type == 4) &&
-            (0 == underflow_statistics[i])) ||
-            (pframe_qos[i].type == 1)) {
-            videoFrmInfo.enVidFrmType = VID_FRAME_TYPE_I;
-            videoFrmInfo.SkipRatio = 0;
-        }
-        if (0 != underflow_statistics[i]) {
-            videoFrmInfo.enVidFrmType = (VID_FRAME_TYPE_e)0;
-        }
-        if (prop_shouldshowlog) {
-            LOGI("##Vdec Info, LastNum=%d, curNum=%d, type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
-                    mLastVdecInfoNum,
-                    pframe_qos[i].num,
-                    videoFrmInfo.enVidFrmType,
-                    videoFrmInfo.nVidFrmSize,
-                    videoFrmInfo.nMinQP,
-                    videoFrmInfo.nMaxQP,
-                    videoFrmInfo.nAvgQP,
-                    videoFrmInfo.nMaxMV,
-                    videoFrmInfo.nMinMV,
-                    videoFrmInfo.nAvgMV,
-                    videoFrmInfo.SkipRatio,
-                    videoFrmInfo.nUnderflow);
-        }
-        if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
-            pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrmInfo);
-        }
-    }
-    //if ( i >= 1)
-    //mLastVdecInfoNum  = pframe_qos[0].num;
-    for (i = 0;i < 60; i++) {
-        underflow_statistics[i] = 0;
-    }
-    qos_count = 0;
-    last_data_len = 0;
-    last_data_len_statistics = 0;
-    return 0;
-}
-#endif
-
-void *CTsPlayer::threadReportInfo(void *pthis)
-{
+void *CTsPlayer::threadReportInfo(void *pthis) {
     LOGI("threadGetVideoInfo start pthis: %p\n", pthis);
     CTsPlayer *tsplayer = static_cast<CTsPlayer *>(pthis);
     int ret = 0;
@@ -4066,7 +3872,7 @@ void *CTsPlayer::threadReportInfo(void *pthis)
                     }
                     checkcount1 = 0;
                 }
-                tsplayer->checkunderflow_type();
+                amvideo_checkunderflow_type(tsplayer->pcodec, tsplayer->vcodec);
             }
             /*+[SE][BUG][BUG-167013][zhizhong.zhang] Modify: use thread sleep instead of usleep.*/
             if (max_count > 1)
@@ -4188,6 +3994,37 @@ void CTsPlayer::GetVideoResolution()
         m_sCtsplayerState.video_ratio,m_sCtsplayerState.video_width,m_sCtsplayerState.video_height);
 }
 
+/*+[SE] [BUG][BUG-173253][yinli.xia] added: update frame info to middleware*/
+void CTsPlayer::ShowFrameInfo(struct vid_frame_info* frameinfo)
+{
+    for (int i = 0; i < frame_rate_ctc; i++) {
+        LOGI("Middleware Info: type %d size %d nMinQP %d nMaxQP %d nAvgQP %d nMaxMV %d nMinMV %d nAvgMV %d SkipRatio %d nUnderflow %d\n",
+            frameinfo[i].enVidFrmType,
+            frameinfo[i].nVidFrmSize,
+            frameinfo[i].nMinQP,
+            frameinfo[i].nMaxQP,
+            frameinfo[i].nAvgQP,
+            frameinfo[i].nMaxMV,
+            frameinfo[i].nMinMV,
+            frameinfo[i].nAvgMV,
+            frameinfo[i].SkipRatio,
+            frameinfo[i].nUnderflow);
+    }
+}
+
+/*+[SE] [BUG][BUG-173253][yinli.xia] added: update frame info to middleware*/
+void CTsPlayer::updateinfo_to_middleware(struct av_param_info_t av_param_info,struct av_param_qosinfo_t av_param_qosinfo)
+{
+    amvideo_updateframeinfo(av_param_info, av_param_qosinfo);
+    struct vid_frame_info* videoFrameInfo = codec_get_frame_info();
+    ShowFrameInfo(videoFrameInfo);
+    for (int i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
+        if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
+            pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrameInfo[i]);
+        }
+    }
+}
+
 int CTsPlayer::updateCTCInfo()
 {
     int i = 0;
@@ -4195,14 +4032,19 @@ int CTsPlayer::updateCTCInfo()
     int frame_height_t = 0;
     char value[PROPERTY_VALUE_MAX] = {0};
     struct av_param_info_t av_param_info;
+    struct av_param_qosinfo_t av_param_qosinfo;
     memset(&av_param_info , 0 ,sizeof(av_param_info));
+    memset(&av_param_qosinfo , 0 ,sizeof(av_param_qosinfo));
     if (pcodec->has_video) {
         if (prop_softdemux == 0) {
             codec_get_av_param_info(pcodec, &av_param_info);
+            codec_get_av_param_qosinfo(pcodec, &av_param_qosinfo);
         } else {
             codec_get_av_param_info(vcodec, &av_param_info);
+            codec_get_av_param_qosinfo(vcodec, &av_param_qosinfo);
         }
     }
+
     // check first frame comming
     frame_rate_ctc = av_param_info.av_info.fps;
     /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
@@ -4225,17 +4067,6 @@ int CTsPlayer::updateCTCInfo()
             pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
         }
         m_sCtsplayerState.first_picture_comming = 1;
-        if (!threshold_ctl_flag) {
-            if (av_param_info.av_info.width > 1920)
-                threshold_value = 700;
-            else if (av_param_info.av_info.width <= 1920
-                && av_param_info.av_info.width > 720)
-                threshold_value = 300;
-            else if (av_param_info.av_info.width <= 720)
-                threshold_value = 250;
-            m_Frame_StartPlayTimePoint= av_gettime();
-            threshold_ctl_flag = 1;
-        }
     } else {
         return 0;
     }
@@ -4256,10 +4087,11 @@ int CTsPlayer::updateCTCInfo()
     }
     if ((!m_bIsPause) && (!m_bFast)) {
         if (m_Frame_StartTime_Ctl) {
-            if ((av_gettime() - m_Frame_StartPlayTimePoint) > 2000000)
-                ReportVideoFrameInfo(av_param_info.vframe_qos);
+            if ((av_gettime() - m_Frame_StartPlayTimePoint) > 2000000) {
+                updateinfo_to_middleware(av_param_info,av_param_qosinfo);
+            }
         } else {
-            ReportVideoFrameInfo(av_param_info.vframe_qos);
+            updateinfo_to_middleware(av_param_info,av_param_qosinfo);
         }
     }
 #endif

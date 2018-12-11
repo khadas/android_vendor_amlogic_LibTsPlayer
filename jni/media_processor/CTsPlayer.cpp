@@ -4026,11 +4026,14 @@ void CTsPlayer::updateinfo_to_middleware(struct av_param_info_t av_param_info,st
     amvideo_updateframeinfo(av_param_info, av_param_qosinfo);
     struct vid_frame_info* videoFrameInfo = codec_get_frame_info();
     ShowFrameInfo(videoFrameInfo);
+
+#ifdef TELECOM_QOS_SUPPORT
     for (int i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {
         if (pfunc_player_param_evt != NULL && m_bIsPlay == true) {
             pfunc_player_param_evt(player_evt_param_handler, IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT, &videoFrameInfo[i]);
         }
     }
+#endif
 }
 
 int CTsPlayer::updateCTCInfo()

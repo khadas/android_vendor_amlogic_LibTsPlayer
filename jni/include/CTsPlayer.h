@@ -508,7 +508,6 @@ private:
     IPTV_PLAYER_PARAM_EVENT_CB  pfunc_player_param_evt;
     void *player_evt_param_handler;
 #endif
-
     unsigned int writecount ;
     int64_t m_StartPlayTimePoint;
     /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later

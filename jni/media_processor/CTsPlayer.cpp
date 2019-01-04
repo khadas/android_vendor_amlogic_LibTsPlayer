@@ -110,6 +110,10 @@ static int collect_write_start;
 static int prop_collect_write_enable;
 static int prop_collect_write_expire;
 
+#define VIDEO_AXIS_MODE_CTC 0
+#define VIDEO_AXIS_MODE_HWC 1
+static int prop_axis_set_mode; // 0 - default use ctc,  1 - use hwc
+
 /* soft demux related*/
 #define _GNU_SOURCE
 #define F_SETPIPE_SZ        (F_LINUX_SPECIFIC_BASE + 7)
@@ -529,6 +533,10 @@ CTsPlayer::CTsPlayer()
     prop_collect_write_expire = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.axis.set_mode", value, "0");
+    prop_axis_set_mode = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.add.tsheader", value, "0");
     prop_add_tsheader = atoi(value);
 
@@ -819,7 +827,9 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
     int mode_w = 0, mode_h = 0;
 
     LOGI("CTsPlayer::SetVideoWindow: %d, %d, %d, %d\n", x, y, width, height);
-    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+    if (prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
+        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+    }
     s_video_axis[0] = x;
     s_video_axis[1] = y;
     s_video_axis[2] = width;
@@ -856,9 +866,13 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         //subtitleSetSurfaceViewParam(x, y, width, height);
 
         //[SE][BUG][IPTV-204][houren.wang] don't set video axis, let hwcomposer to do it.
-        LOGI("SetVideoWindow parameters is deprecated !!!");
-//        ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
-//        LOGI("setvideoaxis: %s\n", bcmd);
+        if (prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
+            ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
+            LOGI("setvideoaxis: %s\n", bcmd);
+        } else {
+            LOGI("SetVideoWindow parameters is deprecated !!!");
+        }
+
         return ret;
     }
 
@@ -895,10 +909,12 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
             new_videowindow_certre_y+int(new_videowindow_height/2)+1);
 
     //[SE][BUG][IPTV-204][houren.wang] don't set video axis, let hwcomposer to do it.
-    LOGI("SetVideoWindow parameters is deprecated !!!");
-//    ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
-//    LOGI("setvideoaxis: %s\n", bcmd);
-
+    if (prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
+        ret = amsysfs_set_sysfs_str("/sys/class/video/axis", bcmd);
+        LOGI("setvideoaxis: %s\n", bcmd);
+    } else {
+        LOGI("SetVideoWindow parameters is deprecated !!!");
+    }
     if ((width2 > 0) && (height2 > 0) && ((width2 < (mode_w - 10)) || (height2 < (mode_h - 10))))
         amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",1);
     else
@@ -1780,7 +1796,9 @@ bool CTsPlayer::iStartPlay()
             update_nativewindow();
         }
     } else  {
-        update_nativewindow();
+        if (prop_axis_set_mode == VIDEO_AXIS_MODE_HWC) {
+            update_nativewindow();
+        }
     }
 
     return !ret;
@@ -3409,7 +3427,9 @@ void CTsPlayer::leaveChannel()
 void CTsPlayer::SetSurface(Surface* pSurface)
 {
     LOGI("SetSurface pSurface: %p\n", pSurface);
-    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+    if (prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
+        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+    }
     sp<IGraphicBufferProducer> mGraphicBufProducer;
 
     mGraphicBufProducer = pSurface->getIGraphicBufferProducer();

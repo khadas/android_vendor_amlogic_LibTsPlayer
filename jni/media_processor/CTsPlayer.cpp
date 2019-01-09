@@ -109,6 +109,7 @@ static int collect_write_total;
 static int collect_write_start;
 static int prop_collect_write_enable;
 static int prop_collect_write_expire;
+static CTsParameter mCTsParams;
 
 #define VIDEO_AXIS_MODE_CTC 0
 #define VIDEO_AXIS_MODE_HWC 1
@@ -396,6 +397,12 @@ CTsPlayer::CTsPlayer(bool DRMMode)
 CTsPlayer::CTsPlayer()
 #endif
 {
+    LOGI("CTsPlayer()\n");
+    init_params();
+}
+
+void CTsPlayer::init_params()
+{
     /*+[SE][REQ][BUG 167437][wenjie.chen]
     KPI: APK: modify the print position to solve the error of the calculation KPI.*/
     LOGI("CTC_KPI::Stage 1_5 create player,start_createplayer_time\n");
@@ -438,6 +445,8 @@ CTsPlayer::CTsPlayer()
     memset(value, 0, PROPERTY_VALUE_MAX);
     if (property_get("media.ctcplayer.enable", value, NULL) > 0)
         prop_multi_play = atoi(value);
+    if (mCTsParams.mMultiSupport == 1)
+        prop_multi_play = 1;
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     if (property_get("media.ctcplayer.singlemode", value, NULL) > 0)
@@ -741,6 +750,13 @@ CTsPlayer::CTsPlayer(bool omx_player)
     LOGW("CTsPlayer, mIsOmxPlayer: %d\n", mIsOmxPlayer);
 }
 
+CTsPlayer::CTsPlayer(CTsParameter p)
+{
+    mCTsParams.mMultiSupport = p.mMultiSupport;
+    LOGW("CTsPlayer, CTsParameter.mMultiSupport: %d\n", mCTsParams.mMultiSupport);
+    init_params();
+}
+
 CTsPlayer::~CTsPlayer()
 {
     LOGI("~CTsPlayer()\n");
@@ -790,6 +806,7 @@ CTsPlayer::~CTsPlayer()
     lp_lock_deinit(&mutex_session);
     pthread_cond_destroy(&m_pthread_cond);
     pthread_cond_destroy(&s_pthread_cond);
+    mCTsParams = {0};
     /*+[SE][REQ][BUG 167437][wenjie.chen]
     KPI: APK: modify the print position to solve the error of the calculation KPI.*/
     LOGI("CTC_KPI::Stage 1_4 player destructor,end_destructor_time\n");

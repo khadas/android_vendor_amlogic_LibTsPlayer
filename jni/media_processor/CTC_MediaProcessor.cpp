@@ -52,6 +52,10 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
         return new CTsOmxPlayer();
     } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1) {
         return new CTsHwOmxPlayer();
+    } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
+        struct CTsParameter p;
+        p.mMultiSupport = 1;
+        return new CTsPlayer(p);
     } else {
         return new CTsPlayer();
     }

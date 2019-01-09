@@ -85,6 +85,10 @@ typedef struct{
 	unsigned char*	pExtraData;
 }AUDIO_PARA_T, *PAUDIO_PARA_T;
 
+typedef struct CTsParameter {
+    int mMultiSupport;
+};
+
 typedef struct {
     struct list_head list;
     unsigned char* tmpbuffer;
@@ -370,6 +374,7 @@ class CTsPlayer : public ITsPlayer
 {
 public:
     CTsPlayer();
+    CTsPlayer(CTsParameter p);
 #ifdef USE_OPTEEOS
     CTsPlayer(bool DRMMode);
     CTsPlayer(bool DRMMode, bool omx_player);
@@ -557,6 +562,7 @@ private:
     static void * init_thread(void *pthis);
     void thread_wait_timeUs(int microseconds);
     void thread_wake_up();
+    virtual void init_params();
     int is_use_double_write();
     void check_use_double_write();
     void stop_double_write();

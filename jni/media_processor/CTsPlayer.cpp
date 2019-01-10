@@ -3573,6 +3573,7 @@ void CTsPlayer::checkAbend()
     }
 }
 
+int last_flag = 0;
 void CTsPlayer::update_caton_info(struct av_param_info_t * info)
 {
     struct codec_quality_info *pquality_info = &m_sCtsplayerState.quality_info;
@@ -3604,7 +3605,28 @@ void CTsPlayer::update_caton_info(struct av_param_info_t * info)
                 m_sCtsplayerState.caton_times, m_sCtsplayerState.caton_time);
         }
     }
+
+    /*[SE] [BUG][IPTV-1021][yinli.xia] added: add probe event for blurred and unload event*/
+    if (m_bIsPause) {
+        pquality_info->unload_flag = 0;
+    }
+    if (pquality_info->unload_flag != last_flag && m_bIsPlay) {
+        if (pquality_info->unload_flag) {
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_START, player_evt_hander);
+        } else {
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_END, player_evt_hander);
+        }
+    }
+    last_flag = pquality_info->unload_flag;
+
     if (codec_get_blurred_screen(&info->av_info, pquality_info)) {
+        if (pquality_info->blurred_flag) {
+        LOGI("blurred start --- \n");
+        pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_START, player_evt_hander);
+        } else {
+        LOGI("blurred end --- \n");
+        pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_END, player_evt_hander);
+        }
     }
 }
 

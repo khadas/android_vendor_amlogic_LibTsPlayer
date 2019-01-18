@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include "player_set_sys.h"
 #include "Amsysfsutils.h"
+#include "Amavutils.h"
 #include <sys/times.h>
 #include <time.h>
 #include <sys/ioctl.h>
@@ -821,6 +822,25 @@ int CTsPlayer::GetPlayMode()
 
 int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
 {
+    LOGI("CTsPlayer::SetVideoWindow: %d, %d, %d, %d\n", x, y, width, height);
+    mWinAis[0] = x;
+    mWinAis[1] = y;
+    mWinAis[2] = width;
+    mWinAis[3] = height;
+    if (m_bIsPlay) {
+        LOGI("CTsPlayer::SetVideoWindow: player is running, set video window!");
+        SetVideoWindowImpl(x, y, width, height);
+    }
+    return 0;
+}
+
+int CTsPlayer::SetVideoWindowImpl(int x,int y,int width,int height)
+{
+    int ret = 0;
+
+    LOGI("SetVideoWindowImpl: %d, %d, %d, %d\n", x, y, width, height);
+    ret = amvideo_utils_set_virtual_position(x, y, width, height, 0);
+#if 0
     int epg_centre_x = 0;
     int epg_centre_y = 0;
     int old_videowindow_certre_x = 0;
@@ -936,6 +956,7 @@ int CTsPlayer::SetVideoWindow(int x,int y,int width,int height)
         amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",1);
     else
         amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_hd",0);
+#endif
     return ret;
 }
 
@@ -1405,6 +1426,9 @@ bool CTsPlayer::StartPlay(){
             LOGI("set screen_mode = %d\n", s_screen_mode);
         }
 
+        if ((mWinAis[2] > 0) && (mWinAis[3] > 0))
+            SetVideoWindowImpl(mWinAis[0], mWinAis[1], mWinAis[2], mWinAis[3]);
+
         ret = iStartPlay();
         codec_set_freerun_mode(pcodec, 0);
         if (prop_trickmode_debug) {
@@ -1812,6 +1836,7 @@ bool CTsPlayer::iStartPlay()
             LOGI("call update_nativewindow");
             update_nativewindow();
         }
+        codec_set_volume(pcodec, (float)m_nVolume/100.0);
     } else  {
         if (prop_axis_set_mode == VIDEO_AXIS_MODE_HWC) {
             update_nativewindow();
@@ -3009,12 +3034,14 @@ static int set_android_stream_volume(float volume)
 int CTsPlayer::GetVolume()
 {
     float volume = 1.0f;
-
-    int ret = get_android_stream_volume(&volume);
-    LOGI("GetVolume: volume:%f , ret:%d \n",volume,ret);
-
-    if (ret < 0 || volume < 0) {
-        return m_nVolume;
+	if (prop_multi_play == 0) {
+        int ret = get_android_stream_volume(&volume);
+        LOGI("GetVolume: volume:%f , ret:%d \n",volume,ret);
+        if (ret < 0 || volume < 0) {
+            return m_nVolume;
+        }
+    } else {
+        volume = m_nVolume;
     }
 
     m_nVolume = (int)(volume*100);
@@ -3030,7 +3057,9 @@ bool CTsPlayer::SetVolume(int volume)
         return false;
     }
     if (prop_multi_play == 1) {
-        ret = codec_set_volume(pcodec, (float)volume/100.0);
+        if (pcodec != NULL)
+            ret = codec_set_volume(pcodec, (float)volume/100.0);
+        m_nVolume = volume;
     } else {
         //int ret = codec_set_volume(pcodec, (float)volume/100.0);
         ret = set_android_stream_volume((float)volume/100.0);
@@ -3080,10 +3109,33 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 
 void CTsPlayer::GetVideoPixels(int& width, int& height)
 {
-    int x = 0, y = 0;
-    OUTPUT_MODE output_mode = get_display_mode();
-    getPosition(output_mode, &x, &y, &width, &height);
-    LOGI("GetVideoPixels, x: %d, y: %d, width: %d, height: %d", x, y, width, height);
+    //int x = 0, y = 0;
+    //OUTPUT_MODE output_mode = get_display_mode();
+    //getPosition(output_mode, &x, &y, &width, &height);
+    //LOGI("GetVideoPixels, x: %d, y: %d, width: %d, height: %d", x, y, width, height);
+    LOGI("Begin CTsPlayer::GetVideoPixels().");
+    char value[PROPERTY_VALUE_MAX] = {0};
+    if (property_get("ubootenv.var.uimode", value, NULL) > 0) {
+        LOGI("ubootenv.var.uimode=%s", value);
+        if (!strcmp(value,"1080p")) {
+            width = 1920;
+            height = 1080;
+        }
+
+        else if (!strcmp(value,"720p")) {
+            width = 1280;
+            height = 720;
+        }
+        else {
+            width = 1280;
+            height = 720;
+        }
+    } else {
+        width = 1280;
+        height = 720;
+        LOGW("Can not read property ubootenv.var.uimode, using width=%d, height=%d\n", width, height);
+    }
+    LOGI("End   CTsPlayer::GetVideoPixels(). width=%d, height=%d.\n", width, height);
 }
 
 bool CTsPlayer::SetRatio(int nRatio)

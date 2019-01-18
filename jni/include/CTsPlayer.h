@@ -493,6 +493,7 @@ private:
     bool          m_bSetEPGSize;
     bool          m_bWrFirstPkg;
     int	          m_nMode;
+    int mWinAis[4];
     sp<ANativeWindow> mNativeWindow;
     int width_old,width_new;
     int height_old,height_new;
@@ -557,6 +558,7 @@ private:
     static void * threadReportInfo(void *pthis);
     void update_caton_info(struct av_param_info_t * info);
     void update_stream_bitrate();
+    int SetVideoWindowImpl(int x,int y,int width,int height);
     bool CheckMultiSupported(int video_type);
 	void * stop_thread(void );
     static void * init_thread(void *pthis);

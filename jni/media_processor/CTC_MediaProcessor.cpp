@@ -48,9 +48,15 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
     property_get("media.ctcplayer.omxdebug", value, "0");
     mOmxDebug = atoi(value);
 
+    /*display_mode 1: vd2; 2: 9-video layer */
+    int display_mode = 0;
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("media.ctc.display.mode", value, "0");
+    display_mode = atoi(value);
+
     if (type == PLAYER_TYPE_OMX) {
         return new CTsOmxPlayer();
-    } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1) {
+    } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 2) {
         return new CTsHwOmxPlayer();
     } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
         struct CTsParameter p;

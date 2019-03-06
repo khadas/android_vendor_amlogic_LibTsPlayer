@@ -21,21 +21,12 @@
 class LivePlayer;
 using namespace android;
 
-typedef enum {
-    VIDEO_FORMAT_UNKNOWN 	= -1,
-    VIDEO_FORMAT_MPEG1,
-    VIDEO_FORMAT_MPEG2,
-    VIDEO_FORMAT_MPEG4,
-    VIDEO_FORMAT_H264,
-    VIDEO_FORMAT_H265,
-    VIDEO_FORMAT_MAX,
-} VIDEO_FORMAT_E;
 class CTsHwOmxPlayer : public ITsPlayer {
 public:
     CTsHwOmxPlayer();
     virtual ~CTsHwOmxPlayer();
     virtual void InitVideo(PVIDEO_PARA_T pVideoPara);
-	virtual void InitAudio(PAUDIO_PARA_T pAudioPara);
+    virtual void InitAudio(PAUDIO_PARA_T pAudioPara);
     virtual void InitSubtitle(PSUBTITLE_PARA_T pSubtitlePara);
     virtual bool StartPlay();
     virtual bool Stop();
@@ -93,7 +84,6 @@ public:
 #if defined(TELECOM_QOS_SUPPORT) || defined(IPTV_ZTE_SUPPORT)
     virtual void RegisterParamEvtCb(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
 #endif
-
     //ZTEDSP 20140905 闁告艾鐗嗛崣锟�760D 濞寸媴绲块悥婊堝储閻斿娼楅柟鎭掑劚瑜版盯宕氶崶銊ュ簥闂傚﹤鐤囧娲嫉婢舵劖锛栧Λ甯嫹
     virtual void SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara);
     virtual void BlackOut(int EarseLastFrame);
@@ -115,41 +105,44 @@ public:
     virtual int GetVideoFrameRate();
     virtual int GetPlayerInstanceNo();
     int checkLogMask();
-	char* convertVideoFormat2Mime(vformat_t);
+    char* convertVideoFormat2Mime(vformat_t);
+    char* convertAudioFormat2Mime(aformat_t);
 
-	//16位色深需要设置colorkey来透出视频；
+    //16位色深需要设置colorkey来透出视频；
 
-	virtual bool StartRender();
-	virtual bool SubtitleShowHide(bool bShow);
-	virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
-	virtual void ClearLastFrame();
-	virtual bool SetErrorRecovery(int mode);
-	virtual void SetVideoHole(int x,int y,int w,int h);
-	virtual void writeScaleValue();
-	virtual int GetVideoDropNumber();
-	virtual int GetVideoTotalNumber();
+    virtual bool StartRender();
+    virtual bool SubtitleShowHide(bool bShow);
+    virtual int playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value);
+    virtual void ClearLastFrame();
+    virtual bool SetErrorRecovery(int mode);
+    virtual void SetVideoHole(int x,int y,int w,int h);
+    virtual void writeScaleValue();
+    virtual int GetVideoDropNumber();
+    virtual int GetVideoTotalNumber();
 	virtual void GetVideoResolution();
-	virtual int GetCurrentVidPTS(unsigned long long  *pPTS);
+    virtual int GetCurrentVidPTS(unsigned long long  *pPTS);
 #ifdef IPTV_ZTE_SUPPORT
     virtual void GetVideoInfo (int *width,int *height ,int  *ratio,int *frame_format);
 #else
-	virtual void GetVideoInfo (int *width,int *height ,int  *ratio);
+    virtual void GetVideoInfo (int *width,int *height ,int  *ratio);
 #endif
     virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL);
     void createBlackOverlay();
 
 private:
+	char* GET_LOG_TAG();
+
     FILE* mFp;
     VIDEO_PARA_T mSoftVideoPara;
     int mSoftNativeX;
     int mSoftNativeY;
     int mSoftNativeWidth;
     int mSoftNativeHeight;
-    PLAYER_STREAMTYPE_E ctcStreamType;
 
     sp<SurfaceComposerClient> mSoftComposerClient;
     sp<SurfaceControl> mSoftControl;
     sp<Surface> mSoftSurface;
+
     sp<SurfaceComposerClient> mSoftComposerClient2;
     sp<SurfaceControl> mSoftControl2;
     sp<Surface> mSoftSurface2;
@@ -159,7 +152,8 @@ private:
     int mApkUiHeight;
     sp<LivePlayer> mLivePlayer;
     int pipe_fd[2];
-	int place_holder_fd[3];
+    int place_holder_fd[3];
+
     int mVolume;
     sp<ALooper> mLooper;
     int mDataWrited;
@@ -184,11 +178,11 @@ private:
     int64_t mLastWriteTimeUs;
     int64_t mStartWriteTimeUs;
     uint64_t mLastWriteSize;
+    PLAYER_STREAMTYPE_E ctcStreamType;
     bool mSupportMutilDecoder;
     bool mSupportVideoFormat;
     bool mSupportAudioFormat;
-
-	size_t mSleepCount;
+    size_t mSleepCount;
     uint32_t mProbeMaxBufSize;
 
     class RunWorker: public Thread {
@@ -200,7 +194,7 @@ private:
         };
         enum dt_module_t{
             MODULE_START_PLAYER,
-			MODULE_DATA_FEEDER,
+            MODULE_DATA_FEEDER,
         };
         dt_module_t mTaskModule;
         bool mFlag;
@@ -216,8 +210,16 @@ private:
 
     sp<RunWorker> mRunWorkerStartPlayer;
     sp<RunWorker> mRunWorkerDataFeeder;
-    //PAUDIO_PARA_T mAudioPara;
-    //PVIDEO_PARA_T mVideoPara;
+
+	int mDisplayMode;
+	bool mUseVideoProducer;
+	bool mUseVD2;
+	char mLogTag[64];
+
+	static Mutex sInstanceNoLock;
+	static int sInstanceNos[9];
+	static int AcquireInstanceNo(void *opaque);
+	static void ReturnInstanceNo(int old, void *opaque);
 };
 
 #endif  //  _CTC_HWOMXPLAYER_H_

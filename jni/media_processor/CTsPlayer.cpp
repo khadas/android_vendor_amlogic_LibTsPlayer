@@ -4166,7 +4166,6 @@ int CTsPlayer::updateCTCInfo()
             codec_get_av_param_qosinfo(vcodec, &av_param_qosinfo);
         }
     }
-
     // check first frame comming
     frame_rate_ctc = av_param_info.av_info.fps;
     /*+[SE] [BUG][BUG-170677][yinli.xia] added:2s later
@@ -4187,6 +4186,7 @@ int CTsPlayer::updateCTCInfo()
             }
             m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
             pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
+            m_Frame_StartPlayTimePoint = av_gettime();
         }
         m_sCtsplayerState.first_picture_comming = 1;
     } else {

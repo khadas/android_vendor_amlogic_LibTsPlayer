@@ -237,7 +237,7 @@ vformat_t changeVformat(vformat_t index)
         return VFORMAT_AVS2;
     }
 
-    if (index >= CT_VFORMAT_UNSUPPORT)
+    if (index >= VFORMAT_UNSUPPORT)
         return VFORMAT_UNSUPPORT;
     else
         return index;

@@ -1836,6 +1836,7 @@ bool CTsPlayer::iStartPlay()
             LOGI("call update_nativewindow");
             update_nativewindow();
         }
+        LOGI("iStartPlay:m_nVolume=%d\n", m_nVolume);
         codec_set_volume(pcodec, (float)m_nVolume/100.0);
     } else  {
         if (prop_axis_set_mode == VIDEO_AXIS_MODE_HWC) {
@@ -3033,6 +3034,7 @@ static int set_android_stream_volume(float volume)
 
 int CTsPlayer::GetVolume()
 {
+    LOGI("GetVolume\n");
     float volume = 1.0f;
 	if (prop_multi_play == 0) {
         int ret = get_android_stream_volume(&volume);
@@ -3040,12 +3042,9 @@ int CTsPlayer::GetVolume()
         if (ret < 0 || volume < 0) {
             return m_nVolume;
         }
-    } else {
-        volume = m_nVolume;
+        return (int)(volume*100);
     }
-
-    m_nVolume = (int)(volume*100);
-    return (int)(volume*100);
+    return m_nVolume;
 }
 
 bool CTsPlayer::SetVolume(int volume)
@@ -3059,7 +3058,9 @@ bool CTsPlayer::SetVolume(int volume)
     if (prop_multi_play == 1) {
         if (pcodec != NULL)
             ret = codec_set_volume(pcodec, (float)volume/100.0);
-        m_nVolume = volume;
+        if (ret != -1) {
+            m_nVolume = volume;
+        }
     } else {
         //int ret = codec_set_volume(pcodec, (float)volume/100.0);
         ret = set_android_stream_volume((float)volume/100.0);

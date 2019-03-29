@@ -3992,7 +3992,11 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                     }
                     checkcount1 = 0;
                 }
-                amvideo_checkunderflow_type(tsplayer->pcodec, tsplayer->vcodec);
+                if (prop_softdemux == 0){
+                    amvideo_checkunderflow_type(tsplayer->pcodec);
+                } else {
+                    amvideo_checkunderflow_type(tsplayer->vcodec);
+                }
             }
             /*+[SE][BUG][BUG-167013][zhizhong.zhang] Modify: use thread sleep instead of usleep.*/
             if (max_count > 1)

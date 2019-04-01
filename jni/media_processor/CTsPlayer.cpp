@@ -252,7 +252,7 @@ aformat_t changeAformat(aformat_t index)
     else if (index == CT_AFORMAT_DDPlUS)
         return AFORMAT_EAC3;
 
-    if (index >= CT_AFORMAT_UNSUPPORT)
+    if (index >= AFORMAT_UNSUPPORT)
         return AFORMAT_UNSUPPORT;
     else
         return index;

@@ -6,13 +6,35 @@
 
 #include "CTC_MediaProcessor.h"
 #include "CTsOmxPlayer.h"
-#include "CTsHwOmxPlayer.h"
 #include <android/log.h>
 #include <cutils/properties.h>
 #include "Amsysfsutils.h"
+#include <dlfcn.h>
 
 
 #define LOG_TAG "CTC_MediaProcessor"
+typedef ITsPlayer *(*CreateTsPlayerFunc)(void);
+static CreateTsPlayerFunc createLivePlayer = NULL;
+static CreateTsPlayerFunc get_createLivePlayer() {
+
+    void *libHandle = dlopen("/system/lib/libliveplayer.so", RTLD_NOW);
+
+    if (libHandle == NULL) {
+        ALOGD("open libliveplayer.so failed for reason: %s", dlerror());
+        return NULL;
+    }
+    createLivePlayer = (CreateTsPlayerFunc)dlsym(
+                            libHandle,
+                            "_Z14createTsPlayerv");
+    if (createLivePlayer == NULL) {
+        ALOGD("dlsym on liveplayer failed for reason %s", dlerror());
+        dlclose(libHandle);
+        libHandle = NULL;
+        return NULL;
+    }
+    ALOGD("dlopen libliveplayer success, libHandle=%p\n", libHandle);
+    return createLivePlayer;
+}
 
 // need single instance?
 ITsPlayer* GetMediaProcessor()
@@ -43,6 +65,9 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
     ALOGI("GetMediaProcessor, type=%d\n", type);
     int mOmxDebug = 0;
     char value[PROPERTY_VALUE_MAX] = {0};
+    ITsPlayer *ret = NULL;
+    if (createLivePlayer == NULL)
+        createLivePlayer = get_createLivePlayer();
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("media.ctcplayer.omxdebug", value, "0");
@@ -53,12 +78,11 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("media.ctc.display.mode", value, "0");
     display_mode = atoi(value);
-
-    ALOGI("GetMediaProcessor, display_mode=%d\n", display_mode);
+    ALOGI("display mode:%d\n", display_mode);
     if (type == PLAYER_TYPE_OMX) {
         return new CTsOmxPlayer();
-    } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 1 || display_mode == 2) {
-        return new CTsHwOmxPlayer();
+    } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode >= 1) {
+        return (*createLivePlayer)();
     } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
         struct CTsParameter p;
         p.mMultiSupport = 1;

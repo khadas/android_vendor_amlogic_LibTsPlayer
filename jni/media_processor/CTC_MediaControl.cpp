@@ -5,34 +5,54 @@
  */
 
 #include "CTC_MediaControl.h"
-#include "CTsHwOmxPlayer.h"
 #include "CTsOmxPlayer.h"
 #include <cutils/properties.h>
+#include <dlfcn.h>
+
+typedef ITsPlayer *(*CreateTsPlayerFunc)(void);
+static CreateTsPlayerFunc createLivePlayer = NULL;
+static CreateTsPlayerFunc get_createLivePlayer() {
+
+    void *libHandle = dlopen("/system/lib/libliveplayer.so", RTLD_NOW);
+
+    if (libHandle == NULL) {
+        ALOGD("open libliveplayer.so failed for reason: %s", dlerror());
+        return NULL;
+    }
+    createLivePlayer = (CreateTsPlayerFunc)dlsym(
+                            libHandle,
+                            "_Z14createTsPlayerv");
+    if (createLivePlayer == NULL) {
+        ALOGD("dlsym on liveplayer failed for reason %s", dlerror());
+        dlclose(libHandle);
+        libHandle = NULL;
+        return NULL;
+    }
+    ALOGD("dlopen libliveplayer success, libHandle=%p\n", libHandle);
+    return createLivePlayer;
+}
 
 // need single instance?
 ITsPlayer* GetMediaControl(int use_omx_decoder)
 {
-	/*
-    char value[PROPERTY_VALUE_MAX] = {0};
-    property_get("iptv.decoder.omx", value, "0");
-    int prop_use_omxdecoder = atoi(value);
+	ITsPlayer *ret = NULL;
+    if (createLivePlayer == NULL)
+        createLivePlayer = get_createLivePlayer();
 
-    if (prop_use_omxdecoder || use_omx_decoder)
-        return new CTsOmxPlayer();
-    else
-        return new CTsPlayer();
-	*/
-	switch(use_omx_decoder) {
+    switch (use_omx_decoder) {
 		case 0:
-		return new CTsPlayer();
+		ret = new CTsPlayer();
+		break;
 		case 1:
-		return new CTsOmxPlayer();
+		ret = new CTsOmxPlayer();
+		break;
 		case 2:
-		return new CTsHwOmxPlayer();
+		ret = (*createLivePlayer)();
+		break;
 		default:
 		return NULL;
 	}
-	return NULL;
+	return ret;
 }
 
 ITsPlayer* GetMediaControl()

@@ -24,7 +24,7 @@ CTC_AmlPlayer::CTC_AmlPlayer(int count)
 {
     ALOGI("CTC_AmlPlayer construct, test count=%d,aml_instance:%d\n", count,aml_instance);
     if (count == 0) {
-        m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_NORMAL);
+        m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_NORMAL_MULTI);
     } else {
         /* +[SE] [BUG][BUG-167372][yanan.wang] added:increase the keep_mode_threshold from 85 to 110 when multi-instances*/
         amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 110);

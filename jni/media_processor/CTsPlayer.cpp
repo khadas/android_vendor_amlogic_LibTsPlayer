@@ -3517,13 +3517,20 @@ void CTsPlayer::SetSurface(Surface* pSurface)
 void CTsPlayer::update_nativewindow() {
     ANativeWindowBuffer* buf;
     char* vaddr;
+    int err = 0;
     /*mNativeWindow->query(mNativeWindow.get(),NATIVE_WINDOW_WIDTH,&width_new);
     mNativeWindow->query(mNativeWindow.get(),NATIVE_WINDOW_HEIGHT,&height_new);
     if (width_old == width_new && height_old == height_new)
         return;
     width_old = width_new;
     height_old = height_new;*/
-    int err = mNativeWindow->dequeueBuffer_DEPRECATED(mNativeWindow.get(), &buf);
+    if (mNativeWindow != NULL) {
+        LOGI("mNativeWindow is not null, set dequeue buffer\n");
+        err = mNativeWindow->dequeueBuffer_DEPRECATED(mNativeWindow.get(), &buf);
+    } else {
+        ALOGE("mNativeWindow is NULL, return\n");
+        return;
+    }
     if (err != 0) {
         ALOGE("dequeueBuffer failed: %s (%d)", strerror(-err), -err);
         return;

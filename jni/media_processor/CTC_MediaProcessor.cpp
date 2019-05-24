@@ -64,6 +64,7 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
 {
     ALOGI("GetMediaProcessor, type=%d\n", type);
     int mOmxDebug = 0;
+    int check_apk_use = 0;
     char value[PROPERTY_VALUE_MAX] = {0};
     ITsPlayer *ret = NULL;
     if (createLivePlayer == NULL)
@@ -79,16 +80,35 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
     property_get("media.ctc.display.mode", value, "0");
     display_mode = atoi(value);
     ALOGI("display mode:%d\n", display_mode);
-    if (type == PLAYER_TYPE_OMX) {
-        return new CTsOmxPlayer();
-    } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode >= 1) {
-        return (*createLivePlayer)();
-    } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
-        struct CTsParameter p;
-        p.mMultiSupport = 1;
-        return new CTsPlayer(p);
+    /* +[SE] [BUG][IPTV-2452][yinli.xia]
+    added: distinguish PIP player from apk to url*/
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("media.ctcplayer.enable", value, NULL);
+    check_apk_use = atoi(value);
+    if (check_apk_use) {
+        if (type == PLAYER_TYPE_OMX) {
+            return new CTsOmxPlayer();
+        } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1) {
+            return new CTsHwOmxPlayer();
+        } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
+            struct CTsParameter p;
+            p.mMultiSupport = 1;
+            return new CTsPlayer(p);
+        } else {
+            return new CTsPlayer();
+        }
     } else {
-        return new CTsPlayer();
+        if (type == PLAYER_TYPE_OMX) {
+            return new CTsOmxPlayer();
+        } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 1 || display_mode == 2) {
+            return new CTsHwOmxPlayer();
+        } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
+            struct CTsParameter p;
+            p.mMultiSupport = 1;
+            return new CTsPlayer(p);
+        } else {
+            return new CTsPlayer();
+        }
     }
 }
 #ifdef USE_OPTEEOS

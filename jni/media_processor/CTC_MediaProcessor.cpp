@@ -88,8 +88,8 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
     if (check_apk_use) {
         if (type == PLAYER_TYPE_OMX) {
             return new CTsOmxPlayer();
-        } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1) {
-            return new CTsHwOmxPlayer();
+        } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 2) {
+            return (*createLivePlayer)();
         } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
             struct CTsParameter p;
             p.mMultiSupport = 1;
@@ -101,7 +101,7 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
         if (type == PLAYER_TYPE_OMX) {
             return new CTsOmxPlayer();
         } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 1 || display_mode == 2) {
-            return new CTsHwOmxPlayer();
+            return (*createLivePlayer)();
         } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
             struct CTsParameter p;
             p.mMultiSupport = 1;

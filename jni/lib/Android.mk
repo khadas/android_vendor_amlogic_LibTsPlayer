@@ -24,9 +24,13 @@ include $(BUILD_PREBUILT)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := libliveplayer
-LOCAL_SRC_FILES := libliveplayer
+ifeq ($(TELECOM_QOS_SUPPORT),true)
+LOCAL_SRC_FILES := libliveplayer_telecom
+else
+LOCAL_SRC_FILES := libliveplayer_no_telecom
+endif
 LOCAL_MODULE_SUFFIX := .so
-LOCAL_SRC_FILES := $(lib_dir)$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
+LOCAL_SRC_FILES := $(lib_dir)$(LOCAL_SRC_FILES)$(LOCAL_MODULE_SUFFIX)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_MODULE_PATH := $(TARGET_OUT)/lib/

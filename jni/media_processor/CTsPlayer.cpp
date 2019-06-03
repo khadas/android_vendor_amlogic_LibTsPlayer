@@ -1679,7 +1679,7 @@ bool CTsPlayer::iStartPlay()
             acodec->audio_type,acodec->audio_pid, acodec->audio_channels, acodec->audio_samplerate);
         }
 #if 1
-        if (prop_esdata != 1) {
+        if (prop_softdemux == 1 && prop_esdata != 1) {
             if (pipe(pipe_fd) == -1) {
                 perror("pipe");
                 exit(1);
@@ -2359,7 +2359,7 @@ int CTsPlayer::WriteData(unsigned char* pBuffer, unsigned int nSize)
         }
     }
 
-    if (prop_softdemux == 1) {
+    if (prop_softdemux == 1 && prop_esdata != 1) {
         int ret = write(pipe_fd[1], pBuffer, nSize);
         if (m_fp != NULL) {
             fwrite(pBuffer, 1, nSize, m_fp);

@@ -840,6 +840,7 @@ int CTsPlayer::SetVideoWindowImpl(int x,int y,int width,int height)
     int ret = 0;
 
     LOGI("SetVideoWindowImpl: %d, %d, %d, %d\n", x, y, width, height);
+    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
     ret = amvideo_utils_set_virtual_position(x, y, width, height, 0);
 #if 0
     int epg_centre_x = 0;

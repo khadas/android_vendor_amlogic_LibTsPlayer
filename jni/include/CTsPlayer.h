@@ -254,7 +254,6 @@ typedef struct VIDEO_FRM_STATUS_INFO {
     int  nUnderflow;
 } VIDEO_FRM_STATUS_INFO_T;
 
-#ifdef TELECOM_QOS_SUPPORT
 typedef enum {
     IPTV_PLAYER_PARAM_EVT_VIDFRM_STATUS_REPORT = 0,
     IPTV_PLAYER_PARAM_EVT_FIRSTFRM_REPORT,
@@ -262,7 +261,6 @@ typedef enum {
 }IPTV_PLAYER_PARAM_Evt_e;
 
 typedef void (*IPTV_PLAYER_PARAM_EVENT_CB)( void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, void *pParam);
-#endif
 
 typedef struct {
     int instanceNo;

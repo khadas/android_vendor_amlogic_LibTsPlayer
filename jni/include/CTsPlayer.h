@@ -185,6 +185,7 @@ typedef struct ctsplayer_state {
     int stream_bitrate;//avg from writedata, duration 1 sec
     int caton_times; //the num of carton
     int caton_time;
+    int stream_bps;//avg dev video bitrate
 };
 
 typedef enum {

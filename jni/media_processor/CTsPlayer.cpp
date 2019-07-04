@@ -4331,8 +4331,12 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.video_width = av_param_info.av_info.width;
         m_sCtsplayerState.video_height = av_param_info.av_info.height;
         m_sCtsplayerState.frame_rate = av_param_info.av_info.fps;
+        /* +[SE] [BUG][IPTV-3492][yinli.xia] added: get real-time rate from dev*/
+        m_sCtsplayerState.stream_bps = av_param_info.av_info.dec_video_bps;
         m_sCtsplayerState.current_fps = av_param_info.av_info.current_fps;
         GetVideoResolution();
+
+        LOGI("m_sCtsplayerState.stream_bps = %d\n",m_sCtsplayerState.stream_bps);
 
         float videoWH = 0;
         if (m_sCtsplayerState.video_width  > 0 && m_sCtsplayerState.video_height > 0)
@@ -4471,7 +4475,7 @@ int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
             *value = m_sCtsplayerState.video_width;
             break;
         case IPTV_PLAYER_ATTR_STREAM_BITRATE:
-            *value = m_sCtsplayerState.stream_bitrate;
+            *value = m_sCtsplayerState.stream_bps;
             break;
         case IPTV_PLAYER_ATTR_CATON_TIMES:
             *value = m_sCtsplayerState.caton_times;

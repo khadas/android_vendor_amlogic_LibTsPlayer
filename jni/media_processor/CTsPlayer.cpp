@@ -4475,7 +4475,12 @@ int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
             *value = m_sCtsplayerState.video_width;
             break;
         case IPTV_PLAYER_ATTR_STREAM_BITRATE:
-            *value = m_sCtsplayerState.stream_bps;
+            /* +[SE] [BUG][IPTV-3760][yinli.xia]
+               added: get different bps for accuracy*/
+            if (m_sCtsplayerState.stream_bitrate > m_sCtsplayerState.stream_bps)
+              *value = m_sCtsplayerState.stream_bitrate;
+            else
+              *value = m_sCtsplayerState.stream_bps;
             break;
         case IPTV_PLAYER_ATTR_CATON_TIMES:
             *value = m_sCtsplayerState.caton_times;

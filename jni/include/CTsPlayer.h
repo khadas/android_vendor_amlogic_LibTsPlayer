@@ -41,7 +41,7 @@ extern "C" {
 #define OUT
 
 #define TS_PACKET_SIZE 188
-
+#define PROCESS_NAME 64
 typedef struct{
 	void *(*init)(IN int flags);
   int (*read)(IN void *handle, IN unsigned char *buf, IN int size);
@@ -364,6 +364,11 @@ public:
 	virtual void ExecuteCmd(const char* cmd_str) = 0;
 	virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp) = 0;
     virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL) = 0;
+    virtual int RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc) = 0;
+    virtual int SetParameter(void *hander, int type, void * ptr) = 0;
+    virtual int GetParameter(void *hander, int type, void * ptr) = 0;
+    virtual int Invoke(void *hander, int type, void * inptr, void * outptr) = 0;
+
 
 	/*end add*/
 
@@ -464,6 +469,11 @@ public:
     virtual void updateinfo_to_middleware(struct av_param_info_t av_param_info,struct av_param_qosinfo_t av_param_qosinfo);
     virtual int SoftWriteData(PLAYER_STREAMTYPE_E type, uint8_t *pBuffer, uint32_t nSize, uint64_t timestamp);
     virtual status_t setDataSource(const char *path, const KeyedVector<String8, String8> *headers = NULL) {return 0;}
+    virtual int RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
+    virtual int SetParameter(void *hander, int type, void * ptr);
+    virtual int GetParameter(void *hander, int type, void * ptr);
+    virtual int Invoke(void *hander, int type, void * inptr, void * outptr);
+
     /*end add*/
     bool mIsOmxPlayer;
 
@@ -554,6 +564,7 @@ private:
     ctsplayer_state m_sCtsplayerState;
     pthread_t mInfoThread;
     int mLastVdecInfoNum;
+    char CallingPidName[PROCESS_NAME];
     static void * threadReportInfo(void *pthis);
     void update_caton_info(struct av_param_info_t * info);
     void update_stream_bitrate();

@@ -21,6 +21,7 @@ typedef enum {
     PLAYER_TYPE_OMX,
     PLAYER_TYPE_HWOMX,
     PLAYER_TYPE_NORMAL_MULTI,
+    PLAYER_TYPE_USE_PARAM = 0x10000000,
 } player_type_t;
 
 ITsPlayer* GetMediaProcessor();  // { return NULL; }

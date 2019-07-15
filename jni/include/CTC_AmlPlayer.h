@@ -46,8 +46,13 @@ class CTC_AmlPlayer
         int  CTC_InitAudio(void *para);
         int  CTC_InitSubtitle(void *para);
         int CTC_GetAVStatus(float *abuf, float *vbuf);
+        int CTC_GetAvBufStatus(AVBUF_STATUS *avstatus);
         int CTC_ClearLastFrame();
-
+        int CTC_GetVideoInfo(int *width, int *height, int *ratio);
+        int RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc);
+        int SetParameter(void *hander, int type, void * ptr);
+        int GetParameter(void *hander, int type, void * ptr);
+        int Invoke(void *hander, int type, void * inptr, void * outptr);
     private:
         ITsPlayer  *m_pTsPlayer;
 

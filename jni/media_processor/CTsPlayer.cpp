@@ -386,6 +386,26 @@ void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler)
         break;
     }
 }
+static int GetCallingPidName(char * callName,int size)
+{
+    int fd = -1;
+    int pid = getpid();
+    char callPath[64] = {0};
+    //char acApkName[64] = {0};
+    sprintf(callPath, "/proc/%d/cmdline", pid);
+    fd = open(callPath, O_RDONLY);
+    if (fd >= 0) {
+        memset(callName, 0, size);
+        read(fd, callName, size - 1);
+        callName[strlen(callName)] = '\0';
+        close(fd);
+    } else {
+        LOGI("unable to open file %s,err: %s", callPath, strerror(errno));
+        return -1;
+    }
+    LOGI("[%s] acApkName=%s,size:%d\n", __FUNCTION__, callName,size);
+    return 0;
+}
 
 
 #ifdef USE_OPTEEOS
@@ -655,7 +675,8 @@ void CTsPlayer::init_params()
     vrp_is_buffer_changed = 0;
     last_data_len = 0;
     last_data_len_statistics = 0;
-
+    memset(mWinAis,0,sizeof(mWinAis));
+    GetCallingPidName(CallingPidName, sizeof(CallingPidName));
     m_StopThread = false;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -840,7 +861,11 @@ int CTsPlayer::SetVideoWindowImpl(int x,int y,int width,int height)
     int ret = 0;
 
     LOGI("SetVideoWindowImpl: %d, %d, %d, %d\n", x, y, width, height);
-    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+    if (strcmp(CallingPidName, "/system/bin/mediaserver") != 0 && prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
+        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+        LOGI("/sys/module/amvideo/parameters/ctsplayer_exist 1\n");
+    }
+
     ret = amvideo_utils_set_virtual_position(x, y, width, height, 0);
 #if 0
     int epg_centre_x = 0;
@@ -3512,26 +3537,12 @@ void CTsPlayer::SetSurface(Surface* pSurface)
     //if (prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
       //  amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
     //}
-    FILE *fd = NULL;
-    char cfg_data[30] = {0};
-    int pid = getpid();
-    if (pid > 0) {
-        //check callprocess mediaserver
-        sprintf(cfg_data, "/proc/%d/cmdline", pid);
-        LOGI("[%s %d] begin read %s\n", __FUNCTION__, pid, cfg_data);
-        fd = fopen(cfg_data, "r");
-        if (fd != NULL) {
-            LOGI("[%s %d] open success\n", __FUNCTION__, pid);
-            if (fgets(cfg_data, sizeof(cfg_data), fd) > 0) {
-                LOGI("[%s %d] callprocess is %s\n", __FUNCTION__, pid, cfg_data);
-                if (strcmp(cfg_data, "/system/bin/mediaserver") != 0 && prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
-                    amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
-                    LOGI("/sys/module/amvideo/parameters/ctsplayer_exist 1\n");
-                }
-            }
-            fclose(fd);
-        }
+    if (strcmp(CallingPidName, "/system/bin/mediaserver") != 0 && prop_axis_set_mode == VIDEO_AXIS_MODE_CTC) {
+        amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 1);
+        LOGI("/sys/module/amvideo/parameters/ctsplayer_exist 1\n");
     }
+
+
     sp<IGraphicBufferProducer> mGraphicBufProducer;
 
     mGraphicBufProducer = pSurface->getIGraphicBufferProducer();
@@ -3557,7 +3568,7 @@ void CTsPlayer::update_nativewindow() {
     width_old = width_new;
     height_old = height_new;*/
     if (mNativeWindow != NULL) {
-        LOGI("mNativeWindow is not null, set dequeue buffer\n");
+        //LOGI("mNativeWindow is not null, set dequeue buffer\n");
         err = mNativeWindow->dequeueBuffer_DEPRECATED(mNativeWindow.get(), &buf);
     } else {
         ALOGE("mNativeWindow is NULL, return\n");
@@ -4500,8 +4511,35 @@ int CTsPlayer::playerback_getStatusInfo(IPTV_ATTR_TYPE_e enAttrType, int *value)
 void CTsPlayer::SwitchAudioTrack_ZTE(PAUDIO_PARA_T pAudioPara) {}
 void CTsPlayer::SetVideoHole(int x,int y,int w,int h) {}
 void CTsPlayer::writeScaleValue() {}
-int CTsPlayer::GetCurrentVidPTS(unsigned long long *pPTS) {return 0;}
-void CTsPlayer::GetVideoInfo(int *width, int *height, int *ratio) {}
-int CTsPlayer::GetPlayerInstanceNo() {return 0;}
-void CTsPlayer::ExecuteCmd(const char* cmd_str) {}
-bool CTsPlayer::StartRender() {return true;}
+int CTsPlayer::GetCurrentVidPTS(unsigned long long *pPTS) { return 0; }
+void CTsPlayer::GetVideoInfo(int *width, int *height, int *ratio)
+{
+    int ret;
+    struct vdec_status dec;
+    ret = codec_get_vdec_state(vcodec, &dec);
+    //if (ret <= 0) {
+        //LOGE("CTsPlayer GetVideoInfo error\n");
+    //}
+    *width = (int)dec.width;
+    *height = (int)dec.height;
+    *ratio = 0;
+}
+int CTsPlayer::GetPlayerInstanceNo() { return 0; }
+void CTsPlayer::ExecuteCmd(const char *cmd_str) {}
+bool CTsPlayer::StartRender() { return true; }
+int CTsPlayer::RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc)
+{
+    return 0;
+}
+int CTsPlayer::SetParameter(void *hander, int type, void * ptr)
+{
+    return 0;
+}
+int CTsPlayer::GetParameter(void *hander, int type, void * ptr)
+{
+    return 0;
+}
+int CTsPlayer::Invoke(void *hander, int type, void * inptr, void * outptr)
+{
+    return 0;
+}

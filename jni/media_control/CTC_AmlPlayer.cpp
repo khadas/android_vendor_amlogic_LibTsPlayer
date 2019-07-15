@@ -24,12 +24,12 @@ CTC_AmlPlayer::CTC_AmlPlayer(int count)
 {
     ALOGI("CTC_AmlPlayer construct, test count=%d,aml_instance:%d\n", count,aml_instance);
     if (count == 0) {
-        m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_NORMAL_MULTI);
+        m_pTsPlayer = GetMediaProcessor((player_type_t)(PLAYER_TYPE_NORMAL_MULTI | PLAYER_TYPE_USE_PARAM));
     } else {
         /* +[SE] [BUG][BUG-167372][yanan.wang] added:increase the keep_mode_threshold from 85 to 110 when multi-instances*/
         amsysfs_set_sysfs_int("/sys/class/thermal/thermal_zone0/keep_mode_threshold", 110);
         ALOGI("CTC_AmlPlayer keep_mode_threshold is 110\n");
-        m_pTsPlayer = GetMediaProcessor(PLAYER_TYPE_HWOMX);
+        m_pTsPlayer = GetMediaProcessor((player_type_t)(PLAYER_TYPE_HWOMX | PLAYER_TYPE_USE_PARAM));
     }
     /* +[SE] [BUG][BUG-170572[chuanqi.wang] added:keep 900M freq in 90% load when more than three-instances*/
     aml_instance++;
@@ -348,6 +348,18 @@ int CTC_AmlPlayer::CTC_GetAVStatus(float *abuf, float *vbuf)
 }
 
 
+int CTC_AmlPlayer::CTC_GetAvBufStatus(AVBUF_STATUS *avstatus)
+{
+    int ret = OK;
+    PAVBUF_STATUS pstatus;
+    pstatus = (PAVBUF_STATUS)malloc(sizeof(AVBUF_STATUS));
+    m_pTsPlayer->GetAvbufStatus(pstatus);
+    memcpy(avstatus, pstatus, sizeof(AVBUF_STATUS));
+    free(pstatus);
+    return ret;
+}
+
+
 int CTC_AmlPlayer::CTC_ClearLastFrame()
 {
     int ret = OK;
@@ -358,4 +370,47 @@ int CTC_AmlPlayer::CTC_ClearLastFrame()
     return ret;
 }
 
+int CTC_AmlPlayer::CTC_GetVideoInfo(int *width, int *height, int *ratio)
+{
+    int ret = OK;
+    if (m_pTsPlayer) {
+        m_pTsPlayer->GetVideoInfo(width, height, ratio);
+    }
+    return ret;
+}
 
+int CTC_AmlPlayer::RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc)
+{
+    int ret = OK;
+    if (m_pTsPlayer) {
+        ret = m_pTsPlayer->RegisterCallBack(hander, enEvt, pfunc);
+    }
+    return ret;
+}
+
+int CTC_AmlPlayer::SetParameter(void *hander, int type, void * ptr)
+{
+    int ret = OK;
+    if (m_pTsPlayer) {
+        ret = m_pTsPlayer->SetParameter(hander, type, ptr);
+    }
+    return ret;
+}
+
+int CTC_AmlPlayer::GetParameter(void *hander, int type, void * ptr)
+{
+    int ret = OK;
+    if (m_pTsPlayer) {
+        ret = m_pTsPlayer->GetParameter(hander, type, ptr);
+    }
+    return ret;
+}
+
+int CTC_AmlPlayer::Invoke(void *hander, int type, void * inptr, void * outptr)
+{
+    int ret = OK;
+    if (m_pTsPlayer) {
+        ret = m_pTsPlayer->Invoke(hander, type, inptr, outptr);
+    }
+    return ret;
+}

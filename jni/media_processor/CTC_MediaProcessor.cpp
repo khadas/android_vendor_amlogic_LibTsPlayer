@@ -62,13 +62,19 @@ ITsPlayer* GetMediaProcessor()
 
 ITsPlayer* GetMediaProcessor(player_type_t type)
 {
-    ALOGI("GetMediaProcessor, type=%d\n", type);
     int mOmxDebug = 0;
     int check_apk_use = 0;
+    int use_param = 0;
+    int real_type = 0;
     char value[PROPERTY_VALUE_MAX] = {0};
     ITsPlayer *ret = NULL;
     if (createLivePlayer == NULL)
         createLivePlayer = get_createLivePlayer();
+
+    use_param =  type & PLAYER_TYPE_USE_PARAM;
+    real_type = type & (~PLAYER_TYPE_USE_PARAM);
+    ALOGI("GetMediaProcessor,real_type:%d type=%d,use_param:%d\n",real_type, type,use_param);
+    type = (player_type_t)real_type;
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("media.ctcplayer.omxdebug", value, "0");
@@ -85,7 +91,8 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("media.ctcplayer.enable", value, NULL);
     check_apk_use = atoi(value);
-    if (check_apk_use) {
+
+    if (check_apk_use ||use_param) {
         if (type == PLAYER_TYPE_OMX) {
             return new CTsOmxPlayer();
         } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 2) {

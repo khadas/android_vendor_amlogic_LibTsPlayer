@@ -80,6 +80,7 @@ int prop_write_log = 0;
 int prop_trickmode_debug = 0;
 int prop_add_tsheader = 0;
 int prop_dump_tsheader = 0;
+int prop_info_report = 1;
 int m_AStopPending = 0;
 int header_backup = 0;
 int first_header_write = -1;
@@ -574,6 +575,10 @@ void CTsPlayer::init_params()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.dump.tsheader", value, "0");
     prop_dump_tsheader = atoi(value);
+
+    memset(value, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.inforeport.show", value, "1");
+    prop_info_report = atoi(value);
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
@@ -2611,9 +2616,10 @@ bool CTsPlayer::Fast()
     //amsysfs_set_sysfs_int("/sys/module/di/parameters/bypass_trick_mode", 2);
     amsysfs_set_sysfs_int("/sys/module/di/parameters/start_frame_drop_count",0);
 
-//    ret = iStartPlay();
-//    if (!ret)
-//        return false;
+    /*[SE][BUG][IPTV-3947][chengshun.wang]: Fast need startplay*/
+    ret = iStartPlay();
+    if (!ret)
+        return false;
 
     LOGI("Fast: codec_set_mode: %d\n", pcodec->handle);
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 0);
@@ -4195,7 +4201,9 @@ void CTsPlayer::updateinfo_to_middleware(struct av_param_info_t av_param_info,st
 {
     amvideo_updateframeinfo(av_param_info, av_param_qosinfo);
     struct vid_frame_info* videoFrameInfo = codec_get_frame_info();
-    ShowFrameInfo(videoFrameInfo);
+    if (prop_info_report) {
+        ShowFrameInfo(videoFrameInfo);
+    }
 
 #ifdef TELECOM_QOS_SUPPORT
     for (int i=0;(i<frame_rate_ctc)&&(i<QOS_FRAME_NUM);i++) {

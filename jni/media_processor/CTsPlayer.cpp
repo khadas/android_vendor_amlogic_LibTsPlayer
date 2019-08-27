@@ -692,6 +692,8 @@ void CTsPlayer::init_params()
     pfunc_player_param_evt = NULL;
     player_evt_param_handler = NULL;
 #endif
+    m_player_evt_hander_regitstercallback = NULL;
+    m_pfunc_player_param_evt_registercallback = NULL;
     pthread_attr_init(&attr);
     pthread_create(&mInfoThread, &attr, threadReportInfo, this);
     pthread_attr_destroy(&attr);
@@ -4252,6 +4254,8 @@ int CTsPlayer::updateCTCInfo()
                 LOGI("updateCTCInfo update writedata bitrate:%dbps\n", m_sCtsplayerState.stream_bitrate);
             }
             m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
+            if (m_pfunc_player_param_evt_registercallback)
+                m_pfunc_player_param_evt_registercallback(m_player_evt_hander_regitstercallback, IPTV_PLAYER_PARAM_EVT_FIRSTFRM_REPORT, NULL);
             pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
             m_Frame_StartPlayTimePoint = av_gettime();
         }
@@ -4537,6 +4541,10 @@ void CTsPlayer::ExecuteCmd(const char *cmd_str) {}
 bool CTsPlayer::StartRender() { return true; }
 int CTsPlayer::RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPTV_PLAYER_PARAM_EVENT_CB  pfunc)
 {
+    LOGI("CTsPlayer RegisterCallBack");
+    m_pfunc_player_param_evt_registercallback = pfunc;
+    m_player_evt_hander_regitstercallback = hander;
+
     return 0;
 }
 int CTsPlayer::SetParameter(void *hander, int type, void * ptr)

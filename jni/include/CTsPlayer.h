@@ -523,6 +523,9 @@ private:
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;
 
+    void *m_player_evt_hander_regitstercallback;
+    IPTV_PLAYER_PARAM_EVENT_CB  m_pfunc_player_param_evt_registercallback;
+
 #ifdef TELECOM_QOS_SUPPORT
     IPTV_PLAYER_PARAM_EVENT_CB  pfunc_player_param_evt;
     void *player_evt_param_handler;

@@ -3416,6 +3416,8 @@ void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
 {
     buf_status audio_buf;
     buf_status video_buf;
+    memset(&audio_buf , 0 ,sizeof(buf_status));
+    memset(&video_buf , 0 ,sizeof(buf_status));
 
     //LOGI( "This is CTsPlayer::GetAvbufStatus(). pstatus=%d.\n", pstatus);
 
@@ -3433,11 +3435,9 @@ void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
         codec_get_vbuf_state(pcodec,&video_buf);
     }
 
-    if (acodec->has_audio == 1) {
-        pstatus->abuf_size = audio_buf.size;
-        pstatus->abuf_data_len = audio_buf.data_len;
-        pstatus->abuf_free_len = audio_buf.free_len;
-    }
+    pstatus->abuf_size = audio_buf.size;
+    pstatus->abuf_data_len = audio_buf.data_len;
+    pstatus->abuf_free_len = audio_buf.free_len;
     pstatus->vbuf_size = video_buf.size;
     pstatus->vbuf_data_len = video_buf.data_len;
     pstatus->vbuf_free_len = video_buf.free_len;

@@ -1383,6 +1383,8 @@ unsigned char mjpeg_addon_data[] = {
 bool CTsPlayer::StartPlay(){
         int ret;
         char value[PROPERTY_VALUE_MAX] = {0};
+        /* +[SE] [REQ][IPTV-4381][jungle.wang] seek after pause */
+        m_bIsPause = false;
         /* +[SE] [BUG][BUG-167598][yanan.wang] added:fix the first channel is out of sync when playing four channels of 720P sources*/
         set_sysfs_int("/sys/class/tsync/av_threshold_min", 90000*3);
         if (prop_start_no_out) {// start with no out  mode
@@ -1834,7 +1836,7 @@ bool CTsPlayer::iStartPlay()
         else
             amsysfs_set_sysfs_int("/sys/class/video/blackout_policy", 1);
         m_bIsPlay = true;
-        m_bIsPause = false;
+//        m_bIsPause = false;
         keep_vdec_mem = 0;
         amsysfs_set_sysfs_int("/sys/class/vdec/keep_vdec_mem", 1);
         /*if(!m_bFast) {
@@ -2846,7 +2848,7 @@ bool CTsPlayer::iStop()
         }
         m_bFast = false;
         m_bIsPlay = false;
-        m_bIsPause = false;
+//        m_bIsPause = false;
         m_StartPlayTimePoint = 0;
         m_Frame_StartTime_Ctl = 0;
         m_Frame_StartPlayTimePoint = 0;
@@ -3013,6 +3015,13 @@ bool CTsPlayer::Seek()
         m_bIsSeek = true;
         first_header_write = 0;
     }
+    /* +[SE] [REQ][IPTV-4381][jungle.wang] seek after pause */
+    if (m_bIsPause)
+    {
+        LOGI("[%s,%d],seek after pause,pause again",__FUNCTION__,__LINE__);
+        codec_pause(pcodec);
+    }
+
     return true;
 }
 static float last_vol = 1.0;

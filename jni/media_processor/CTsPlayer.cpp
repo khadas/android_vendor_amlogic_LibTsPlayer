@@ -800,6 +800,7 @@ CTsPlayer::~CTsPlayer()
     Stop();
     amsysfs_set_sysfs_int("/sys/module/amvdec_h264/parameters/fatal_error_reset", 0);
     amsysfs_set_sysfs_int("/sys/module/amvideo/parameters/ctsplayer_exist", 0);
+    SetAudioBalance(3);
     if (perform_flag) {
         amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
         perform_flag =0;
@@ -3136,6 +3137,10 @@ bool CTsPlayer::SetAudioBalance(int nAudioBalance)
 {
     if ((nAudioBalance < 1) && (nAudioBalance > 4))
         return false;
+    if (pcodec == NULL) {
+        amsysfs_set_sysfs_str("/sys/class/amaudio/audio_channels_mask", "s");
+        return false;
+    }
     m_nAudioBalance = nAudioBalance;
     if (nAudioBalance == 1) {
         LOGI("SetAudioBalance 1 Left Mono\n");

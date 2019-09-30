@@ -53,6 +53,8 @@ class CTC_AmlPlayer
         int SetParameter(void *hander, int type, void * ptr);
         int GetParameter(void *hander, int type, void * ptr);
         int Invoke(void *hander, int type, void * inptr, void * outptr);
+        void BlackOut(int EarseLastFrame);
+
     private:
         ITsPlayer  *m_pTsPlayer;
 

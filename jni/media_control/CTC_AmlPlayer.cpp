@@ -414,3 +414,11 @@ int CTC_AmlPlayer::Invoke(void *hander, int type, void * inptr, void * outptr)
     }
     return ret;
 }
+
+void CTC_AmlPlayer::BlackOut(int EarseLastFrame)
+{
+    if (m_pTsPlayer)
+    {
+        m_pTsPlayer->BlackOut(EarseLastFrame);
+    }
+}

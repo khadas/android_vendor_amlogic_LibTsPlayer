@@ -3407,6 +3407,8 @@ void CTsPlayer::BlackOut(int EarseLastFrame)
 {
     LOGI( "Begin CTsPlayer::BlackOut().EarseLastFrame=%d.\n", EarseLastFrame);
     amsysfs_set_sysfs_int( "/sys/class/video/blackout_policy", EarseLastFrame);
+    /* +[SE][BUG][IPTV-4547][tao.zhu] Save the last frame change by API*/
+    m_isBlackoutPolicy = EarseLastFrame;
     LOGI( "End   CTsPlayer::BlackOut().\n");
     return;
 }

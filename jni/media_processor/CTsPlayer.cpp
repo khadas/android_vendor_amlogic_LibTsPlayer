@@ -6,7 +6,6 @@
 #include <android/native_window.h>
 #include <cutils/properties.h>
 #include <fcntl.h>
-#include "player_set_sys.h"
 #include "Amsysfsutils.h"
 #include "Amavutils.h"
 #include <sys/times.h>
@@ -17,11 +16,16 @@
 #include <binder/ProcessState.h>
 #include <binder/IServiceManager.h>
 #include <media/IMediaPlayerService.h>
-#include "subtitleservice.h"
 #include <gui/SurfaceComposerClient.h>
 #include <gui/ISurfaceComposer.h>
 #include <ui/DisplayInfo.h>
 #include <gui/Surface.h>
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
+#include "player_set_sys.h"
+#include "subtitleservice.h"
+#else
+#include "am_gralloc_ext.h"
+#endif
 
 #ifdef USE_OPTEEOS
 #include <PA_Decrypt.h>
@@ -698,12 +702,13 @@ void CTsPlayer::init_params()
     pthread_create(&mInfoThread, &attr, threadReportInfo, this);
     pthread_attr_destroy(&attr);
 
-
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     if (prop_softdemux == 1 && prop_esdata != 1) {
         pthread_attr_init(&attr);
         pthread_create(&readThread, &attr, threadReadPacket, this);
         pthread_attr_destroy(&attr);
     }
+#endif
 
     //m_nMode = M_LIVE;
     LunchIptv(m_isSoftFit);
@@ -712,7 +717,9 @@ void CTsPlayer::init_params()
     sp<IMediaPlayerService> service = interface_cast<IMediaPlayerService>(binder);
     if (service.get() != NULL) {
         LOGI("CTsPlayer stopPlayerIfNeed \n");
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         service->stopPlayerIfNeed();
+#endif
         LOGI("CTsPlayer stopPlayerIfNeed ==end\n");
     }
     mIsOmxPlayer = false;
@@ -739,6 +746,34 @@ static int remove_di()
     amsysfs_set_sysfs_str(AML_VFM_MAP, "add default decoder ppmgr amvideo");
     return 0;
 }
+
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
+#else
+void get_vfm_map_info(char *vfm_map)
+{
+    int fd;
+    char *path = "/sys/class/vfm/map";
+    if (!vfm_map) {
+        LOGE("[get_vfm_map]Invalide parameter!");
+        return;
+    }
+    fd = open(path, O_RDONLY);
+    if (fd >= 0) {
+        memset(vfm_map, 0, 4096); // clean buffer and read 4096 byte to avoid strlen > 4096
+        int ret = read(fd, vfm_map, 4096);
+        if (ret < 0) {
+            return;
+        }
+        LOGI("[get_vfm_map_info]vfm_map=%s strlen=%d\n", vfm_map, strlen(vfm_map));
+        vfm_map[strlen(vfm_map)] = '\0';
+        close(fd);
+    } else {
+        sprintf(vfm_map, "%s", "fail");
+    };
+    LOGI("last [get_vfm_map_info]vfm_map=%s\n", vfm_map);
+    return ;
+}
+#endif
 
 static int check_add_ppmgr()
 {
@@ -1068,18 +1103,18 @@ void setSubType(PSUBTITLE_PARA_T pSubtitlePara)
         return;
     LOGI("setSubType pSubtitlePara->pid:%d pSubtitlePara->sub_type:%d\n",pSubtitlePara->pid,pSubtitlePara->sub_type);
     if (pSubtitlePara->sub_type== CTC_CODEC_ID_DVD_SUBTITLE) {
-        set_subtitle_subtype(0);
+        amsysfs_set_sysfs_int("/sys/class/subtitle/subtype",0);
     } else if (pSubtitlePara->sub_type== CTC_CODEC_ID_HDMV_PGS_SUBTITLE) {
-        set_subtitle_subtype(1);
+        amsysfs_set_sysfs_int("/sys/class/subtitle/subtype",1);
     } else if (pSubtitlePara->sub_type== CTC_CODEC_ID_XSUB) {
-        set_subtitle_subtype(2);
+        amsysfs_set_sysfs_int("/sys/class/subtitle/subtype",2);
     } else if (pSubtitlePara->sub_type == CTC_CODEC_ID_TEXT || \
                 pSubtitlePara->sub_type == CTC_CODEC_ID_SSA) {
-        set_subtitle_subtype(3);
+        amsysfs_set_sysfs_int("/sys/class/subtitle/subtype",3);
     } else if (pSubtitlePara->sub_type == CTC_CODEC_ID_DVB_SUBTITLE) {
-        set_subtitle_subtype(5);
+        amsysfs_set_sysfs_int("/sys/class/subtitle/subtype",5);
     } else {
-        set_subtitle_subtype(4);
+        amsysfs_set_sysfs_int("/sys/class/subtitle/subtype",4);
     }
 }
 
@@ -1193,6 +1228,7 @@ int TsplayerGetAFilterFormat(const char *prop)
 pthread_t mSetSubRatioThread;
 int mSubRatioRetry = 200; //10*0.5s=5s to retry get video width and height
 bool mSubRatioThreadStop = false;
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 void *setSubRatioAutoThread(void *pthis)
 {
     int width = -1;
@@ -1295,6 +1331,7 @@ void setSubRatioAuto()
     mSubRatioThreadStop = false;
     pthread_create(&mSetSubRatioThread, NULL, setSubRatioAutoThread, NULL);
  }
+#endif
 
 /*
  * player_startsync_set
@@ -1318,7 +1355,7 @@ int player_startsync_set(int mode)
     int mode = get_sysfs_int(startsync_mode);
     int ret = property_get(startsync_prop, value, NULL);
     if (ret <= 0) {
-        log_print("start sync mode prop not setting ,using default none \n");
+        LOGI("start sync mode prop not setting ,using default none \n");
     }
     else
         mode = atoi(value);
@@ -1327,21 +1364,21 @@ int player_startsync_set(int mode)
     LOGI("start sync mode = %d \n",mode);
 
     if (mode == 0) { // none case
-        set_sysfs_int(slowsync_path,0);
+        amsysfs_set_sysfs_int(slowsync_path,0);
         //property_set(droppcm_prop, "0");
-        set_sysfs_int(slowsync_repeate_path,0);
+        amsysfs_set_sysfs_int(slowsync_repeate_path,0);
     }
 
     if (mode == 1) { // slow sync repeat mode
-        set_sysfs_int(slowsync_path,1);
+        amsysfs_set_sysfs_int(slowsync_path,1);
         //property_set(droppcm_prop, "0");
-        set_sysfs_int(slowsync_repeate_path,1);
+        amsysfs_set_sysfs_int(slowsync_repeate_path,1);
     }
 
     if (mode == 2) { // drop pcm mode
-        set_sysfs_int(slowsync_path,0);
+        amsysfs_set_sysfs_int(slowsync_path,0);
         //property_set(droppcm_prop, "1");
-        set_sysfs_int(slowsync_repeate_path,0);
+        amsysfs_set_sysfs_int(slowsync_repeate_path,0);
     }
 
     return 0;
@@ -1387,9 +1424,9 @@ bool CTsPlayer::StartPlay(){
         /* +[SE] [REQ][IPTV-4381][jungle.wang] seek after pause */
         m_bIsPause = false;
         /* +[SE] [BUG][BUG-167598][yanan.wang] added:fix the first channel is out of sync when playing four channels of 720P sources*/
-        set_sysfs_int("/sys/class/tsync/av_threshold_min", 90000*3);
+        amsysfs_set_sysfs_int("/sys/class/tsync/av_threshold_min", 90000*3);
         if (prop_start_no_out) {// start with no out  mode
-            set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);	//keep last frame instead of show first frame
+            amsysfs_set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);	//keep last frame instead of show first frame
             pcodec->start_no_out = 1;
         } else {
             pcodec->start_no_out = 0;
@@ -1509,14 +1546,14 @@ bool CTsPlayer::iStartPlay()
     amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE, SCALING_MODE);
     perform_flag = 1;
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
-    set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
+    amsysfs_set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
 
     // start with no out  mode
     start_no_out = pcodec->start_no_out;
     if (start_no_out) {
-        set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);
+        amsysfs_set_sysfs_int("/sys/class/video/show_first_frame_nosync", 0);
     } else {
-          set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
+        amsysfs_set_sysfs_int("/sys/class/video/show_first_frame_nosync", prop_show_first_frame_nosync);	//keep last frame instead of show first frame
     }
 
 
@@ -1866,10 +1903,12 @@ bool CTsPlayer::iStartPlay()
     LOGI("subtitleSetSurfaceViewParam 1\n");
     if (pcodec->has_sub == 1) {
         LOGI("subtitleSetSurfaceViewParam\n");
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         subtitleSetSurfaceViewParam(s_video_axis[0], s_video_axis[1], s_video_axis[2], s_video_axis[3]);
         subtitleResetForSeek();
         subtitleOpen("", this);// "" fit for api param, no matter what the path is for inner subtitle.
         subtitleShow();
+#endif
         //setSubRatioAuto();// 1.this function in subtitleservice is do nothing;2.don't free thread resource
     }
     lp_unlock(&mutex);
@@ -2583,7 +2622,7 @@ bool CTsPlayer::Resume()
 
 static void Check_FirstPictur_Coming(void)
 {
-    if (get_sysfs_int("/sys/module/amvideo/parameters/first_frame_toggled")) {
+    if (amsysfs_get_sysfs_int16("/sys/module/amvideo/parameters/first_frame_toggled")) {
        if (perform_flag) {
             amsysfs_set_sysfs_str(CPU_SCALING_MODE_NODE,DEFAULT_MODE);
             perform_flag =0;
@@ -2657,8 +2696,10 @@ bool CTsPlayer::StopFast()
     }
 
     LOGI("StopFast");
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     if (pcodec->has_sub == 1)
         subtitleResetForSeek();
+#endif
     m_bFast = false;
 
     ret=codec_set_freerun_mode(pcodec, 0);
@@ -2877,7 +2918,7 @@ bool CTsPlayer::iStop()
                     return ret;
                 }
             }
-#if 1
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
             if (prop_esdata != 1) {
                 am_ffextractor_deinit();
                 am_ffextractor_inited = false;
@@ -2900,8 +2941,10 @@ bool CTsPlayer::iStop()
 #endif
         m_bWrFirstPkg = true;
         //add_di();
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         if (pcodec->has_sub == 1)
             subtitleClose();
+#endif
         if (!s_h264sameucode && lpbuffer_st.buffer != NULL) {
             lp_lock(&mutex_lp);
             free(lpbuffer_st.buffer);
@@ -3035,12 +3078,14 @@ static int get_android_stream_volume(float *volume)
     AudioSystem::getOutputSamplingRate(&sr,AUDIO_STREAM_MUSIC);
     if (sr > 0) {
         audio_io_handle_t handle = -1;
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         handle = AudioSystem::getOutput(AUDIO_STREAM_MUSIC,
                   48000,
                   AUDIO_FORMAT_PCM_16_BIT,
                   AUDIO_CHANNEL_OUT_STEREO,
                   AUDIO_OUTPUT_FLAG_PRIMARY
                   );
+#endif
 
         if (handle > 0) {
             if (AudioSystem::getStreamVolume(AUDIO_STREAM_MUSIC,&vol,handle) == NO_ERROR) {
@@ -3067,11 +3112,13 @@ static int set_android_stream_volume(float volume)
     AudioSystem::getOutputSamplingRate(&sr,AUDIO_STREAM_MUSIC);
     if (sr > 0) {
         audio_io_handle_t handle = -1;
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         handle = AudioSystem::getOutput(AUDIO_STREAM_MUSIC,
                                         48000,
                                         AUDIO_FORMAT_PCM_16_BIT,
                                         AUDIO_CHANNEL_OUT_STEREO,
                                         AUDIO_OUTPUT_FLAG_PRIMARY);
+#endif
 
     if (handle > 0) {
         if (AudioSystem::setStreamVolume(AUDIO_STREAM_MUSIC,volume, handle) == NO_ERROR) {
@@ -3280,6 +3327,7 @@ void CTsPlayer::SetEPGSize(int w, int h)
     }
 }
 
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 void CTsPlayer::readExtractor() {
     int size = 0;
     int index = -1;
@@ -3319,6 +3367,7 @@ void CTsPlayer::readExtractor() {
     am_ffextractor_read_packet(vcodec, acodec);
     lp_unlock(&mutex);
 }
+#endif
 
 void CTsPlayer::SwitchAudioTrack(int pid)
 {
@@ -3464,8 +3513,10 @@ void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
 void CTsPlayer::SwitchSubtitle(int pid)
 {
     LOGI("SwitchSubtitle be called pid is %d\n", pid);
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     if (pcodec->has_sub == 1)
-        subtitleResetForSeek();
+       subtitleResetForSeek();
+#endif
     /* first set an invalid sub id */
     pcodec->sub_pid = 0xffff;
     if (codec_set_sub_id(pcodec)) {
@@ -3497,6 +3548,7 @@ void CTsPlayer::SwitchSubtitle(int pid)
 bool CTsPlayer::SubtitleShowHide(bool bShow)
 {
     LOGV("[%s:%d]\n", __FUNCTION__, __LINE__);
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     if (pcodec->has_sub == 1) {
         if (bShow) {
             subtitleDisplay();
@@ -3507,7 +3559,7 @@ bool CTsPlayer::SubtitleShowHide(bool bShow)
         LOGV("[%s:%d]No subtitle !\n", __FUNCTION__, __LINE__);
         return false;
     }
-
+#endif
     return true;
 }
 
@@ -3577,9 +3629,15 @@ void CTsPlayer::SetSurface(Surface* pSurface)
         return;
     }
     native_window_set_buffer_count(mNativeWindow.get(), 4);
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     native_window_set_usage(mNativeWindow.get(), GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_EXTERNAL_DISP | GRALLOC_USAGE_AML_VIDEO_OVERLAY);
     //native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGBA_8888);
     native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGB_565);
+#else
+    native_window_set_usage(mNativeWindow.get(), am_gralloc_get_video_overlay_producer_usage());
+    native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGBA_8888);
+    //native_window_set_buffers_format(mNativeWindow.get(), WINDOW_FORMAT_RGB_565);
+#endif
 }
 void CTsPlayer::update_nativewindow() {
     ANativeWindowBuffer* buf;
@@ -3603,7 +3661,11 @@ void CTsPlayer::update_nativewindow() {
         return;
     }
     mNativeWindow->lockBuffer_DEPRECATED(mNativeWindow.get(), buf);
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     sp<GraphicBuffer> graphicBuffer(new GraphicBuffer(buf, false));
+#else
+    sp<GraphicBuffer> graphicBuffer = GraphicBuffer::from(buf);
+#endif
     graphicBuffer->lock(1, (void **)&vaddr);
     //if (vaddr != NULL) {
     //    memset(vaddr, 0x0, graphicBuffer->getWidth() * graphicBuffer->getHeight() * 4); /*to show video in osd hole...*/
@@ -4086,6 +4148,7 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
     return NULL;
 }
 
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 void *CTsPlayer::threadReadPacket(void *pthis)
 {
     LOGV("threadReadPacket start pthis: %p\n", pthis);
@@ -4099,6 +4162,7 @@ void *CTsPlayer::threadReadPacket(void *pthis)
     LOGV("threadReadPakcet end\n");
     return NULL;
 }
+#endif
 
 int CTsPlayer::GetRealTimeFrameRate()
 {

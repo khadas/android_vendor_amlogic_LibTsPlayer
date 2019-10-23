@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <gui/Surface.h>
+#include <utils/KeyedVector.h>
 
 using namespace android;
 extern "C" {
@@ -108,7 +109,7 @@ typedef enum {
     CTC_CODEC_ID_DVB_TELETEXT,
     CTC_CODEC_ID_SRT,
     CTC_CODEC_ID_MICRODVD,
-}SUB_TYPE;
+}subtitle_type;
 #endif
 typedef struct{
     unsigned short pid;//pid
@@ -463,7 +464,9 @@ public:
 	virtual void GetVideoInfo(int *width, int *height, int *ratio);
 	virtual int GetPlayerInstanceNo();
 	virtual void ExecuteCmd(const char* cmd_str);
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
     virtual void readExtractor();
+#endif
     virtual int updateCTCInfo();
     virtual void ShowFrameInfo(struct vid_frame_info* frameinfo);
     virtual void updateinfo_to_middleware(struct av_param_info_t av_param_info,struct av_param_qosinfo_t av_param_qosinfo);

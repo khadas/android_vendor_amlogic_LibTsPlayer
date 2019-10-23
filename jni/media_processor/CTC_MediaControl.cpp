@@ -5,7 +5,9 @@
  */
 
 #include "CTC_MediaControl.h"
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 #include "CTsOmxPlayer.h"
+#endif
 #include <cutils/properties.h>
 #include <dlfcn.h>
 
@@ -44,7 +46,11 @@ ITsPlayer* GetMediaControl(int use_omx_decoder)
 		ret = new CTsPlayer();
 		break;
 		case 1:
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 		ret = new CTsOmxPlayer();
+#else
+		ret = (*createLivePlayer)();
+#endif
 		break;
 		case 2:
 		ret = (*createLivePlayer)();
@@ -62,7 +68,11 @@ ITsPlayer* GetMediaControl()
     int prop_use_omxdecoder = atoi(value);
 
     if (prop_use_omxdecoder)
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         return new CTsOmxPlayer();
+#else
+        return (*createLivePlayer)();
+#endif
     else
         return new CTsPlayer();
 }

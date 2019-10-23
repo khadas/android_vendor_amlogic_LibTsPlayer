@@ -9,17 +9,21 @@
 #ifndef _PROXY_MEDIA_PROCESSOR_H_
 #define _PROXY_MEDIA_PROCESSOR_H_
 
+
 #include <CTC_MediaControl.h>
-#include <CTsOmxPlayer.h>
 #include "vformat.h"
 #include "aformat.h"
 //#include "AudioBufferProvider.h"
 //#include "Common.h"
 #include "android_runtime/AndroidRuntime.h"
+#include "android_runtime/android_view_Surface.h"
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
+#include <CTsOmxPlayer.h>
 #include <gui/Surface.h>
 #include <gui/ISurfaceTexture.h>
-#include "android_runtime/android_view_Surface.h"
-//#include "CTC_MediaProcessor.h"
+#else
+#include "player_type.h"
+#endif
 using namespace android;
 
 class Proxy_MediaProcessor

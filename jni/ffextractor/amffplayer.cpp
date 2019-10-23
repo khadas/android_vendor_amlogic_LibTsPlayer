@@ -15,7 +15,9 @@ extern "C"
 // #endif
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 #include <libavfilter/avfiltergraph.h>
+#endif
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
@@ -420,11 +422,13 @@ YUVFrame *ff_decode_frame() {
 									width,
 									height);
 				}
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 				avpicture_deinterlace((AVPicture*)pDiFrame, 
 									(const AVPicture*)pFrame, 
 									pCodecCtx->pix_fmt, 
 									width,
 									height);
+#endif
 			   tmpFrame = pDiFrame;
 #endif
 		}

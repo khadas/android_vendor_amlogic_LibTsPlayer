@@ -1,6 +1,8 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
+
 ifeq ($(TELECOM_VFORMAT_SUPPORT),true)
 LOCAL_CFLAGS += -DTELECOM_VFORMAT_SUPPORT
 endif
@@ -11,6 +13,9 @@ ifeq ($(TELECOM_QOS_SUPPORT),true)
 LOCAL_CFLAGS += -DTELECOM_QOS_SUPPORT
 endif
 
+endif
+
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 LOCAL_ARM_MODE := arm
 LOCAL_MODULE    := libCTC_AmMediaControl
 LOCAL_PRELINK_MODULE := false
@@ -38,15 +43,35 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/../include \
 	$(TOP)/frameworks/av/include \
 
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+
+LOCAL_C_INCLUDES += \
+	$(TOP)/frameworks/base/core/jni/include \
+
+endif
+
 
 LOCAL_SHARED_LIBRARIES += libutils libz libbinder
 LOCAL_SHARED_LIBRARIES += liblog libcutils libdl libgui
-LOCAL_SHARED_LIBRARIES += libCTC_AmMediaProcessor libffmpeg30
+LOCAL_SHARED_LIBRARIES += libCTC_AmMediaProcessor
 
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
+
+LOCAL_SHARED_LIBRARIES += libffmpeg30
+
+else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+
+LOCAL_SHARED_LIBRARIES += libffmpeg30
+
+endif
+
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
 
 ifeq ($(TARGET_USE_OPTEEOS),true)
 LOCAL_SHARED_LIBRARIES += libtelecom_iptv
 LOCAL_CFLAGS += -DUSE_OPTEEOS
+endif
+
 endif
 
 include $(BUILD_SHARED_LIBRARY)
@@ -83,6 +108,9 @@ LOCAL_CFLAGS	+= -DANDROID4
 LOCAL_C_INCLUDES += $(TOP)/external/stlport/stlport
 LOCAL_SHARED_LIBRARIES += libstlport
 endif
+
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
+
 ifneq (,$(wildcard vendor/amlogic/frameworks/av/LibPlayer))
 LIBPLAYER_PATH:=$(TOP)/vendor/amlogic/frameworks/av/LibPlayer
 SUBTITLE_SERVICE_PATH:=$(TOP)/vendor/amlogic/apps/SubTitle
@@ -90,7 +118,23 @@ else
 LIBPLAYER_PATH := $(TOP)/packages/amlogic/LibPlayer
 SUBTITLE_SERVICE_PATH:=$(TOP)/packages/amlogic/SubTitle
 endif
+
+else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+
+HARDWARE_PATH := $(TOP)/hardware/amlogic
+
+endif
+
 LOCAL_C_INCLUDES := \
+	$(JNI_H_INCLUDE)/ \
+	$(LOCAL_PATH)/../include \
+	$(TOP)/frameworks/av/ \
+	$(TOP)/frameworks/av/media/libstagefright/include \
+	$(TOP)/frameworks/native/include/media/openmax \
+
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
+
+LOCAL_C_INCLUDES += \
 	$(LIBPLAYER_PATH)/amplayer/player/include \
 	$(LIBPLAYER_PATH)/amplayer/control/include \
 	$(LIBPLAYER_PATH)/amffmpeg \
@@ -99,23 +143,48 @@ LOCAL_C_INCLUDES := \
 	$(LIBPLAYER_PATH)/amadec/include \
 	$(LIBPLAYER_PATH)/amavutils/include \
 	$(LIBPLAYER_PATH)/amsubdec \
-	$(JNI_H_INCLUDE)/ \
-	$(LOCAL_PATH)/../include \
-	$$(TOP)/frameworks/av/ \
 	$(SUBTITLE_SERVICE_PATH)/service \
-	$(TOP)/frameworks/av/media/libstagefright/include \
-	$(TOP)/frameworks/native/include/media/openmax
+
+else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+
+LOCAL_C_INCLUDES += \
+	$(HARDWARE_PATH)/media/amcodec/include \
+	$(HARDWARE_PATH)/LibAudio/amadec/include \
+	$(HARDWARE_PATH)/media/amavutils/include \
+	$(TOP)/vendor/amlogic/common/external/ffmpeg \
+#	$(TOP)/vendor/amlogic/common/iptvmiddlewave/AmIptvMedia/contrib/ffmpeg40 \
+
+endif
+
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
+
 #LOCAL_STATIC_LIBRARIES := libamcodec libamadec libavformat libavcodec libavutil
 LOCAL_STATIC_LIBRARIES := libamcodec libamadec
 
-LOCAL_SHARED_LIBRARIES += libamplayer libutils libmedia libz libbinder libamavutils libamsubdec
-LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl libCTC_MediaProcessor
-LOCAL_SHARED_LIBRARIES +=libgui libsubtitleservice libui
+endif
 
+LOCAL_SHARED_LIBRARIES +=libutils libmedia libz libbinder
+LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl libCTC_MediaProcessor
+LOCAL_SHARED_LIBRARIES +=libgui libui
+
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
+
+LOCAL_SHARED_LIBRARIES +=libamplayer libamavutils libamsubdec
+LOCAL_SHARED_LIBRARIES +=libsubtitleservice
+
+else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
+
+LOCAL_SHARED_LIBRARIES += libamcodec libamadec_system libamavutils_sys
+
+endif
+
+ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
 
 ifeq ($(TARGET_USE_OPTEEOS),true)
 LOCAL_SHARED_LIBRARIES += libtelecom_iptv
 LOCAL_CFLAGS += -DUSE_OPTEEOS
+endif
+
 endif
 
 include $(BUILD_SHARED_LIBRARY)

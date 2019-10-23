@@ -5,12 +5,13 @@
  */
 
 #include "CTC_MediaProcessor.h"
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 #include "CTsOmxPlayer.h"
+#endif
 #include <android/log.h>
 #include <cutils/properties.h>
 #include "Amsysfsutils.h"
 #include <dlfcn.h>
-
 
 #define LOG_TAG "CTC_MediaProcessor"
 typedef ITsPlayer *(*CreateTsPlayerFunc)(void);
@@ -43,8 +44,8 @@ ITsPlayer* GetMediaProcessor()
     int middle_soft_demux = 0;
     int multi_enable = 0;
 
-    amsysfs_write_prop_ctc_multi("iptv.middle.softdemux", "0");
-    amsysfs_write_prop_ctc_multi("media.ctcplayer.enable", "0");
+    amsysfs_set_sysfs_str("iptv.middle.softdemux", "0");
+    amsysfs_set_sysfs_str("media.ctcplayer.enable", "0");
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.middle.softdemux", value, "0");
@@ -94,7 +95,12 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
 
     if (check_apk_use ||use_param) {
         if (type == PLAYER_TYPE_OMX) {
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
             return new CTsOmxPlayer();
+#else
+            return (*createLivePlayer)();
+#endif
+
         } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 2) {
             return (*createLivePlayer)();
         } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
@@ -106,7 +112,11 @@ ITsPlayer* GetMediaProcessor(player_type_t type)
         }
     } else {
         if (type == PLAYER_TYPE_OMX) {
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
             return new CTsOmxPlayer();
+#else
+            return (*createLivePlayer)();
+#endif
         } else if (type == PLAYER_TYPE_HWOMX || mOmxDebug == 1 || display_mode == 1 || display_mode == 2) {
             return (*createLivePlayer)();
         } else if (type == PLAYER_TYPE_NORMAL_MULTI) {
@@ -127,7 +137,11 @@ ITsPlayer* GetMediaProcessor(bool DRMMode)
 ITsPlayer* GetMediaProcessor(player_type_t type, bool DRMMode)
 {
     if (type == PLAYER_TYPE_OMX)
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
         return new CTsOmxPlayer();
+#else
+        return (*createLivePlayer)();
+#endif
     else
         return new CTsPlayer(DRMMode);
 }

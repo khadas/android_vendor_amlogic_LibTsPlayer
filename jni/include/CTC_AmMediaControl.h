@@ -8,8 +8,37 @@
 #define _CTC_AMMEDIACONTROL_H_
 //#include "CTsPlayer.h"
 #include "CTC_AmMediaProcessor.h"
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
 #include <media/CTC_MediaControl.h>
-
+#else
+class ICTC_MCNotify {
+public:
+    ICTC_MCNotify() {}
+    virtual ~ICTC_MCNotify() {}
+    public:
+        virtual void OnNotify(int event, const char* msg) = 0;
+};
+class ICTC_MediaControl {
+public:
+    ICTC_MediaControl(){}
+    virtual ~ICTC_MediaControl(){}
+public:
+    virtual void  PlayFromStart(char* url) = 0;
+    virtual void  PlayFromStart(int fd) = 0;
+    virtual void  Pause() = 0;
+    virtual void  Resume() = 0;
+    virtual void  PlayByTime(int time) = 0;
+    virtual void  Fast(int speed) = 0;
+    virtual void Stop() = 0;
+    virtual void SetSurface(Surface* pSurface) = 0;
+    virtual int GetCurrentPlayTime() = 0;
+    virtual int GetDuration() = 0;
+    virtual void SetListenNotify(ICTC_MCNotify* notify) = 0;
+    virtual void SetVolume(float leftVolume, float rightVolume) = 0;
+};
+typedef ICTC_MediaControl* (*FGetMediaControl)();
+typedef void (*FFreeMediaControl)(ICTC_MediaControl* pMediaContrl);
+#endif
 
 class CTC_AmMediaControl :public ICTC_MediaControl {
 public:

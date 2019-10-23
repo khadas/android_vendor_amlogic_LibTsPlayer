@@ -1,5 +1,11 @@
 #include "Util.h"
 #include <stdlib.h>
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
+#else
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#endif
 #include <fcntl.h>
 #include <android/log.h>
 #include <sys/system_properties.h>

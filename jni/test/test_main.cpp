@@ -305,6 +305,8 @@ void createSurface(int mInstanceNo, int x, int y, int weight, int high) {
 		return;
     mSoftControl[mInstanceNo]->isValid();
 
+#if ANDROID_PLATFORM_SDK_VERSION <= 27
+
     SurfaceComposerClient::openGlobalTransaction();
 
     mSoftControl[mInstanceNo]->setLayer(INT_MAX);
@@ -312,6 +314,15 @@ void createSurface(int mInstanceNo, int x, int y, int weight, int high) {
     mSoftControl[mInstanceNo]->setPosition(x, y);
     SurfaceComposerClient::closeGlobalTransaction();
 
+#else
+    SurfaceComposerClient::Transaction{}
+        .hide(mSoftControl[mInstanceNo])
+        .setLayer(mSoftControl[mInstanceNo], INT_MAX)
+        .setPosition(mSoftControl[mInstanceNo], x, y)
+        .setSize(mSoftControl[mInstanceNo], weight, y)
+        .show(mSoftControl[mInstanceNo])
+        .apply();
+#endif
     mSoftSurface[mInstanceNo] = mSoftControl[mInstanceNo]->getSurface();
     if (mSoftSurface[mInstanceNo] == NULL)
 		return;

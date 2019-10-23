@@ -11,7 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.os.SystemProperties;
+//import android.os.SystemProperties;
 import android.widget.Button;
 import android.widget.TextView; 
 import android.view.KeyEvent;
@@ -43,12 +43,12 @@ public class MediaProcessorDemoActivity extends Activity {
 	String url = getUrl(); 
 	String url1 = getUrl1();
 	private static String getUrl() {
-		return SystemProperties.get("iptv.demo.url",
-			"/storage/external_storage/sdcard1/iptv_test.ts");
+		return null;/*SystemProperties.get("iptv.demo.url",
+			"/storage/external_storage/sdcard1/iptv_test.ts");*/
 	}
 	private static String getUrl1() {
-		return SystemProperties.get("iptv.demo.url1",
-			"/storage/external_storage/sdcard1/iptv_test.ts");
+		return null;/*SystemProperties.get("iptv.demo.url1",
+			"/storage/external_storage/sdcard1/iptv_test.ts");*/
 	}
 	private int playBufferSize = 32;
 	private Button pause = null;

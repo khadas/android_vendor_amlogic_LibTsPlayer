@@ -1146,7 +1146,9 @@ int TsplayerGetAFilterFormat(const char *prop)
     char value[PROPERTY_VALUE_MAX];
     int filter_fmt = 0;
     /* check the dts/ac3 firmware status */
-    if (access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK) && access("/system/lib/libstagefright_soft_dcvdec.so",F_OK)) {
+    if (access("/system/etc/firmware/audiodsp_codec_ddp_dcv.bin",F_OK) && access("/system/lib/libstagefright_soft_dcvdec.so",F_OK)
+        && access("/vendor/lib/libHwAudio_dcvdec.so",F_OK)) {
+        LOGI("[%s:%d]\n", __FUNCTION__, __LINE__);
         filter_fmt |= (FILTER_AFMT_AC3|FILTER_AFMT_EAC3);
     }
     if (access("/system/etc/firmware/audiodsp_codec_dtshd.bin",F_OK) && access("/system/lib/libstagefright_soft_dtshd.so",F_OK)) {
@@ -1547,6 +1549,7 @@ bool CTsPlayer::iStartPlay()
     perform_flag = 1;
     amsysfs_set_sysfs_int("/sys/class/tsync/enable", 1);
     amsysfs_set_sysfs_int("/sys/class/tsync/vpause_flag",0); // reset vpause flag -> 0
+    amsysfs_set_sysfs_int("/sys/class/video/video_global_output",1);
 
     // start with no out  mode
     start_no_out = pcodec->start_no_out;

@@ -34,7 +34,6 @@ else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
 HARDWARE_PATH := $(TOP)/hardware/amlogic
 LOCAL_C_INCLUDES += \
 	$(HARDWARE_PATH)/media/amcodec/include \
-	$(HARDWARE_PATH)/LibAudio/amadec/include \
 	$(HARDWARE_PATH)/media/amavutils/include \
 	$(TOP)/vendor/amlogic/common/external/ffmpeg \
 #	$(TOP)/vendor/amlogic/common/iptvmiddlewave/AmIptvMedia/contrib/ffmpeg40 \
@@ -49,7 +48,7 @@ LOCAL_SHARED_LIBRARIES += libamffmpeg libamadec
 
 else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
 
-LOCAL_SHARED_LIBRARIES += libffmpeg30 libamadec_system
+LOCAL_SHARED_LIBRARIES += libffmpeg30
 
 endif
 

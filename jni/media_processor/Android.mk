@@ -119,7 +119,6 @@ LOCAL_SHARED_LIBRARIES +=libutils libmedia libz libbinder
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
 LOCAL_SHARED_LIBRARIES +=libgui libui
 LOCAL_SHARED_LIBRARIES +=libstagefright libstagefright_foundation libFFExtractor
-LOCAL_SHARED_LIBRARIES +=libliveplayer
 
 ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
 
@@ -128,7 +127,7 @@ LOCAL_SHARED_LIBRARIES +=libamplayer libsubtitleservice
 
 else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
 
-LOCAL_SHARED_LIBRARIES +=libamavutils_sys libamadec_system libamcodec libaudioclient
+LOCAL_SHARED_LIBRARIES +=libamavutils_sys libamcodec libaudioclient
 LOCAL_SHARED_LIBRARIES +=libamgralloc_ext@2 libhidltransport libbase
 
 endif

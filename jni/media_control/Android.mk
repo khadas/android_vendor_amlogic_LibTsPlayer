@@ -149,7 +149,6 @@ else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
 
 LOCAL_C_INCLUDES += \
 	$(HARDWARE_PATH)/media/amcodec/include \
-	$(HARDWARE_PATH)/LibAudio/amadec/include \
 	$(HARDWARE_PATH)/media/amavutils/include \
 	$(TOP)/vendor/amlogic/common/external/ffmpeg \
 #	$(TOP)/vendor/amlogic/common/iptvmiddlewave/AmIptvMedia/contrib/ffmpeg40 \
@@ -174,7 +173,7 @@ LOCAL_SHARED_LIBRARIES +=libsubtitleservice
 
 else ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \>= 23))
 
-LOCAL_SHARED_LIBRARIES += libamcodec libamadec_system libamavutils_sys
+LOCAL_SHARED_LIBRARIES += libamcodec libamavutils_sys
 
 endif
 

@@ -20,11 +20,12 @@
 #include <gui/ISurfaceComposer.h>
 #include <ui/DisplayInfo.h>
 #include <gui/Surface.h>
+#include "subtitleservice.h"
 #if ANDROID_PLATFORM_SDK_VERSION <= 27
 #include "player_set_sys.h"
-#include "subtitleservice.h"
 #else
 #include "am_gralloc_ext.h"
+#include "SubtitleServerHidlClient.h"
 #endif
 
 #ifdef USE_OPTEEOS
@@ -61,6 +62,15 @@ int prop_softdemux = 0;
 int prop_esdata = 0;
 int prop_multi_play = 0;
 int debug_single_mode = 0;
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+//subtitle prop params
+int subType1 = 0;
+int channelId = 0;
+int pid = 0;
+int pageId = 0;
+int ancPageId = 0;
+android::SubtitleServerHidlClient::SUB_Para_t gsubtitleCtx;
+#endif
 //#define MULTIMODE
 /*debug_multi_mode for  notify multi mode*/
 int debug_multi_mode = 0;
@@ -583,6 +593,31 @@ void CTsPlayer::init_params()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("iptv.inforeport.show", value, "1");
     prop_info_report = atoi(value);
+
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+    //init subtitle params
+    char vaule[PROPERTY_VALUE_MAX] = {0};
+    memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.subtitle.subtype", vaule, "2");
+    subType1 = atoi(vaule);
+    LOGE("iStartPlay-1-subType1:%d",subType1);
+
+    memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.subtitle.pid", vaule, "260");
+    pid = atoi(vaule);
+
+    memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.subtitle.channelId", vaule, "0");
+    channelId = atoi(vaule);
+
+    memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.subtitle.pageId", vaule, "1");
+    pageId = atoi(vaule);
+
+    memset(vaule, 0, PROPERTY_VALUE_MAX);
+    property_get("iptv.subtitle.ancPageId", vaule, "1");
+    ancPageId = atoi(vaule);
+#endif
 
     memset(value, 0, PROPERTY_VALUE_MAX);
     amsysfs_get_sysfs_str("/sys/class/cputype/cputype", value, PROPERTY_VALUE_MAX);
@@ -1421,6 +1456,10 @@ unsigned char mjpeg_addon_data[] = {
     0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa
 };
 bool CTsPlayer::StartPlay(){
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+        registerSubtitleMiddleListener();
+        subtitleCreat();
+#endif
         int ret;
         char value[PROPERTY_VALUE_MAX] = {0};
         /* +[SE] [REQ][IPTV-4381][jungle.wang] seek after pause */
@@ -1641,7 +1680,24 @@ bool CTsPlayer::iStartPlay()
             memset(lpbuffer_st.buffer, 0, CTC_BUFFER_LOOP_NSIZE*buffersize);
         }
         lp_unlock(&mutex_lp);
-
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+        LOGE("iStartPlay-subType1:%d",subType1);
+        if (subType1 == 2) {
+            gsubtitleCtx.tvType=2;
+            gsubtitleCtx.vfmt=2;
+            gsubtitleCtx.channelId=channelId;
+        }
+        else if (subType1 == 3) {
+            gsubtitleCtx.tvType=3;
+            gsubtitleCtx.pid=pid;
+        }
+        else if (subType1 == 4) {
+            gsubtitleCtx.tvType=4;
+            gsubtitleCtx.pid=pid;
+            gsubtitleCtx.pageId=pageId;
+            gsubtitleCtx.ancPageId=ancPageId;
+        }
+#endif
         /*if (m_bFast) {
             pcodec->am_sysinfo.param=(void *)am_sysinfo_param;
             pcodec->am_sysinfo.height = vPara.nVideoHeight;
@@ -1657,9 +1713,19 @@ bool CTsPlayer::iStartPlay()
     if (pcodec->video_type == VFORMAT_MPEG4) {
         pcodec->am_sysinfo.format= VIDEO_DEC_FORMAT_MPEG4_5;
         LOGI("VIDEO_DEC_FORMAT_MPEG4_5\n");
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+        gsubtitleCtx.tvType=3;
+        gsubtitleCtx.pid=pid;
+#endif
     }
     check_use_double_write();
-
+    if (pcodec->video_type == VFORMAT_MPEG12) {
+        LOGI("VFORMAT_MPEG12\n");
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+        gsubtitleCtx.tvType=3;
+        gsubtitleCtx.pid=pid;
+#endif
+    }
     filter_afmt = TsplayerGetAFilterFormat("media.amplayer.disable-acodecs");
     if (((1 << pcodec->audio_type) & filter_afmt) != 0) {
         LOGI("## filtered format audio_format=%d,----\n", pcodec->audio_type);
@@ -1904,6 +1970,9 @@ bool CTsPlayer::iStartPlay()
     m_StartPlayTimePoint = av_gettime();
     LOGI("StartPlay: m_StartPlayTimePoint = %lld\n", m_StartPlayTimePoint);
     LOGI("subtitleSetSurfaceViewParam 1\n");
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+    subtitleOpen("", this, &gsubtitleCtx);// "" fit for api param, no matter
+#endif
     if (pcodec->has_sub == 1) {
         LOGI("subtitleSetSurfaceViewParam\n");
 #if ANDROID_PLATFORM_SDK_VERSION <= 27
@@ -2743,6 +2812,11 @@ bool CTsPlayer::Stop(){
         LOGI("already is Stoped\n");
         return true;
     }
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+    subtitleClose();
+    subtitleHide();
+    subtitleDestory();
+#endif
     LOGI("CTC_KPI::Stage 0 press->stop cost,stop_begin_time\n");
     LOGI("CTC_KPI::Stage 1_1 stop_time,stop_begin_time\n");
     codec_set_freerun_mode(pcodec, 0);

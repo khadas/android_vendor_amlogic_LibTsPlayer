@@ -14,8 +14,10 @@
 #include <unistd.h>
 #include <gui/Surface.h>
 #include <utils/KeyedVector.h>
+#include <utils/RefBase.h>
 
 using namespace android;
+
 extern "C" {
 #include <amports/vformat.h>
 #include <amports/aformat.h>
@@ -27,6 +29,7 @@ extern "C" {
 }
 #include <string.h>
 #include <utils/Timers.h>
+
 
 
 #define lock_t          pthread_mutex_t
@@ -285,7 +288,7 @@ int enable_gl_2xscale(const char *);
 int Active_osd_viewport(int , int );
 
 class CTsPlayer;
-class ITsPlayer{
+class ITsPlayer : virtual public RefBase {
 public:
     ITsPlayer(){}
     virtual ~ITsPlayer(){}

@@ -23,6 +23,7 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := \
 	CTsPlayer.cpp \
+	subtitleservice.cpp \
 	CTC_MediaControl.cpp \
 	CTC_MediaProcessor.cpp \
 	Util.cpp \
@@ -79,6 +80,11 @@ LOCAL_C_INCLUDES := \
 	$(TOP)/frameworks/av/media/libstagefright/include \
 	$(TOP)/frameworks/native/include/media/openmax \
 
+
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 28 && echo OK),OK)
+LOCAL_C_INCLUDES += $(TOP)/vendor/amlogic/common/frameworks/services/subtiltleserver/subtitleServerHidlClient
+endif
+
 ifeq (1, $(shell expr $(PLATFORM_SDK_VERSION) \= 19))
 
 LOCAL_C_INCLUDES += \
@@ -115,6 +121,10 @@ LOCAL_STATIC_LIBRARIES := libamcodec libamadec
 
 endif
 
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 28 && echo OK),OK)
+LOCAL_SHARED_LIBRARIES +=vendor.amlogic.hardware.subtitleserver@1.0 libhidltransport libbase libsubtitlebinder
+endif
+
 LOCAL_SHARED_LIBRARIES +=libutils libmedia libz libbinder
 LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl
 LOCAL_SHARED_LIBRARIES +=libgui libui
@@ -147,3 +157,36 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE    := ctsplayer
+LOCAL_MODULE_TAGS := samples
+LOCAL_ARM_MODE := arm
+#LOCAL_32_BIT_ONLY := true
+LOCAL_SRC_FILES := main.cpp
+
+LIBFFMPEG_PATH := $(TOP)/vendor/amlogic/common/external/ffmpeg
+LIBMEDIA_PATH := $(TOP)/hardware/amlogic
+SUBTITLE_SERVICE_PATH:=$(TOP)/vendor/amlogic/common/apps/SubTitle
+LOCAL_C_INCLUDES := \
+         $(JNI_H_INCLUDE)/ \
+         $(LOCAL_PATH)/../include \
+         $(LIBMEDIA_PATH)/LibAudio/amadec/include \
+         $(LIBMEDIA_PATH)/media/amcodec/include \
+         $(LIBMEDIA_PATH)/media/amvdec/include \
+         $(LIBMEDIA_PATH)/media/amavutils/include \
+         $(TOP)/frameworks/av/ \
+         $(TOP)/frameworks/av/media/libstagefright/include \
+         $(TOP)/frameworks/native/libs/nativewindow/include \
+         $(SUBTITLE_SERVICE_PATH)/service \
+         $(TOP)/frameworks/native/include/media/openmax \
+         $(TOP)/hardware/amlogic/gralloc \
+         $(LOCAL_PATH)/../../../../../external/dvb/include/am_adp  \
+
+LOCAL_SHARED_LIBRARIES += libz libbinder  libamcodec  libmedia
+LOCAL_SHARED_LIBRARIES +=liblog libcutils libdl liblog  libutils
+LOCAL_SHARED_LIBRARIES += libgui  libFFExtractor #libsubtitleservice
+LOCAL_SHARED_LIBRARIES += libCTC_MediaProcessor  #libstagefright libstagefright_foundation
+
+include $(BUILD_EXECUTABLE)
+

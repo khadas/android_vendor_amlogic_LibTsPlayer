@@ -8,6 +8,7 @@
 #endif
 #include "subtitleservice.h"
 #include "CTsPlayer.h"
+#include "CTsPlayerImpl.h"
 #include "Amsysfsutils.h"
 #include "string.h"
 

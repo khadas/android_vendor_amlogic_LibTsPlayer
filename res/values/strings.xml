@@ -4,6 +4,7 @@
     <string name="hello">Hello World, MediaProcessorDemoActivity!</string>
     <string name="app_name">MediaProcessorTestSuite</string>
     <color name="gray">#FF0000</color> 
+    <string name="button_play">Play</string>
     <string name="button_pause">Pause</string>
     <string name="button_resume">Resume</string>
     <string name="button_seek">Seek</string>

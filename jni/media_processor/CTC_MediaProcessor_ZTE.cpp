@@ -17,19 +17,44 @@
  * 
  */
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// this file is just for backward compatibility
-//
-///////////////////////////////////////////////////////////////////////////////
+#define LOG_NDEBUG 0
+#define LOG_TAG "CTC_MediaProcessor_ZTE"
+#include "CTC_Log.h"
+#include <cutils/properties.h>
+
+#include <CTC_MediaProcessor_ZTE.h>
 #include "ITsPlayer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace aml {
 
-#include <amports/amstream.h>
+CTC_MediaProcessor_ZTE* GetMediaProcessor_ZTE(int channelNo, CTC_InitialParameter* initialParam)
+{
+    if (initialParam != nullptr) {
+        if ((initialParam->interfaceExtension&CTC_EXTENSION_ZTE) == 0) {
+            ALOGW("interfaceExtension does not set correctly!");
+            initialParam->interfaceExtension |= CTC_EXTENSION_ZTE;
+        }
+    }
 
-#ifdef __cplusplus
+    return new CTC_MediaProcessor_ZTE(channelNo, initialParam);
 }
-#endif
+
+CTC_MediaProcessor_ZTE::CTC_MediaProcessor_ZTE(int channelNo, CTC_InitialParameter* initialParam)
+: CTC_MediaProcessor(channelNo, initialParam)
+{
+
+}
+
+CTC_MediaProcessor_ZTE::~CTC_MediaProcessor_ZTE()
+{
+
+}
+
+
+
+
+
+
+
+
+}

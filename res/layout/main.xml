@@ -4,6 +4,23 @@
     android:layout_height="fill_parent"
     android:background="#55000000"
     android:orientation="vertical" >
+
+	<LinearLayout 
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:text="URL:"/>
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/urlText"
+            android:text="/data/a.ts" />
+    </LinearLayout>
+
 	<LinearLayout 
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
@@ -13,6 +30,12 @@
 	    android:layout_width="210dip"
 	    android:layout_height="fill_parent"
 	    android:orientation="vertical" >
+	    <Button
+	        android:id="@+id/play"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/button_play" />
+            <requestFocus></requestFocus>
 	    <Button
 	        android:id="@+id/pause"
 	        android:layout_width="fill_parent"

@@ -4,6 +4,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 #include <utils/Log.h>
 #include <cutils/properties.h>
 #include <CTC_MediaControl.h>

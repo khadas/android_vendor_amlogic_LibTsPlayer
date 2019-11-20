@@ -1,5 +1,5 @@
-#include "CTsPlayer.h"
-#include "Util.h"
+#include "CTsPlayerImpl.h"
+#include "CTC_Utils.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/system_properties.h>
@@ -31,6 +31,9 @@
 #ifdef USE_OPTEEOS
 #include <PA_Decrypt.h>
 #endif
+
+#include <fcntl.h>
+#include <amffextractor/amffextractor.h>
 
 using namespace android;
 
@@ -136,8 +139,8 @@ static int prop_axis_set_mode; // 0 - default use ctc,  1 - use hwc
 #define _GNU_SOURCE
 #define F_SETPIPE_SZ        (F_LINUX_SPECIFIC_BASE + 7)
 #define F_GETPIPE_SZ        (F_LINUX_SPECIFIC_BASE + 8)
-#include <fcntl.h>
-#include "amffextractor.h"
+
+//#define ENABLE_FRAME_INFO_REPORT
 
 static int s_nDumpTs = 0;
 static int pipe_fd[2] = { -1, -1 };
@@ -379,7 +382,7 @@ int sysfs_get_long(char *path, unsigned long  *val)
     }
     return 0;
 }
-void test_player_evt_func(IPTV_PLAYER_EVT_e evt, void *handler)
+void test_player_evt_func(IPTV_PLAYER_EVT_E evt, void *handler, uint32_t, uint32_t)
 {
     switch (evt) {
         case IPTV_PLAYER_EVT_STREAM_VALID:
@@ -733,6 +736,7 @@ void CTsPlayer::init_params()
 #endif
     m_player_evt_hander_regitstercallback = NULL;
     m_pfunc_player_param_evt_registercallback = NULL;
+
     pthread_attr_init(&attr);
     pthread_create(&mInfoThread, &attr, threadReportInfo, this);
     pthread_attr_destroy(&attr);
@@ -882,6 +886,7 @@ CTsPlayer::~CTsPlayer()
     if (prop_async_stop) {
         pthread_join(mThread[1], NULL);
     }
+
     pthread_join(mInfoThread, NULL);
     /*+[SE][BUG][BUG-167013][zhizhong.zhang] Add: add condition check to join readThread.*/
     if (prop_softdemux == 1 && prop_esdata != 1)
@@ -3335,6 +3340,7 @@ bool CTsPlayer::SetRatio(int nRatio)
     int mode_width = 0;
     int mode_height = 0;
     vdec_status vdec;
+
     if (!m_bIsPlay) {
         return false;
     }
@@ -3915,9 +3921,9 @@ void CTsPlayer::update_caton_info(struct av_param_info_t * info)
     }
     if (pquality_info->unload_flag != last_flag && m_bIsPlay) {
         if (pquality_info->unload_flag) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_START, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_START, player_evt_hander, 0, 0);
         } else {
-            pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_END, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_END, player_evt_hander, 0, 0);
         }
     }
     last_flag = pquality_info->unload_flag;
@@ -3925,10 +3931,10 @@ void CTsPlayer::update_caton_info(struct av_param_info_t * info)
     if (codec_get_blurred_screen(&info->av_info, pquality_info)) {
         if (pquality_info->blurred_flag) {
         LOGI("blurred start --- \n");
-        pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_START, player_evt_hander);
+        pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_START, player_evt_hander, 0, 0);
         } else {
         LOGI("blurred end --- \n");
-        pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_END, player_evt_hander);
+        pfunc_player_evt(IPTV_PLAYER_EVT_VID_BUFF_UNLOAD_END, player_evt_hander, 0, 0);
         }
     }
 }
@@ -4184,6 +4190,7 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
     int max_count = 0;
     do {
             if (tsplayer->m_bIsPlay) {
+#ifdef ENABLE_FRAME_INFO_REPORT
                 if (tsplayer->m_sCtsplayerState.first_picture_comming == 0) {
                     LOGI("first updateCTCInfo,width :%d,height:%d\n",
                     tsplayer->m_sCtsplayerState.video_width,
@@ -4205,15 +4212,18 @@ void *CTsPlayer::threadReportInfo(void *pthis) {
                     }
                     checkcount1 = 0;
                 }
+#endif
 	    if (abs(av_gettime()-mUpdateInterval_us)>10000) {
                 tsplayer->update_nativewindow();
                 mUpdateInterval_us = av_gettime();
         }
+#if ENABLE_FRAME_INFO_REPORT
                 if (prop_softdemux == 0) {
                     amvideo_checkunderflow_type(tsplayer->pcodec);
                 } else {
                     amvideo_checkunderflow_type(tsplayer->vcodec);
                 }
+#endif
             }
             /*+[SE][BUG][BUG-167013][zhizhong.zhang] Modify: use thread sleep instead of usleep.*/
             if (max_count > 1)
@@ -4413,7 +4423,7 @@ int CTsPlayer::updateCTCInfo()
             m_sCtsplayerState.first_frame_pts = av_param_info.av_info.first_vpts;
             if (m_pfunc_player_param_evt_registercallback)
                 m_pfunc_player_param_evt_registercallback(m_player_evt_hander_regitstercallback, IPTV_PLAYER_PARAM_EVT_FIRSTFRM_REPORT, NULL);
-            pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_FIRST_PTS, player_evt_hander, 0, 0);
             m_Frame_StartPlayTimePoint = av_gettime();
         }
         m_sCtsplayerState.first_picture_comming = 1;
@@ -4481,14 +4491,14 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.abuf_used = audio_buf.data_len;
         m_sCtsplayerState.abuf_size = audio_buf.size;
         if (pcodec->audio_info.error_num != m_sCtsplayerState.adec_error) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_FRAME_ERROR, player_evt_hander);
-            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_DISCARD_FRAME, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_FRAME_ERROR, player_evt_hander, 0, 0);
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_DISCARD_FRAME, player_evt_hander, 0, 0);
         }
         if (adec_underflow != m_sCtsplayerState.adec_underflow) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_DEC_UNDERFLOW, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_DEC_UNDERFLOW, player_evt_hander, 0, 0);
         }
         if (av_param_info.av_info.apts_err != m_sCtsplayerState.apts_error) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_PTS_ERROR, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_AUD_PTS_ERROR, player_evt_hander, 0, 0);
         }
         m_sCtsplayerState.adec_error = pcodec->audio_info.error_num;
         m_sCtsplayerState.adec_drop = pcodec->audio_info.error_num;
@@ -4530,18 +4540,18 @@ int CTsPlayer::updateCTCInfo()
         m_sCtsplayerState.vbuf_used = video_buf.data_len;
         m_sCtsplayerState.vbuf_size = video_buf.size;
         if (m_sCtsplayerState.vdec_error != av_param_info.av_info.dec_error_count) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_VID_FRAME_ERROR, player_evt_hander); // use video underflow
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_FRAME_ERROR, player_evt_hander, 0, 0); // use video underflow
         }
         if (m_sCtsplayerState.vdec_drop != av_param_info.av_info.dec_drop_frame_count) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_VID_DISCARD_FRAME, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_DISCARD_FRAME, player_evt_hander, 0, 0);
         }
 
         if (m_sCtsplayerState.vdec_underflow != vdec_underflow) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_VID_DEC_UNDERFLOW, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_DEC_UNDERFLOW, player_evt_hander, 0, 0);
         }
 
         if (m_sCtsplayerState.vpts_error != av_param_info.av_info.ts_error) {
-            pfunc_player_evt(IPTV_PLAYER_EVT_VID_PTS_ERROR, player_evt_hander);
+            pfunc_player_evt(IPTV_PLAYER_EVT_VID_PTS_ERROR, player_evt_hander, 0, 0);
         }
         m_sCtsplayerState.vdec_total = av_param_info.av_info.dec_frame_count;;
         m_sCtsplayerState.vdec_error = av_param_info.av_info.dec_error_count;
@@ -4704,11 +4714,11 @@ int CTsPlayer::RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPT
 
     return 0;
 }
-int CTsPlayer::SetParameter(void *hander, int type, void * ptr)
+int CTsPlayer::SetParameter(void* handler, int key, void * request)
 {
     return 0;
 }
-int CTsPlayer::GetParameter(void *hander, int type, void * ptr)
+int CTsPlayer::GetParameter(void* handler, int key, void * reply)
 {
     return 0;
 }
@@ -4716,3 +4726,46 @@ int CTsPlayer::Invoke(void *hander, int type, void * inptr, void * outptr)
 {
     return 0;
 }
+
+bool CTsPlayer::GetIsEos()
+{
+    return false;
+}
+
+uint32_t CTsPlayer::GetCurrentPts()
+{
+    return 0;
+}
+
+void CTsPlayer::SetStopMode(bool bHoldLastPic)
+{
+
+}
+
+int CTsPlayer::GetBufferStatus(int* totalsiz, int* datasize)
+{
+    return 0;
+}
+
+int CTsPlayer::GetStreamInfo(PVIDEO_INFO_T pVideoInfo, PAUDIO_INFO_T pAudioInfo)
+{
+    return 0;
+}
+
+bool CTsPlayer::SetDrmInfo(PDRM_PARA_T pDrmPara)
+{
+    return true;
+}
+
+int CTsPlayer::Set3DMode(DISPLAY_3DMODE_E mode)
+{
+    return 0;
+}
+
+void CTsPlayer::SetSurfaceOrder(SURFACE_ORDER_E pOrder)
+{
+
+}
+
+
+

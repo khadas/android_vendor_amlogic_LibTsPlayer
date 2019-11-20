@@ -19,6 +19,9 @@
 #include <CTC_MediaControl.h>
 #define kReadSize (64*1024)
 #define LOG_LINE() ALOGD("[%s:%d]", __FUNCTION__, __LINE__);
+
+using namespace android;
+
 unsigned char* mBuf[9];// = (unsigned char*) malloc(sizeof(unsigned char) * kReadSize);
 
 //VIDEO_PARA_T vidPara = {0, 640, 480, 24, VFORMAT_H264, 0};

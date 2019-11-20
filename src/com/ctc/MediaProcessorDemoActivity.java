@@ -14,6 +14,7 @@ import android.os.PowerManager;
 //import android.os.SystemProperties;
 import android.widget.Button;
 import android.widget.TextView; 
+import android.widget.EditText;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -31,8 +32,12 @@ import android.os.Message;
 import android.view.Gravity;
 import android.graphics.Typeface;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Field;
+import java.lang.reflect.Constructor;
+
 public class MediaProcessorDemoActivity extends Activity {
-	private String TAG="MediaProcessorDemoActivity";
+	private static String TAG="MediaProcessorDemoActivity";
 	public String result_s = "success";
 	public int result_i = 0;
 	public boolean result_b = false;
@@ -42,15 +47,30 @@ public class MediaProcessorDemoActivity extends Activity {
 	private PropertieList propList = new PropertieList();
 	String url = getUrl(); 
 	String url1 = getUrl1();
-	private static String getUrl() {
-		return null;/*SystemProperties.get("iptv.demo.url",
-			"/storage/external_storage/sdcard1/iptv_test.ts");*/
-	}
+    public static Object getProperties(String key, String def) {
+            String defVal = def;
+            try {
+                Class properClass = Class.forName("android.os.SystemProperties");
+                Method getMethod = properClass.getMethod("get",String.class,String.class);
+                defVal = (String)getMethod.invoke(null,key,def);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } finally {
+                Log.d(TAG,"getProperties(" + key + "," + def + ") ret= "+defVal);
+                return defVal;
+            }
+
+    }
+    private static String getUrl() {
+        return (String)getProperties("iptv.demo.url",
+            "/sdcard1/iptv_test.ts");
+    }
 	private static String getUrl1() {
 		return null;/*SystemProperties.get("iptv.demo.url1",
 			"/storage/external_storage/sdcard1/iptv_test.ts");*/
 	}
 	private int playBufferSize = 32;
+	private Button playButton = null;
 	private Button pause = null;
 	private Button resume = null; 
 	private Button seek = null;
@@ -74,6 +94,7 @@ public class MediaProcessorDemoActivity extends Activity {
 	private TextView Return_t = null;
 	private TextView Result = null;
 	private TextView resultView = null;
+    private EditText urlEditText = null;
 	
 	private int flag = 0;
 	private int PLAYER_INIT = 0;
@@ -121,7 +142,7 @@ public class MediaProcessorDemoActivity extends Activity {
 		player_status = PLAYER_STOP;
 		Log.d(TAG, "before nativeStop, time is: " + System.currentTimeMillis());
 
-		nativeStop(1);  
+		nativeStop(0);  
 		Log.d(TAG, "before nativeSetEPGSize, time is: " + System.currentTimeMillis());
 
         nativeSetEPGSize(1280, 720, 0);
@@ -149,39 +170,43 @@ public class MediaProcessorDemoActivity extends Activity {
 
 	@Override
 	public void onResume() {
-		if (nativeInit(url, 0) == 0)
-			Log.i("Init:", "success");
-		else {
-			Log.i("Init:", "error");
-		}
-		Log.d(getClass().getName(), "onResume()");
-
-		Log.i("create surface:", "next");
-		if (nativeCreateSurface(mySurface, 1280, 720, 0) == 0)
-			Log.i("create surface:", "success");
-
-		nativeSetEPGSize(1280, 720, 0);
-		nativeSetVideoWindow(420, 100, 640, 480, 0);
-
-		nativeStartPlay(0);
-		Log.i("play", "success");
-
-		drawSurface playData = new drawSurface();
-		playData.url = url;
-		Thread player = new Thread(playData);
-		player.start();
-
-		MainHandler = new Handler() {
-			@Override
-			public void handleMessage(Message msg) {
-				Log.d(TAG, "get msg "+msg.what);
-				super.handleMessage(msg);
-			}
-		};
-
-		player_status = PLAYER_PALY;
 		super.onResume();
+		Log.d(getClass().getName(), "onResume()");
 	}
+
+    private void startPlay(String playUrl) {
+        if (nativeInit(playUrl, 0) == 0)
+            Log.i(TAG, "Init success!");
+        else {
+            Log.i(TAG, "Init: error!");
+            return;
+        }
+
+        Log.i("create surface:", "next ");
+        if (nativeCreateSurface(mySurface, 1280, 720, 0) == 0)
+            Log.i("create surface:", "success");
+
+        //nativeSetEPGSize(1280, 720, 0);
+        //nativeSetVideoWindow(420, 100, 640, 480, 0);
+
+        nativeStartPlay(0);
+        Log.i("play", "success");
+
+        drawSurface playData = new drawSurface();
+        playData.url = playUrl;
+        Thread player = new Thread(playData);
+        player.start();
+
+        MainHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                Log.d(TAG, "get msg "+msg.what);
+                super.handleMessage(msg);
+            }
+        };
+
+        player_status = PLAYER_PALY;
+    }
 
 	/** Called when the activity is first created. */ 
 	@Override 
@@ -200,12 +225,43 @@ public class MediaProcessorDemoActivity extends Activity {
 		Log.i(TAG, "onCreate");
 		mySurfaceView = (SurfaceView)this.findViewById(R.id.SurfaceView01);
 		myHolder = mySurfaceView.getHolder();
-		myHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		mySurface = myHolder.getSurface(); 
+        //myHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        mySurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                mySurface = holder.getSurface();
+                Log.d(TAG, "surfaceCreated: " + mySurface);
+            }
+
+			@Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+			@Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+
+            }
+        });
 
 		Function = (TextView)findViewById(R.id.Function);
 		Return_t = (TextView)findViewById(R.id.Return_t);
 		Result = (TextView)findViewById(R.id.Result);
+        urlEditText = (EditText)findViewById(R.id.urlText);
+
+        //play
+		playButton = (Button)findViewById(R.id.play);
+		playButton.setOnClickListener(new Button.OnClickListener(){
+			public void onClick(View v) {
+                String playUrl = url;
+                String urlText = urlEditText.getText().toString();
+                Log.i(TAG, "urlText: " + urlText);
+                if (urlText != null) {
+                    playUrl = urlText;
+                }
+                startPlay(playUrl);
+            }
+        });
 
 		//pause
 		pause = (Button)findViewById(R.id.pause);

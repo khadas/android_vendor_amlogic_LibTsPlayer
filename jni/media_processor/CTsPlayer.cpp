@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include "Amsysfsutils.h"
 #include "Amavutils.h"
+#include "media/ammediaplayerext.h"
 #include <sys/times.h>
 #include <time.h>
 #include <sys/ioctl.h>
@@ -722,6 +723,7 @@ void CTsPlayer::init_params()
     vrp_is_buffer_changed = 0;
     last_data_len = 0;
     last_data_len_statistics = 0;
+    mIsTSdata = 0;
     memset(mWinAis,0,sizeof(mWinAis));
     GetCallingPidName(CallingPidName, sizeof(CallingPidName));
     m_StopThread = false;
@@ -1501,12 +1503,12 @@ bool CTsPlayer::StartPlay(){
         }
 
         // add for some write ts stream
-        if (prop_multi_play) {
+        /*if (prop_multi_play) {
             memset(value, 0, PROPERTY_VALUE_MAX);
             property_get("iptv.middle.softdemux", value, "0");
             prop_softdemux = atoi(value);
             LOGI("StartPlay: multi play, prop_softdemux=%d\n", prop_softdemux);
-        }
+        }*/
 
         if (vcodec != NULL) {
             memset(vcodec, 0, sizeof(codec_para_t));
@@ -4716,6 +4718,24 @@ int CTsPlayer::RegisterCallBack(void *hander, IPTV_PLAYER_PARAM_Evt_e enEvt, IPT
 }
 int CTsPlayer::SetParameter(void* handler, int key, void * request)
 {
+    if (NULL == handler) {
+        return -1;
+    }
+    switch (key) {
+        case KEY_PARAMETER_AML_PLAYER_SET_TS_OR_ES:
+            mIsTSdata = *(int *)request;
+            LOGI("CTsPlayer SetParameter mIsTSdata = %d\n", mIsTSdata);
+            if (!mIsTSdata) {
+                prop_softdemux = 1;
+                prop_esdata = 1;
+            } else {
+                prop_softdemux = 0;
+                prop_esdata = 0;
+            }
+            break;
+        default:
+            break;
+    }
     return 0;
 }
 int CTsPlayer::GetParameter(void* handler, int key, void * reply)

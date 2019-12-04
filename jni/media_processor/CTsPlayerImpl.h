@@ -320,6 +320,7 @@ private:
     int vrp_is_buffer_changed;
     int last_data_len;
     int last_data_len_statistics;
+    int mIsTSdata;
 
     IPTV_PLAYER_EVT_CB pfunc_player_evt;
     void *player_evt_hander;

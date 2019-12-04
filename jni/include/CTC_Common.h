@@ -44,6 +44,7 @@ struct CTC_InitialParameter {
     uint32_t        version;
     uint8_t         useOmx;            //force enable omx decoder
     uint8_t         useSoftDemux;
+    uint8_t         isEsSource;        //setParameter KEY_PARAMETER_AML_PLAYER_SET_TS_OR_ES to control.
     uint32_t        drmIdentifier;
     uint32_t        interfaceExtension;
     uint32_t        reserved;

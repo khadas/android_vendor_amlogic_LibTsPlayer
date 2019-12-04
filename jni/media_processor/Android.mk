@@ -66,6 +66,7 @@ CTC_C_INCLUDES_28 := \
 	$(HARDWARE_PATH)/gralloc/amlogic \
 	$(TOP)/vendor/amlogic/common/external/dvb/include/am_adp \
 	$(TOP)/vendor/amlogic/common/external/dvb/android/ndk/include \
+	$(TOP)/vendor/amlogic/common/frameworks/av/mediaextconfig/include \
 	$(TOP)/vendor/verimatrix/iptvclient/include \
 	$(TOP)/vendor/amlogic/common/external/ffmpeg \
 	$(TOP)/vendor/amlogic/common/frameworks/services/subtiltleserver/subtitleServerHidlClient

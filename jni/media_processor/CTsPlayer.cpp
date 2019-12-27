@@ -3598,6 +3598,35 @@ void CTsPlayer::GetAvbufStatus(PAVBUF_STATUS pstatus)
 void CTsPlayer::SwitchSubtitle(int pid)
 {
     LOGI("SwitchSubtitle be called pid is %d\n", pid);
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+    int num=0;
+    PSUBTITLE_PARA_T subtitlePara=sPara;
+    LOGI("SwitchSubtitle subtitlePara->pid:%d, pid: %d\n", subtitlePara->pid, pid);
+    while ((subtitlePara->pid != 0) && (num < MAX_SUBTITLE_PARAM_SIZE)) {
+        if (subtitlePara->pid == pid) {
+            LOGI("SwitchSubtitle sub_type:%x\n", subtitlePara->sub_type);
+            if (subtitlePara->sub_type == CTC_CODEC_ID_DVB_SUBTITLE) {
+                if (subtitlePara->dvb_sub_param.Composition_Page != 0 &&
+                    subtitlePara->dvb_sub_param.Ancillary_Page != 0) {
+                    gsubtitleCtx.tvType=4;
+                    gsubtitleCtx.pid= (int) subtitlePara->dvb_sub_param.Sub_PID;
+                    gsubtitleCtx.pageId= (int) subtitlePara->dvb_sub_param.Composition_Page;
+                    gsubtitleCtx.ancPageId= (int) subtitlePara->dvb_sub_param.Ancillary_Page;
+                    LOGI("SwitchSubtitle subtitlePara->pid:%d, pageId:%d, anPageId:%d\n",gsubtitleCtx.pid,gsubtitleCtx.pageId, gsubtitleCtx.ancPageId);
+                }
+            } else if (subtitlePara->sub_type == CODEC_ID_CLOSEDCAPTION) {
+                gsubtitleCtx.tvType=2;
+                gsubtitleCtx.vfmt=2;
+                gsubtitleCtx.channelId=channelId;
+            }
+            switchSubtitle(&gsubtitleCtx);
+            break;
+        }
+        num++;
+        subtitlePara++;
+    }
+    return;
+#endif
 #if ANDROID_PLATFORM_SDK_VERSION <= 27
     if (pcodec->has_sub == 1)
        subtitleResetForSeek();
@@ -3633,6 +3662,14 @@ void CTsPlayer::SwitchSubtitle(int pid)
 bool CTsPlayer::SubtitleShowHide(bool bShow)
 {
     LOGV("[%s:%d]\n", __FUNCTION__, __LINE__);
+#if ANDROID_PLATFORM_SDK_VERSION > 27
+    if (bShow) {
+        subtitleDisplay();
+    } else {
+        subtitleHide();
+    }
+    return true;
+#endif
 #if ANDROID_PLATFORM_SDK_VERSION <= 27
     if (pcodec->has_sub == 1) {
         if (bShow) {
